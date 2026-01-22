@@ -28,10 +28,14 @@
             --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         body {
-            margin: 0; padding: 0;
+            margin: 0;
+            padding: 0;
             font-family: var(--font-family);
             background: var(--bg-gradient);
             color: var(--text-color);
@@ -41,28 +45,46 @@
             align-items: flex-start;
             overflow-x: hidden;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(90px + env(safe-area-inset-bottom));
+            padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Alt menü için boşluk */
         }
 
         /* Blobs */
-        .blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
-        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate; }
+        .blobs {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
+        }
+        .blob {
+            position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate;
+        }
         .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
         .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
-        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
+
+        @keyframes move {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(20px, 40px) rotate(20deg); }
+        }
 
         /* Container */
         .container {
-            width: 100%; max-width: 600px; padding: 20px 25px;
-            display: flex; flex-direction: column; gap: 25px;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
         }
 
-        /* Tab Content */
-        .tab-content { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
+        /* Sekme Sistemi (Tabs) */
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeIn 0.3s ease;
+        }
         .tab-content.active { display: flex; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Header */
+        /* Başlık Tasarımı */
         .app-header { text-align: center; margin-top: 10px; margin-bottom: 10px; }
         .liquid-brand {
             font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
@@ -79,14 +101,27 @@
 
         /* Glass Cards */
         .glass-card {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px 25px; box-shadow: var(--glass-shadow);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 30px;
+            padding: 30px 25px; box-shadow: var(--glass-shadow);
         }
 
         h3 { font-size: 20px; margin: 0 0 20px 0; font-weight: 700; letter-spacing: 0.5px; }
         
+        /* Date Picker */
+        .date-section { text-align: center; padding-top: 10px; }
+        .date-subtitle { opacity: 0.7; font-size: 15px; margin-bottom: 15px; display: block; }
+        input[type="date"] {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; padding: 16px; border-radius: 18px;
+            font-size: 20px; font-weight: 600; font-family: var(--font-family);
+            outline: none; width: 100%; text-align: center; -webkit-appearance: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
         /* Inputs & Buttons */
-        input[type="date"], input[type="text"], textarea {
+        input[type="text"], textarea, input[type="url"] {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
             color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
             outline: none; width: 100%; margin-bottom: 15px;
@@ -96,7 +131,13 @@
         .btn-primary {
             width: 100%; padding: 16px; border-radius: 18px; border: none;
             background: var(--vakit-gradient); color: white; font-size: 16px; font-weight: 700;
-            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3);
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); transition: 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; padding: 12px; border-radius: 14px; font-size: 14px; cursor: pointer;
+            margin-bottom: 15px; width: 100%;
         }
 
         /* Prayer List Styles */
@@ -199,6 +240,7 @@
         .modal-content {
             background: #151520; width: 100%; border-radius: 30px 30px 0 0; padding: 30px 25px 50px 25px;
             border-top: 1px solid var(--glass-border); animation: slideUpModal 0.3s ease;
+            max-height: 85vh; overflow-y: auto;
         }
         @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -229,6 +271,13 @@
         .nav-icon { width: 22px; height: 22px; fill: white; }
 
         .hidden { display: none !important; }
+
+        /* URL Fetch Section */
+        .url-fetch-box {
+            background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2);
+            padding: 15px; border-radius: 15px; margin-bottom: 20px;
+        }
+        .url-label { font-size: 12px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 5px; }
 
     </style>
 </head>
@@ -314,6 +363,16 @@
     <div id="modalAddSurah" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom:20px;">Yeni Sure Ekle</h3>
+            
+            <div class="url-fetch-box">
+                <span class="url-label">Otomatik Çek (namazzamani.net Linki)</span>
+                <div style="display: flex; gap: 10px;">
+                    <input type="url" id="urlInput" placeholder="https://www.namazzamani.net/..." style="margin-bottom:0;">
+                    <button class="btn-primary" id="fetchBtn" style="width: auto; padding: 0 20px; font-size: 14px;" onclick="fetchSurahFromUrl()">Getir</button>
+                </div>
+                <div id="fetchStatus" style="font-size: 12px; color: var(--accent-green); margin-top: 5px; display: none;"></div>
+            </div>
+
             <input type="text" id="newSurahTitle" placeholder="Başlık (Örn: 1-Fatiha Suresi)">
             <textarea id="newSurahArabic" placeholder="Arapça Metin"></textarea>
             <textarea id="newSurahReading" placeholder="Okunuşu (Latin harfleriyle)"></textarea>
@@ -404,6 +463,96 @@
         }
 
         // ==========================================
+        //  URL FETCH LOGIC (CORS PROXY + PARSER)
+        // ==========================================
+        async function fetchSurahFromUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const statusEl = document.getElementById('fetchStatus');
+            const btn = document.getElementById('fetchBtn');
+            const url = urlInput.value.trim();
+
+            if (!url) { alert("Lütfen bir link yapıştırın."); return; }
+
+            // UI Feedback
+            btn.disabled = true;
+            btn.innerText = "İşleniyor...";
+            statusEl.style.display = 'block';
+            statusEl.innerText = "Siteye bağlanılıyor...";
+            statusEl.style.color = "var(--accent-green)";
+
+            // CORS Proxy (AllOrigins)
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Bağlantı hatası");
+                
+                const htmlText = await response.text();
+                statusEl.innerText = "Veri işleniyor...";
+
+                // Parse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+
+                // --- Parsing Logic for namazzamani.net ---
+                // Bu site genellikle <div class="ayet"> yapısını kullanır veya benzer bloklar.
+                // Biz en genel yapıyı hedefleyelim: Ayet numarası, Arapça, Okunuş, Meal
+                
+                let title = doc.querySelector('h1')?.innerText.trim() || "Yeni Sure";
+                
+                // Başlıktaki fazla kelimeleri temizle
+                title = title.replace("Suresi Türkçe Meali", "Suresi").trim();
+
+                // Ayetleri topla
+                let fullArabic = "";
+                let fullReading = "";
+                let fullMeaning = "";
+
+                // namazzamani.net spesifik yapısı (Genellikle .kuran_ayet_box içinde)
+                const verses = doc.querySelectorAll('.kuran_ayet_box');
+                
+                if (verses.length > 0) {
+                    verses.forEach((v) => {
+                        const arabic = v.querySelector('.kuran_ayet_arapca, .arab')?.innerText.trim() || "";
+                        const reading = v.querySelector('.kuran_ayet_okunus, .trans')?.innerText.trim() || "";
+                        const meaning = v.querySelector('.kuran_ayet_meal, .meal')?.innerText.trim() || "";
+                        
+                        // Ayet numarası bulmaya çalış
+                        let no = "";
+                        const noEl = v.querySelector('.kuran_ayet_no');
+                        if(noEl) no = "(" + noEl.innerText.trim() + ") ";
+
+                        if(arabic) fullArabic += arabic + " " + "\u06DD" + " "; // Ayet sonu işareti
+                        if(reading) fullReading += reading + " ";
+                        if(meaning) fullMeaning += no + meaning + " ";
+                    });
+                } else {
+                    // Yedek Plan: Eğer class'lar değişmişse daha genel div araması
+                    // Bu kısım riskli olabilir ama denemekte fayda var.
+                    // Şimdilik boş bırakıp kullanıcıya manuel doldurma şansı verelim.
+                    throw new Error("Ayet yapısı algılanamadı. Lütfen manuel giriniz.");
+                }
+
+                // Inputları doldur
+                document.getElementById('newSurahTitle').value = title;
+                document.getElementById('newSurahArabic').value = fullArabic.trim();
+                document.getElementById('newSurahReading').value = fullReading.trim();
+                document.getElementById('newSurahMeaning').value = fullMeaning.trim();
+
+                statusEl.innerText = "Başarıyla çekildi!";
+                
+            } catch (error) {
+                console.error(error);
+                statusEl.innerText = "Hata: Veri çekilemedi. Linki kontrol edin.";
+                statusEl.style.color = "var(--missed-color)";
+                alert("Site yapısı değişmiş veya erişim engeli var. Lütfen manuel ekleyin.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Getir";
+            }
+        }
+
+        // ==========================================
         //  SURELER (EZBER) BÖLÜMÜ
         // ==========================================
 
@@ -412,7 +561,6 @@
             if(stored) {
                 currentSurahs = JSON.parse(stored);
             } else {
-                // Varsayılan boş veya örnek veri
                 currentSurahs = []; 
             }
             renderSurahList();
@@ -423,7 +571,6 @@
             renderSurahList();
         }
 
-        // Listeyi numaraya göre sırala (1-Fatiha, 2-Bakara...)
         function sortSurahs() {
             currentSurahs.sort((a, b) => {
                 const numA = parseInt(a.title.match(/^\d+/) || 0);
@@ -456,10 +603,14 @@
         }
 
         function openAddModal() {
+            // Reset fields
+            document.getElementById('urlInput').value = '';
+            document.getElementById('fetchStatus').style.display = 'none';
             document.getElementById('newSurahTitle').value = '';
             document.getElementById('newSurahArabic').value = '';
             document.getElementById('newSurahReading').value = '';
             document.getElementById('newSurahMeaning').value = '';
+            
             document.getElementById('modalAddSurah').classList.add('open');
         }
 
@@ -673,7 +824,6 @@
                     if (picker) {
                         picker.value = externalDate;
                         picker.dispatchEvent(new Event('change'));
-                        // Eğer takip sekmesi açıksa veriyi yükle
                         if(typeof loadDay === 'function') loadDay(externalDate);
                     }
                 }
