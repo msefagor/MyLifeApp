@@ -48,35 +48,26 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 80px); /* Biraz daha yukarı aldık */
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
             transition: opacity 0.8s ease-out, visibility 0.8s;
         }
 
         /* Liquid Glass Panel */
         .loading-content-panel {
-            /* Çok daha şeffaf ve parlak bir taban */
             background: rgba(255, 255, 255, 0.03);
-            /* Yüzeyde ışık yansıması efekti (Glass reflection) */
             background-image: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.01) 100%);
-            
-            /* Daha güçlü bulanıklık (Deep Blur) */
             backdrop-filter: blur(35px) saturate(180%);
             -webkit-backdrop-filter: blur(35px) saturate(180%);
-            
-            /* Keskin ve parlak kenarlık */
             border: 1px solid rgba(255, 255, 255, 0.18);
-            border-top-color: rgba(255, 255, 255, 0.3); /* Üst kenar daha parlak */
-            
+            border-top-color: rgba(255, 255, 255, 0.3);
             padding: 30px 35px;
             border-radius: 30px;
             width: 85%;
             max-width: 340px;
             text-align: center;
-            
-            /* Derinlik veren gölgeler */
             box-shadow: 
-                0 20px 40px rgba(0,0,0,0.5), /* Dış gölge */
-                inset 0 0 0 1px rgba(255,255,255,0.05); /* İç çerçeve parlaması */
+                0 20px 40px rgba(0,0,0,0.5),
+                inset 0 0 0 1px rgba(255,255,255,0.05);
         }
 
         .loading-text {
@@ -87,8 +78,8 @@
 
         .progress-container {
             width: 100%;
-            height: 10px; /* Biraz daha kalın */
-            background: rgba(0,0,0,0.2); /* Daha koyu iç */
+            height: 10px;
+            background: rgba(0,0,0,0.2);
             border-radius: 20px;
             overflow: hidden;
             position: relative;
@@ -99,11 +90,9 @@
         .progress-bar {
             height: 100%;
             width: 0%;
-            /* Daha canlı bir degrade */
             background: linear-gradient(90deg, var(--primary-color), #38ef7d);
             border-radius: 20px;
             transition: width 0.1s linear;
-            /* Neon Likit Parlama Efekti */
             box-shadow: 
                 0 0 20px rgba(10, 132, 255, 0.7),
                 inset 0 2px 5px rgba(255,255,255,0.4);
@@ -113,7 +102,6 @@
             margin-top: 15px; font-size: 14px; font-weight: 600; opacity: 0.8; font-variant-numeric: tabular-nums;
         }
         /* --- YÜKLEME EKRANI BİTİŞ --- */
-
 
         /* Arkaplan Efektleri (Ana sayfa için) */
         .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
@@ -351,19 +339,23 @@
         });
         // --- YÜKLEME EKRANI BİTİŞ ---
 
+        // 1. iPhone Uyumlu Tarih Ayarı
         function setToday() {
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
+            
             const picker = document.getElementById('mainDatePicker');
             if(!picker.value) picker.value = localISOTime;
         }
 
+        // 2. Sayfa Yönlendirme (Tarih verisini taşıyarak)
         function navigateTo(page) {
             const date = document.getElementById('mainDatePicker').value;
             window.location.href = `${page}?date=${date}`;
         }
 
+        // 3. Şifre Kontrolü ve Yedekleme Menüsü
         function checkPasswordAndOpen() {
             const userPass = prompt("Veri yönetimi için şifre giriniz:");
             if (userPass === APP_PASS) {
@@ -379,6 +371,7 @@
             const allData = JSON.stringify(localStorage);
             const blob = new Blob([allData], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
+            
             const a = document.createElement('a');
             a.href = url;
             const dateStr = new Date().toISOString().split('T')[0];
@@ -392,15 +385,22 @@
         function importData(input) {
             const file = input.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     localStorage.clear();
-                    Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); });
+                    
+                    Object.keys(data).forEach(key => {
+                        localStorage.setItem(key, data[key]);
+                    });
+                    
                     alert("Veriler başarıyla geri yüklendi!");
                     location.reload(); 
-                } catch (err) { alert("Dosya bozuk veya hatalı format: " + err); }
+                } catch (err) {
+                    alert("Dosya bozuk veya hatalı format: " + err);
+                }
             };
             reader.readAsText(file);
         }
@@ -409,4 +409,3 @@
     </script>
 </body>
 </html>
-
