@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#aebad0"> <title>Ana Ekran</title>
+    <meta name="theme-color" content="#8CA6C5"> <title>Ana Ekran</title>
     
-    <link rel="apple-touch-icon" sizes="180x180" href="app-icon.png?v=2">
-    <link rel="apple-touch-icon-precomposed" href="app-icon.png?v=2">
-    <link rel="icon" type="image/png" href="app-icon.png?v=2">
-    <link rel="shortcut icon" href="app-icon.png?v=2">
+    <link rel="preload" href="splash-screen.png" as="image">
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="app-icon.png?v=3">
+    <link rel="icon" type="image/png" href="app-icon.png?v=3">
+    <link rel="shortcut icon" href="app-icon.png?v=3">
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
             --text-color: #ffffff;
             --primary-color: #0a84ff;
         }
@@ -25,7 +26,7 @@
 
         body {
             margin: 0; padding: 0;
-            background: #000;
+            background: #000; /* Uygulama içi siyah */
             color: var(--text-color);
             min-height: 100vh;
             display: flex;
@@ -34,173 +35,114 @@
             padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
         }
 
-        /* --- YÜKLEME EKRANI (SPLASH SCREEN) CSS --- */
+        /* --- YÜKLEME EKRANI (SPLASH SCREEN) --- */
         #loading-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* Görselin kendi renklerini bozmamak için karartmayı azalttık */
-            background: url('splash-screen.png') no-repeat center center;
+            /* Görsel yüklenene kadar arkaplanın gözükmemesi için solid renk + görsel */
+            background-color: #8CA6C5; 
+            background-image: url('splash-screen.png');
+            background-repeat: no-repeat;
+            background-position: center center;
             background-size: cover;
-            z-index: 99999;
-            display: flex;
+            z-index: 999999; /* Her şeyin üstünde */
+            display: flex; /* JS ile kontrol edilecek, default flex */
             flex-direction: column;
-            justify-content: flex-end; /* İçeriği alta it */
+            justify-content: flex-end;
             align-items: center;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 90px);
-            transition: opacity 0.8s ease-out, visibility 0.8s;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
+            transition: opacity 0.6s ease-out, visibility 0.6s;
         }
 
-        /* Liquid Glass Panel - Görselin pastel tonlarına uygun */
+        /* Yükleme Paneli - Okunabilirlik için Koyu Buzlu Cam */
         .loading-content-panel {
-            background: rgba(255, 255, 255, 0.15); /* Daha parlak cam */
-            background-image: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%);
-            backdrop-filter: blur(25px) saturate(120%);
-            -webkit-backdrop-filter: blur(25px) saturate(120%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-top-color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.4); /* Koyu yarı saydam taban */
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
             padding: 25px 30px;
-            border-radius: 35px;
+            border-radius: 30px;
             width: 80%;
-            max-width: 300px;
+            max-width: 320px;
             text-align: center;
-            box-shadow: 
-                0 15px 35px rgba(0,0,0,0.2), /* Daha yumuşak gölge */
-                inset 0 0 0 1px rgba(255,255,255,0.2);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
         }
 
         .loading-text {
-            font-size: 16px; font-weight: 700; margin-bottom: 15px; letter-spacing: 0.5px;
+            font-size: 18px; font-weight: 700; margin-bottom: 15px; letter-spacing: 0.5px;
             color: #ffffff;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Yazı gölgesi */
         }
 
         .progress-container {
             width: 100%;
-            height: 8px;
-            background: rgba(0,0,0,0.15); /* Hafif koyu taban */
+            height: 12px; /* Daha kalın bar */
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             overflow: hidden;
             position: relative;
-            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
-            /* Görseldeki mavi/beyaz tonlarına uygun degrade */
-            background: linear-gradient(90deg, #ffffff, #a1c4fd);
+            /* Parlak Mavi/Beyaz Degrade */
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
             border-radius: 20px;
-            transition: width 0.1s linear;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+            transition: width 0.05s linear;
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.6); /* Neon parlama */
         }
 
         .progress-percentage {
-            margin-top: 10px; font-size: 13px; font-weight: 600; opacity: 0.9; 
-            color: white; font-variant-numeric: tabular-nums;
+            margin-top: 12px; font-size: 15px; font-weight: 600; 
+            color: rgba(255,255,255,0.9); font-variant-numeric: tabular-nums;
         }
         /* --- YÜKLEME EKRANI BİTİŞ --- */
 
-
-        /* Arkaplan Efektleri (Ana sayfa için) */
+        /* Arkaplan Efektleri */
         .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
         .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #ff00cc; animation: float 8s infinite ease-in-out; }
         .blob-2 { bottom: -10%; right: -20%; width: 350px; height: 350px; background: #3333ff; animation: float 10s infinite ease-in-out reverse; }
         .blob-3 { top: 40%; left: 30%; width: 200px; height: 200px; background: #00f2ff; opacity: 0.4; }
-
         @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
 
         /* Üst Bar */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 0; margin-bottom: 10px;
-        }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 10px; }
         .header h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
-        
-        .backup-btn {
-            background: rgba(255,255,255,0.15); border: 1px solid var(--glass-border);
-            color: white; width: 44px; height: 44px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            backdrop-filter: blur(10px); transition: 0.2s;
-        }
+        .backup-btn { background: rgba(255,255,255,0.15); border: 1px solid var(--glass-border); color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); transition: 0.2s; }
         .backup-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
 
         /* Tarih Seçici */
-        .date-container {
-            background: var(--glass-bg); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 20px; text-align: center; margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+        .date-container { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .date-label { font-size: 13px; opacity: 0.7; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        input[type="date"] {
-            background: transparent; border: none; color: white;
-            font-size: 24px; font-weight: 700; font-family: inherit;
-            outline: none; text-align: center; width: 100%;
-        }
+        input[type="date"] { background: transparent; border: none; color: white; font-size: 24px; font-weight: 700; font-family: inherit; outline: none; text-align: center; width: 100%; }
 
-        /* Liste Menü (Kartlar) */
-        .menu-list {
-            display: flex; flex-direction: column; gap: 15px;
-            flex: 1; 
-        }
-
-        .menu-item {
-            background: var(--glass-bg); backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 20px; display: flex; align-items: center; justify-content: flex-start;
-            gap: 20px; text-decoration: none; color: white;
-            transition: transform 0.2s, background 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+        /* Menü */
+        .menu-list { display: flex; flex-direction: column; gap: 15px; flex: 1; }
+        .menu-item { background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; display: flex; align-items: center; justify-content: flex-start; gap: 20px; text-decoration: none; color: white; transition: transform 0.2s, background 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .menu-item:active { transform: scale(0.98); background: rgba(255,255,255,0.15); }
-        
-        .icon-box {
-            width: 50px; height: 50px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
+        .icon-box { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .item-info { display: flex; flex-direction: column; }
         .item-title { font-size: 18px; font-weight: 600; }
         .item-desc { font-size: 13px; opacity: 0.6; margin-top: 3px; }
-
-        /* Renk Temaları */
         .theme-namaz .icon-box { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #000; }
         .theme-not .icon-box { background: linear-gradient(135deg, #f83600 0%, #f9d423 100%); color: #000; }
         .theme-eng .icon-box { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; }
         .theme-book .icon-box { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #000; }
         .theme-money .icon-box { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
 
-        /* Footer */
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px 10px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
+        .footer { text-align: center; margin-top: 40px; padding: 20px 10px; font-size: 11px; color: rgba(255, 255, 255, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.05); }
 
-        /* Modal (Yedekleme) */
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            z-index: 100; display: none; align-items: center; justify-content: center;
-        }
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 100; display: none; align-items: center; justify-content: center; }
         .modal.open { display: flex; }
-        .modal-content {
-            background: #1c1c1e; width: 85%; max-width: 400px;
-            border-radius: 24px; padding: 25px; border: 1px solid var(--glass-border);
-            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .modal-btn {
-            width: 100%; padding: 16px; margin-top: 12px; border-radius: 14px;
-            border: none; font-size: 16px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .modal-content { background: #1c1c1e; width: 85%; max-width: 400px; border-radius: 24px; padding: 25px; border: 1px solid var(--glass-border); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .modal-btn { width: 100%; padding: 16px; margin-top: 12px; border-radius: 14px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-download { background: #0a84ff; color: white; }
         .btn-upload { background: #30d158; color: white; }
         .btn-close { background: rgba(255,255,255,0.1); color: white; margin-top: 25px; }
-
     </style>
 </head>
 <body>
@@ -302,16 +244,25 @@
 
     <script>
         const APP_PASS = "120622";
+        const SESSION_KEY = "app_splash_shown"; // Oturum anahtarı
 
-        // --- YÜKLEME EKRANI ANİMASYONU ---
+        // --- YÜKLEME EKRANI MANTIĞI ---
         document.addEventListener("DOMContentLoaded", () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            // Eğer daha önce gösterildiyse (sessionStorage), direkt gizle
+            if (sessionStorage.getItem(SESSION_KEY)) {
+                loadingScreen.style.display = 'none';
+                return; // Animasyonu çalıştırma
+            }
+
+            // GÖSTERİLMEMİŞSE ANİMASYONU BAŞLAT
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
-            const loadingScreen = document.getElementById('loading-screen');
             
             let progress = 0;
             const totalTime = 5000; // 5 saniye
-            const intervalTime = 50; // Her 50ms'de bir güncelle
+            const intervalTime = 50; 
             const step = 100 / (totalTime / intervalTime);
 
             const loadingInterval = setInterval(() => {
@@ -321,10 +272,14 @@
                     progress = 100;
                     clearInterval(loadingInterval);
                     
-                    // Bekle ve gizle
+                    // İşaretle: Bu oturumda gösterildi
+                    sessionStorage.setItem(SESSION_KEY, "true");
+
                     setTimeout(() => {
                         loadingScreen.style.opacity = '0';
                         loadingScreen.style.visibility = 'hidden';
+                        // DOM'dan kaldırmak performansı artırır
+                        setTimeout(() => loadingScreen.style.display = 'none', 600);
                     }, 500);
                 }
                 
@@ -333,7 +288,6 @@
 
             }, intervalTime);
         });
-        // --- YÜKLEME EKRANI BİTİŞ ---
 
         function setToday() {
             const now = new Date();
