@@ -6,10 +6,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>English Day</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --bg-body: #000000;
-            --glass-bg: rgba(28, 28, 30, 0.85);
+            --glass-bg: rgba(28, 28, 30, 0.65);
             --glass-border: rgba(255, 255, 255, 0.12);
             --primary: #0a84ff;
             --incoming: #3a3a3c;
@@ -18,6 +19,7 @@
             --orange: #ff9f0a;
             --text: #ffffff;
             --text-gray: #8e8e93;
+            --calendar-highlight: #0a84ff;
         }
 
         html { height: -webkit-fill-available; }
@@ -38,30 +40,140 @@
             z-index: -2;
         }
 
-        .container { max-width: 100%; padding: 20px; padding-top: 40px; }
+        .blob {
+            position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: -1;
+        }
+        .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #0a84ff; animation: float 10s infinite ease-in-out; }
+        .blob-2 { bottom: 10%; right: -20%; width: 250px; height: 250px; background: #bf5af2; animation: float 8s infinite ease-in-out reverse; }
 
-        h1 { font-size: 2.2rem; margin: 0 0 10px 0; font-weight: 800; letter-spacing: -0.5px; }
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+
+        .container { max-width: 100%; padding: 20px; padding-top: 20px; }
+
+        /* --- YENİ BAŞLIK TASARIMI --- */
+        .header-wrapper {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .liquid-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff 0%, #a1c4fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(10, 132, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .title-icon-box {
+            width: 50px; height: 50px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            font-size: 24px;
+            color: #fff;
+            -webkit-text-fill-color: #fff; /* Gradyanı ezmek için */
+        }
+
+        .liquid-subtitle {
+            font-size: 1rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'SF Pro Display', sans-serif;
+        }
+
+        /* --- ÖZEL TAKVİM TASARIMI --- */
+        .calendar-wrapper {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .cal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; color: white;
+        }
+        .cal-month-name { font-size: 1.1rem; font-weight: 700; }
+        .cal-nav-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+        }
+
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+            text-align: center;
+        }
+
+        .cal-day-name {
+            font-size: 0.75rem; color: var(--text-gray); font-weight: 600; margin-bottom: 5px;
+        }
+
+        .cal-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem; border-radius: 12px; cursor: pointer;
+            transition: 0.2s; border: 1px solid transparent; position: relative;
+        }
+        
+        .cal-day:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+        
+        /* Seçili Gün */
+        .cal-day.selected {
+            background: white; color: black; font-weight: 700;
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+        }
+
+        /* Dolu Gün (Daire İçine Alma) */
+        .cal-day.has-data::after {
+            content: '';
+            position: absolute;
+            inset: 2px; /* Kenarlardan boşluk */
+            border: 2px solid var(--accent); /* Yeşil çerçeve */
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        /* Hem seçili hem dolu ise */
+        .cal-day.selected.has-data::after {
+            border-color: var(--primary); /* Seçiliyken mavi çerçeve */
+            box-shadow: none;
+        }
+
+        .cal-day.empty { pointer-events: none; }
+        .cal-day.today { color: var(--primary); font-weight: 700; }
+
+        /* ----------------------- */
 
         button {
             width: 100%; padding: 18px; border-radius: 16px; border: none;
             font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-bottom: 12px;
             background: var(--primary); color: white; transition: transform 0.1s;
+            box-shadow: 0 10px 20px rgba(10, 132, 255, 0.3);
         }
         button:active { transform: scale(0.97); opacity: 0.9; }
-        .btn-secondary { background: rgba(255,255,255,0.12); backdrop-filter: blur(10px); }
-        .btn-accent { background: var(--accent); color:#000; }
+        .btn-secondary { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-accent { background: var(--accent); color:#000; box-shadow: 0 10px 20px rgba(50, 215, 75, 0.3); }
 
         textarea {
             width: 100%; height: 40vh; background: #1c1c1e; color: #fff;
             border: 1px solid var(--glass-border); border-radius: 14px; padding: 15px;
             font-family: monospace; font-size: 14px; box-sizing: border-box; margin-bottom: 15px;
-        }
-
-        input[type="date"] {
-            width: 100%; padding: 16px; background: rgba(255,255,255,0.1);
-            border: 1px solid var(--glass-border); border-radius: 14px;
-            color: white; font-size: 1.2rem; text-align: center; appearance: none;
-            margin-bottom: 20px; box-sizing: border-box;
         }
 
         .card {
@@ -79,74 +191,35 @@
             padding-bottom: 12px; margin-bottom: 20px; color: #fff; font-weight: 700;
         }
 
+        /* İçerik Stilleri */
         .vocab-grid { display: grid; gap: 12px; }
-        .vocab-item {
-            background: rgba(255,255,255,0.06); border-radius: 16px; padding: 15px;
-            border-left: 4px solid var(--primary);
-        }
+        .vocab-item { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 15px; border-left: 4px solid var(--primary); }
         .v-top { display: flex; justify-content: space-between; align-items: baseline; }
         .v-word { font-size: 1.2rem; font-weight: 700; }
         .v-pron { font-size: 0.85rem; color: #aaa; font-style: italic; }
         .v-mean { color: var(--accent); font-weight: 600; display: block; margin: 6px 0; }
         .v-ex { font-size: 0.9rem; color: #ddd; opacity: 0.9; line-height: 1.4; }
 
-        .phrase-unit {
-            background: rgba(255,255,255,0.05); border-radius: 20px;
-            padding: 20px; margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.08); position: relative; overflow: hidden;
-        }
-        .phrase-unit::before {
-            content:''; position: absolute; left:0; top:0; bottom:0; width:5px; background: var(--purple);
-        }
+        .phrase-unit { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; overflow: hidden; }
+        .phrase-unit::before { content:''; position: absolute; left:0; top:0; bottom:0; width:5px; background: var(--purple); }
         .ph-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 15px; display: block; line-height: 1.3; }
-        .ph-meta {
-            display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;
-            background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px;
-        }
+        .ph-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; }
         .ph-row { font-size: 0.95rem; color: #eee; display: flex; flex-direction: column; }
         .ph-tag { color: var(--text-gray); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
-        .ph-dialogue {
-            background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px;
-            font-size: 0.95rem; border-left: 3px solid var(--orange); font-style: italic;
-        }
+        .ph-dialogue { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; font-size: 0.95rem; border-left: 3px solid var(--orange); font-style: italic; }
 
         .reading-container { display: flex; flex-direction: column; gap: 15px; }
-        .scenario-box {
-            background: rgba(10, 132, 255, 0.15); border: 1px solid var(--primary);
-            padding: 10px 15px; border-radius: 12px; color: #fff; font-size: 0.95rem;
-        }
-        .eng-text-box {
-            font-size: 1.05rem; line-height: 1.6; color: #fff; padding: 10px; border-left: 3px solid #fff;
-        }
-        .tr-text-box {
-            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;
-            font-size: 0.95rem; color: #ccc; line-height: 1.5;
-        }
+        .scenario-box { background: rgba(10, 132, 255, 0.15); border: 1px solid var(--primary); padding: 10px 15px; border-radius: 12px; color: #fff; font-size: 0.95rem; }
+        .eng-text-box { font-size: 1.05rem; line-height: 1.6; color: #fff; padding: 10px; border-left: 3px solid #fff; }
+        .tr-text-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; font-size: 0.95rem; color: #ccc; line-height: 1.5; }
         .questions-box { margin-top: 10px; }
         .q-title { color: var(--accent); font-weight: bold; margin-bottom: 8px; display: block; }
 
-        /* DİYALOG - WhatsApp/iMessage tarzı */
-        .chat-container {
-            display: flex; flex-direction: column; gap: 10px; padding: 5px;
-        }
-        .chat-bubble {
-            padding: 12px 16px; border-radius: 20px; max-width: 85%;
-            font-size: 1.05rem; line-height: 1.4; position: relative;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; flex-direction: column;
-            word-break: break-word;
-        }
-        .chat-left {
-            align-self: flex-start; background: var(--incoming); color: #fff;
-            border-bottom-left-radius: 4px;
-        }
-        .chat-right {
-            align-self: flex-end; background: var(--primary); color: white;
-            border-bottom-right-radius: 4px; text-align: right;
-        }
-        .chat-tr {
-            font-size: 0.85rem; opacity: 0.7; margin-top: 6px; padding-top: 6px;
-            border-top: 1px solid rgba(255,255,255,0.2); font-weight: 400;
-        }
+        .chat-container { display: flex; flex-direction: column; gap: 10px; padding: 5px; }
+        .chat-bubble { padding: 12px 16px; border-radius: 20px; max-width: 85%; font-size: 1.05rem; line-height: 1.4; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; flex-direction: column; word-break: break-word; }
+        .chat-left { align-self: flex-start; background: var(--incoming); color: #fff; border-bottom-left-radius: 4px; }
+        .chat-right { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; text-align: right; }
+        .chat-tr { font-size: 0.85rem; opacity: 0.7; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.2); font-weight: 400; }
 
         .hw-block { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .hw-title { color: var(--orange); font-weight: bold; display: block; margin-bottom: 10px; font-size: 1.1rem; }
@@ -158,23 +231,56 @@
         .screen.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        #alert-box {
-            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
-            background: #333; color: #fff; padding: 12px 24px; border-radius: 30px;
-            z-index: 999; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
+        #alert-box { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 999; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
     <div class="bg-gradient"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    
     <div id="alert-box"></div>
+
+    <a href="index.html" style="position: fixed; top: max(env(safe-area-inset-top), 20px); left: 20px; z-index: 10000; width: 44px; height: 44px; background: rgba(40, 40, 40, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-size: 18px; transition: transform 0.2s;" onclick="this.style.transform='scale(0.9)'">
+        <i class="fas fa-arrow-left"></i>
+    </a>
 
     <div class="container">
         <div id="home-screen" class="screen active" style="text-align: center;">
-            <h1>English Day 📅</h1>
-            <p style="color:#888; margin-bottom: 30px;">Bugün ne çalışıyoruz?</p>
-            <div style="text-align: left; color:#aaa; font-size:0.9rem; margin-bottom:5px; margin-left:5px;">Tarih Seç:</div>
-            <input type="date" id="date-picker">
+            
+            <div class="header-wrapper">
+                <h1 class="liquid-title">
+                    English Day
+                    <div class="title-icon-box">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                </h1>
+                <p class="liquid-subtitle">Bugün ne çalışıyoruz?</p>
+            </div>
+
+            <input type="date" id="date-picker" style="display:none;">
+
+            <div class="calendar-wrapper">
+                <div class="cal-header">
+                    <button class="cal-nav-btn" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                    <div class="cal-month-name" id="calMonthName">Ocak 2026</div>
+                    <button class="cal-nav-btn" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                
+                <div class="cal-grid">
+                    <div class="cal-day-name">Pzt</div>
+                    <div class="cal-day-name">Sal</div>
+                    <div class="cal-day-name">Çar</div>
+                    <div class="cal-day-name">Per</div>
+                    <div class="cal-day-name">Cum</div>
+                    <div class="cal-day-name">Cmt</div>
+                    <div class="cal-day-name">Paz</div>
+                </div>
+                
+                <div id="calendarDays" class="cal-grid" style="margin-top: 10px;">
+                    </div>
+            </div>
+
             <button onclick="startLesson()">Dersi Başlat ▶️</button>
             <button class="btn-secondary" onclick="openEditor()">📝 Metni Yapıştır</button>
         </div>
@@ -198,8 +304,99 @@
     </div>
 
     <script>
+        // --- TAKVİM VE TARİH YÖNETİMİ ---
         const datePicker = document.getElementById('date-picker');
-        datePicker.valueAsDate = new Date();
+        let currentCalDate = new Date();
+        
+        // Başlangıçta bugünü seç
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(today.getTime() - offset).toISOString().split('T')[0];
+        datePicker.value = localISOTime;
+
+        function initCalendar() {
+            renderCalendar();
+        }
+
+        function changeMonth(dir) {
+            currentCalDate.setMonth(currentCalDate.getMonth() + dir);
+            renderCalendar();
+        }
+
+        function getMarkedDates() {
+            // LocalStorage'ı tara ve 'eng_day_' ile başlayan tarihleri bul
+            const marked = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('eng_day_')) {
+                    marked.push(key.replace('eng_day_', ''));
+                }
+            }
+            return marked;
+        }
+
+        function renderCalendar() {
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+            
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            document.getElementById('calMonthName').innerText = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay(); // 0 = Pazar
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Pzt(1) den başlaması için ayar (Pazar=0 -> 7 yapıp 1 çıkar)
+            let startCol = firstDay === 0 ? 6 : firstDay - 1;
+
+            const grid = document.getElementById('calendarDays');
+            grid.innerHTML = '';
+
+            const markedDates = getMarkedDates();
+            const selectedDateVal = datePicker.value;
+
+            // Boşluklar
+            for(let i=0; i<startCol; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-day empty';
+                grid.appendChild(empty);
+            }
+
+            // Günler
+            for(let d=1; d<=daysInMonth; d++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-day';
+                cell.innerText = d;
+
+                // Tarih formatı YYYY-MM-DD
+                const currentDayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+                // Bugün mü?
+                const now = new Date();
+                if(d === now.getDate() && month === now.getMonth() && year === now.getFullYear()) {
+                    cell.classList.add('today');
+                }
+
+                // Seçili mi?
+                if(currentDayStr === selectedDateVal) {
+                    cell.classList.add('selected');
+                }
+
+                // Veri var mı? (Daire içine al)
+                if(markedDates.includes(currentDayStr)) {
+                    cell.classList.add('has-data');
+                }
+
+                // Tıklama Olayı
+                cell.onclick = () => {
+                    datePicker.value = currentDayStr;
+                    renderCalendar(); // Seçimi güncellemek için tekrar çiz
+                };
+
+                grid.appendChild(cell);
+            }
+        }
+
+        // --- UYGULAMA FONKSİYONLARI ---
 
         function showAlert(msg) {
             const box = document.getElementById('alert-box');
@@ -211,11 +408,12 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('home-screen').classList.add('active');
             window.scrollTo(0,0);
+            renderCalendar(); // Geri dönünce takvimi güncelle (yeni veri eklendiyse görünsün)
         }
 
         function openEditor() {
             const date = datePicker.value;
-            if(!date) return showAlert('Tarih seçin.');
+            if(!date) return showAlert('Lütfen takvimden tarih seçin.');
             const saved = localStorage.getItem('eng_day_' + date);
             document.getElementById('content-input').value = saved || "";
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -236,7 +434,7 @@
             if(!date) return showAlert('Tarih seçin.');
             const content = localStorage.getItem('eng_day_' + date);
             if(!content) {
-                if(confirm("İçerik yok. Eklemek ister misiniz?")) openEditor();
+                if(confirm("Bu tarih için içerik yok. Eklemek ister misiniz?")) openEditor();
                 return;
             }
             renderLesson(content, date);
@@ -244,80 +442,43 @@
             document.getElementById('lesson-screen').classList.add('active');
         }
 
-        /* =========================================================
-           DİYALOG PARSER (TABLO + TAB KAYBOLMUŞ METİN İÇİN SAĞLAM)
-        ========================================================= */
-
+        /* --- PARSER & RENDERER --- */
         function normalizeSpaces(s) {
             return (s || '').replace(/\u00A0/g, ' ').replace(/[ \t]+/g, ' ').trim();
         }
 
-        // TR başlangıcını yakalamak için: Türkçe karakter veya sık başlayan TR kelimeleri
         function findTurkishStartIndex(text) {
             if(!text) return -1;
-
-            // 1) Türkçe karakter görülürse o index TR olabilir
             const trCharMatch = text.match(/[çğıöşüÇĞİÖŞÜ]/);
             if(trCharMatch) return trCharMatch.index;
-
-            // 2) Sık TR başlangıç kelimeleri (senin diyaloglarında çok geçiyor)
             const commonTR = /\b(Merhaba|Tabii|Tamam|Evet|İşte|Harika|Lütfen|Ne kadar\??|Ne zaman\??|İki gün|Bu paket|Bu|Şu|Ben|Sen|Siz)\b/;
             const m = text.match(commonTR);
             if(m) return m.index;
-
             return -1;
         }
 
-        // Satırdan {speaker, en, tr} çıkarır.
         function parseDialogueLine(rawLine) {
             let line = (rawLine || '').replace(/\r/g,'').trim();
             if(line.length < 2) return null;
-
-            // Başlık satırlarını atla
             const low = line.toLowerCase();
             if(low.includes('kişi') && low.includes('ingilizce') && low.includes('türkçe')) return null;
             if(low.startsWith('(') && low.includes('diyalog')) return null;
-
-            // A:/B: yakala (başta A:, A. vb.)
             const speakerMatch = line.match(/^([AB])\s*[:.]\s*(.*)$/i);
             if(!speakerMatch) return null;
-
             const speaker = speakerMatch[1].toUpperCase();
             let rest = speakerMatch[2] || '';
             rest = rest.trim();
-
-            // 1) Önce TAB ile sütun (en doğru senaryonun)
             if(rest.includes('\t')) {
                 const parts = rest.split('\t').map(p => p.trim()).filter(Boolean);
-                if(parts.length >= 2) {
-                    const en = parts[0];
-                    const tr = parts.slice(1).join(' ');
-                    return { speaker, en, tr };
-                }
+                if(parts.length >= 2) { return { speaker, en: parts[0], tr: parts.slice(1).join(' ') }; }
             }
-
-            // 2) Çoklu boşluk (tab kaybolduysa) -> 2+ boşlukla böl
             const multiSpaceParts = rest.split(/\s{2,}/).map(p => p.trim()).filter(Boolean);
-            if(multiSpaceParts.length >= 2) {
-                const en = multiSpaceParts[0];
-                const tr = multiSpaceParts.slice(1).join(' ');
-                return { speaker, en, tr };
-            }
-
-            // 3) Son çare: TR başlangıcını heuristikle bul
-            // (Bu, "Hello. I'd like... Merhaba. ..." gibi yapışık metinlerde çalışır)
+            if(multiSpaceParts.length >= 2) { return { speaker, en: multiSpaceParts[0], tr: multiSpaceParts.slice(1).join(' ') }; }
             const idx = findTurkishStartIndex(rest);
-            if(idx > 0) {
-                const en = normalizeSpaces(rest.slice(0, idx));
-                const tr = normalizeSpaces(rest.slice(idx));
-                return { speaker, en, tr };
-            }
-
-            // 4) Hiç ayıramadıysak sadece EN göster
+            if(idx > 0) { return { speaker, en: normalizeSpaces(rest.slice(0, idx)), tr: normalizeSpaces(rest.slice(idx)) }; }
             return { speaker, en: rest, tr: "" };
         }
 
-        // --- AKILLI PARSER ---
         function renderLesson(text, date) {
             const container = document.getElementById('lesson-content');
             container.innerHTML = '';
@@ -342,39 +503,27 @@
                 h2.innerText = titleLine;
                 card.appendChild(h2);
 
-                // 1) KELİMELER
                 if (titleLine.toLowerCase().includes('kelimeler') || titleLine.toLowerCase().includes('vocabulary')) {
                     const grid = document.createElement('div');
                     grid.className = 'vocab-grid';
                     contentLines.forEach(line => {
                         if(line.includes('(') && line.includes('kelime')) return;
-
                         const cols = line.split(/\t|\s{2,}/).map(c => c.trim()).filter(c => c !== "");
                         if (cols.length >= 2 && (cols[0].toLowerCase().includes('kelime') || cols[0].toLowerCase().includes('okunuşu'))) return;
-
                         if (cols.length >= 3) {
                             const item = document.createElement('div');
                             item.className = 'vocab-item';
-                            item.innerHTML = `
-                                <div class="v-top"><span class="v-word">${cols[0]}</span><span class="v-pron">/${cols[1] || ''}/</span></div>
-                                <span class="v-mean">${cols[2]}</span>
-                                <div class="v-ex">${cols[3] || ''}<br><span style="color:#999; font-size:0.8rem">${cols[4] || ''}</span></div>
-                            `;
+                            item.innerHTML = `<div class="v-top"><span class="v-word">${cols[0]}</span><span class="v-pron">/${cols[1] || ''}/</span></div><span class="v-mean">${cols[2]}</span><div class="v-ex">${cols[3] || ''}<br><span style="color:#999; font-size:0.8rem">${cols[4] || ''}</span></div>`;
                             grid.appendChild(item);
                         }
                     });
                     card.appendChild(grid);
-                }
-
-                // 2) KALIPLAR
-                else if (titleLine.toLowerCase().includes('kalıplar') || titleLine.toLowerCase().includes('phrases')) {
+                } else if (titleLine.toLowerCase().includes('kalıplar') || titleLine.toLowerCase().includes('phrases')) {
                     let currentPhrase = null;
                     contentLines.forEach(line => {
                         let cleanLine = line.replace(/^[•\t\s]+/, '').trim();
                         if (cleanLine.startsWith('(') || cleanLine.length < 3) return;
-
                         const isProperty = cleanLine.startsWith('Anlamı:') || cleanLine.startsWith('Kullanımı:') || cleanLine.startsWith('Örnek:');
-
                         if (!isProperty) {
                             if(currentPhrase) appendPhrase(card, currentPhrase);
                             currentPhrase = { text: cleanLine, mean: '', use: '', ex: '' };
@@ -385,26 +534,18 @@
                         }
                     });
                     if(currentPhrase) appendPhrase(card, currentPhrase);
-                }
-
-                // 3) OKUMA
-                else if (titleLine.toLowerCase().includes('okuma') || titleLine.toLowerCase().includes('reading')) {
+                } else if (titleLine.toLowerCase().includes('okuma') || titleLine.toLowerCase().includes('reading')) {
                     const div = document.createElement('div');
                     div.className = 'reading-container';
                     let fullText = contentLines.join('\n');
-
                     fullText = fullText.replace(/Senaryo:(.*?)(\n|$)/, '<div class="scenario-box">🎬 <b>Senaryo:</b> $1</div>');
-
                     if(fullText.includes('Tam Türkçe Çevirisi:')) {
                         const parts = fullText.split('Tam Türkçe Çevirisi:');
                         let engPart = parts[0].replace(/<div class="scenario-box">.*?<\/div>/s, '');
-
                         let html = '';
                         const scenarioMatch = fullText.match(/<div class="scenario-box">.*?<\/div>/s);
                         if(scenarioMatch) html += scenarioMatch[0];
-
                         html += `<div class="eng-text-box">${engPart.trim().replace(/\n/g, '<br>')}</div>`;
-
                         let trPart = parts[1];
                         let questionsPart = "";
                         if(trPart.includes('Anlama Soruları:')) {
@@ -413,18 +554,11 @@
                             questionsPart = trSplit[1];
                         }
                         html += `<div class="tr-text-box">🇹🇷 <b>Çeviri:</b><br>${trPart.trim().replace(/\n/g, '<br>')}</div>`;
-                        if(questionsPart) {
-                            html += `<div class="questions-box"><span class="q-title">❓ Anlama Soruları:</span>${questionsPart.trim().replace(/\n/g, '<br>')}</div>`;
-                        }
+                        if(questionsPart) { html += `<div class="questions-box"><span class="q-title">❓ Anlama Soruları:</span>${questionsPart.trim().replace(/\n/g, '<br>')}</div>`; }
                         div.innerHTML = html;
-                    } else {
-                        div.innerHTML = fullText.replace(/\n/g, '<br>');
-                    }
+                    } else { div.innerHTML = fullText.replace(/\n/g, '<br>'); }
                     card.appendChild(div);
-                }
-
-                // 4) ÖDEV
-                else if (titleLine.toLowerCase().includes('ödev') || titleLine.toLowerCase().includes('homework')) {
+                } else if (titleLine.toLowerCase().includes('ödev') || titleLine.toLowerCase().includes('homework')) {
                      const div = document.createElement('div');
                      let fullText = contentLines.join('\n');
                      if(fullText.includes('A. Cümle Tamamlama:')) fullText = fullText.replace('A. Cümle Tamamlama:', '<div class="hw-block"><span class="hw-title">A. Cümle Tamamlama:</span><div class="hw-content">');
@@ -433,32 +567,21 @@
                      fullText = fullText.replace(/\n/g, '<br>');
                      div.innerHTML = fullText;
                      card.appendChild(div);
-                }
-
-                // 5) DİYALOG (✅ TABLO + TAB KAYBI DESTEKLİ WhatsApp Görünüm)
-                else if (titleLine.toLowerCase().includes('diyalog') || titleLine.toLowerCase().includes('dialogue')) {
+                } else if (titleLine.toLowerCase().includes('diyalog') || titleLine.toLowerCase().includes('dialogue')) {
                     const box = document.createElement('div');
                     box.className = 'chat-container';
-
                     contentLines.forEach(line => {
                         const parsed = parseDialogueLine(line);
                         if(!parsed) return;
-
                         const isA = (parsed.speaker === 'A');
                         const cssClass = isA ? 'chat-left' : 'chat-right';
-
                         const bub = document.createElement('div');
                         bub.className = `chat-bubble ${cssClass}`;
-
-                        // EN (üst) + TR (alt)
                         let html = `<div style="font-size:1rem;">${parsed.en}</div>`;
                         if(parsed.tr && parsed.tr.trim().length > 0) html += `<div class="chat-tr">${parsed.tr}</div>`;
-
                         bub.innerHTML = html;
                         box.appendChild(bub);
                     });
-
-                    // Diyalog bulunamazsa kullanıcıyı boş bırakma
                     if(!box.children.length) {
                         const warn = document.createElement('div');
                         warn.style.color = '#aaa';
@@ -466,19 +589,14 @@
                         warn.innerHTML = 'Diyalog satırları ayrıştırılamadı. Satırlar "A:" / "B:" ile başlamalı.';
                         box.appendChild(warn);
                     }
-
                     card.appendChild(box);
-                }
-
-                // Diğerleri
-                else {
+                } else {
                     const div = document.createElement('div');
                     div.style.lineHeight = "1.6";
                     div.innerHTML = contentLines.join('<br>');
                     card.appendChild(div);
                 }
 
-                // Butonlar
                 if (index < sections.length - 1) {
                     const btn = document.createElement('button');
                     btn.className = 'nav-btn';
@@ -503,87 +621,33 @@
         }
 
         function appendPhrase(container, data) {
-            let coloredEx = (data.ex || '')
-                .replace(/A:/g, '<b style="color:var(--primary)">A:</b>')
-                .replace(/B:/g, '<b style="color:var(--orange)">B:</b>');
-
+            let coloredEx = (data.ex || '').replace(/A:/g, '<b style="color:var(--primary)">A:</b>').replace(/B:/g, '<b style="color:var(--orange)">B:</b>');
             const el = document.createElement('div');
             el.className = 'phrase-unit';
-            el.innerHTML = `
-                <span class="ph-title">${data.text}</span>
-                <div class="ph-meta">
-                    <div class="ph-row"><span class="ph-tag">ANLAM:</span> ${data.mean}</div>
-                    <div class="ph-row"><span class="ph-tag">KULLANIM:</span> ${data.use}</div>
-                </div>
-                <div class="ph-dialogue">${coloredEx}</div>
-            `;
+            el.innerHTML = `<span class="ph-title">${data.text}</span><div class="ph-meta"><div class="ph-row"><span class="ph-tag">ANLAM:</span> ${data.mean}</div><div class="ph-row"><span class="ph-tag">KULLANIM:</span> ${data.use}</div></div><div class="ph-dialogue">${coloredEx}</div>`;
             container.appendChild(el);
         }
+
+        // Başlangıçta takvimi oluştur
+        initCalendar();
     </script>
-<script>
-    (function syncDateFromUrl() {
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const externalDate = urlParams.get('date');
-            
-            if (externalDate) {
-                // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
-                const dateInputs = [
-                    'datePicker',      // Notlar, Namaz, Kitap
-                    'date-picker',     // İngilizce
-                    'input-date'       // Bütçe (Yatırım)
-                ];
-
-                let targetInput = null;
-                for (let id of dateInputs) {
-                    targetInput = document.getElementById(id);
-                    if (targetInput) break;
-                }
-
-                if (targetInput) {
-                    targetInput.value = externalDate;
-                    
-                    // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
-                    targetInput.dispatchEvent(new Event('change'));
-                    targetInput.dispatchEvent(new Event('input'));
-                    
-                    // Notlar uygulaması için özel tetikleyici
-                    if(typeof openSelectedDate === 'function') {
-                        // Notlar uygulamasında tarih seçilince otomatik ekranı aç
-                         setTimeout(() => openSelectedDate(), 100);
-                    }
-                    // Bütçe uygulaması için özel kontrol
-                    if(typeof checkDateAllowed === 'function') {
-                        checkDateAllowed();
+    
+    <script>
+        (function syncDateFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const externalDate = urlParams.get('date');
+                if (externalDate) {
+                    const picker = document.getElementById('date-picker');
+                    if (picker) {
+                        picker.value = externalDate;
+                        // Takvimi de o tarihe götür
+                        currentCalDate = new Date(externalDate);
+                        renderCalendar();
                     }
                 }
-            }
-        } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
-    })();
-</script>
-<a href="index.html" style="
-    position: fixed;
-    top: max(env(safe-area-inset-top), 20px);
-    left: 20px;
-    z-index: 10000;
-    width: 44px;
-    height: 44px;
-    background: rgba(40, 40, 40, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    font-size: 18px;
-    transition: transform 0.2s;
-" onclick="this.style.transform='scale(0.9)'">
-    <i class="fas fa-arrow-left"></i>
-</a>
+            } catch (e) { console.log("Tarih senk. hatası:", e); }
+        })();
+    </script>
 </body>
-
 </html>
