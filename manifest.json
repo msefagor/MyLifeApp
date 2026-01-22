@@ -1,0 +1,21 @@
+{
+    "name": "Günlük Akış",
+    "short_name": "Akış",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#8CA6C5",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "app-icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "app-icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
