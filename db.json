@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "version": "1.0",
+    "lastUpdated": "2025-01-23"
+  },
+  "courses": [
+    {
+      "courseId": "PH-201",
+      "name": "AYRIM, SEVK, DAĞITIM",
+      "department": "Posta Hizmetleri",
+      "hours": 4,
+      "totalWeeks": 14,
+      "weeksConfig": [
+        {"id": 1, "type": "normal"}, {"id": 2, "type": "normal"}, 
+        {"id": 3, "type": "normal"}, {"id": 4, "type": "normal"},
+        {"id": 5, "type": "normal"}, {"id": 6, "type": "normal"},
+        {"id": 7, "type": "midterm"}, {"id": 8, "type": "normal"},
+        {"id": 9, "type": "normal"}, {"id": 10, "type": "normal"},
+        {"id": 11, "type": "normal"}, {"id": 12, "type": "normal"},
+        {"id": 13, "type": "normal"}, {"id": 14, "type": "normal"}
+      ],
+      "students": [
+        {"id": "221331021", "name": "EMİNE", "surname": "TUNÇER"},
+        {"id": "221331030", "name": "ÇAĞATAY", "surname": "KARADANE"},
+        {"id": "231331015", "name": "SILA", "surname": "İLELİ"},
+        {"id": "231331016", "name": "BÜŞRA", "surname": "AĞIRBAŞ"},
+        {"id": "231331017", "name": "RÜMEYSA", "surname": "BEĞEN"},
+        {"id": "231331029", "name": "FATMA NAZ", "surname": "YILMAZ"},
+        {"id": "231331035", "name": "MEHMET AKİF", "surname": "KUL"},
+        {"id": "231331045", "name": "MEDİHA", "surname": "KAYA"},
+        {"id": "241331003", "name": "EREN", "surname": "KAVİ"},
+        {"id": "241331004", "name": "EFE", "surname": "KILIÇ"},
+        {"id": "241331006", "name": "YAVUZ KERİM", "surname": "HARMAN"},
+        {"id": "241331010", "name": "CANER", "surname": "BEŞEL"},
+        {"id": "241331013", "name": "İLKNUR", "surname": "BİNGÖL"},
+        {"id": "241331017", "name": "ARİF", "surname": "ÖZDOĞAN"},
+        {"id": "241331018", "name": "CEMALETTİN CAN", "surname": "BÜLBÜL"},
+        {"id": "241331019", "name": "EMRE", "surname": "YILDIRAN"},
+        {"id": "241331021", "name": "KADİR", "surname": "TORAMAN"},
+        {"id": "241331025", "name": "ZEYNEP", "surname": "ELMAS"},
+        {"id": "241331029", "name": "BERDAN", "surname": "KARADUMAN"},
+        {"id": "241331030", "name": "İSMET", "surname": "ABANOZ"},
+        {"id": "241331032", "name": "MUSTAFA", "surname": "BOZDAĞ"},
+        {"id": "241331034", "name": "MUHAMMET ALİ", "surname": "ŞÜKÜR"},
+        {"id": "241331035", "name": "MUSTAFA CAN", "surname": "TÖRE"},
+        {"id": "241331040", "name": "SUDENUR", "surname": "EROL"},
+        {"id": "241331042", "name": "NURAY", "surname": "AĞCA"},
+        {"id": "241331044", "name": "MAHMUT SAMET", "surname": "BÜYÜKTAŞ"},
+        {"id": "241331058", "name": "MUHAMMET", "surname": "AYDIN"},
+        {"id": "241331064", "name": "BEYZA", "surname": "GÖKKAYA"},
+        {"id": "241331065", "name": "HALİL İBRAHİM", "surname": "SOLMAZ"}
+      ]
+    }
+  ]
+}
