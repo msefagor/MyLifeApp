@@ -8,8 +8,9 @@
     <meta name="theme-color" content="#000000">
     <title>Ana Ekran</title>
     
-    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=MSG&background=1c1c1e&color=fff&length=3&size=512&font-size=0.35&bold=true&rounded=false">
-    <link rel="icon" type="image/png" href="https://ui-avatars.com/api/?name=MSG&background=1c1c1e&color=fff&length=3&size=512&font-size=0.35&bold=true&rounded=false">
+    <link rel="apple-touch-icon" href="app-icon.png">
+    <link rel="icon" type="image/png" href="app-icon.png">
+    <link rel="shortcut icon" href="app-icon.png">
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -17,6 +18,7 @@
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.15);
             --text-color: #ffffff;
+            --primary-color: #0a84ff;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; }
@@ -32,7 +34,65 @@
             padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
         }
 
-        /* Arkaplan Efektleri */
+        /* --- YÜKLEME EKRANI (SPLASH SCREEN) CSS --- */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* Arkaplan görseli: splash-screen.png GitHub'a yüklenmiş olmalı */
+            background: url('splash-screen.png') no-repeat center center;
+            background-size: cover;
+            z-index: 99999; /* En üstte dursun */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* İçeriği alta it */
+            align-items: center;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 60px); /* Alttan boşluk bırak */
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+
+        /* Yükleniyor içeriği için cam panel */
+        .loading-content-panel {
+            background: rgba(28, 28, 30, 0.7); /* Koyu yarı saydam */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px 30px;
+            border-radius: 24px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .loading-text {
+            font-size: 16px; font-weight: 600; margin-bottom: 15px; letter-spacing: 0.5px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%; /* Javascript ile artacak */
+            background: linear-gradient(90deg, var(--primary-color), #30d158);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px rgba(10, 132, 255, 0.5);
+        }
+
+        .progress-percentage {
+            margin-top: 10px; font-size: 13px; opacity: 0.7; font-variant-numeric: tabular-nums;
+        }
+        /* --- YÜKLEME EKRANI BİTİŞ --- */
+
+
+        /* Arkaplan Efektleri (Ana sayfa için) */
         .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
         .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #ff00cc; animation: float 8s infinite ease-in-out; }
         .blob-2 { bottom: -10%; right: -20%; width: 350px; height: 350px; background: #3333ff; animation: float 10s infinite ease-in-out reverse; }
@@ -72,7 +132,7 @@
         /* Liste Menü (Kartlar) */
         .menu-list {
             display: flex; flex-direction: column; gap: 15px;
-            flex: 1; /* Footer'ı aşağı itmek için */
+            flex: 1; 
         }
 
         .menu-item {
@@ -136,6 +196,15 @@
 </head>
 <body>
 
+    <div id="loading-screen">
+        <div class="loading-content-panel">
+            <div class="loading-text">Yükleniyor...</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-percentage" id="progressText">0%</div>
+        </div>
+    </div>
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
@@ -223,26 +292,55 @@
     </div>
 
     <script>
-        // Şifre Tanımlama
         const APP_PASS = "120622";
 
-        // 1. iPhone Uyumlu Tarih Ayarı
+        // --- YÜKLEME EKRANI ANİMASYONU ---
+        document.addEventListener("DOMContentLoaded", () => {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            let progress = 0;
+            const totalTime = 5000; // 5 saniye
+            const intervalTime = 50; // Her 50ms'de bir güncelle
+            // 5 saniyede %100'e ulaşmak için her adımda ne kadar artmalı
+            const step = 100 / (totalTime / intervalTime);
+
+            const loadingInterval = setInterval(() => {
+                progress += step;
+                
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(loadingInterval);
+                    
+                    // %100'de biraz bekle sonra ekranı gizle
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        loadingScreen.style.visibility = 'hidden';
+                    }, 500);
+                }
+                
+                // Görsel güncelleme
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${Math.floor(progress)}%`;
+
+            }, intervalTime);
+        });
+        // --- YÜKLEME EKRANI BİTİŞ ---
+
         function setToday() {
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            
             const picker = document.getElementById('mainDatePicker');
             if(!picker.value) picker.value = localISOTime;
         }
 
-        // 2. Sayfa Yönlendirme (Tarih verisini taşıyarak)
         function navigateTo(page) {
             const date = document.getElementById('mainDatePicker').value;
             window.location.href = `${page}?date=${date}`;
         }
 
-        // 3. Şifre Kontrolü ve Yedekleme Menüsü
         function checkPasswordAndOpen() {
             const userPass = prompt("Veri yönetimi için şifre giriniz:");
             if (userPass === APP_PASS) {
@@ -258,7 +356,6 @@
             const allData = JSON.stringify(localStorage);
             const blob = new Blob([allData], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             const dateStr = new Date().toISOString().split('T')[0];
@@ -272,22 +369,15 @@
         function importData(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     localStorage.clear();
-                    
-                    Object.keys(data).forEach(key => {
-                        localStorage.setItem(key, data[key]);
-                    });
-                    
+                    Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); });
                     alert("Veriler başarıyla geri yüklendi!");
                     location.reload(); 
-                } catch (err) {
-                    alert("Dosya bozuk veya hatalı format: " + err);
-                }
+                } catch (err) { alert("Dosya bozuk veya hatalı format: " + err); }
             };
             reader.readAsText(file);
         }
