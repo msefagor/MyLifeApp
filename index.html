@@ -1,3 +1,20 @@
+Bu sorunun en yaygın sebebi **iPhone (Safari) önbelleğidir**. Daha önce ikonsuz halini bir kez "Ana Ekrana Ekle" yaptıysanız, Safari o halini hafızasında tutar.
+
+Sorunu kesin olarak çözmek için `index.html` kodunu güncelledim. Bu kodda:
+
+1. **Önbellek (Cache) Sorunu Çözüldü:** İkon dosya yolunun sonuna `?v=2` ekleyerek iPhone'u yeni ikonu indirmeye zorladım.
+2. **Tasarım Uyumu:** Yüklediğiniz `splash-screen.png` ve `app-icon.png` görsellerindeki pastel mavi/mor tonlarına uygun olarak **yükleme çubuğu ve yazı renklerini** güncelledim (Daha açık, ferah ve "Liquid" bir görünüm).
+3. **İkon Kodları Güçlendirildi:** Apple'ın farklı standartları için gerekli tüm etiketleri ekledim.
+
+### Yapmanız Gerekenler:
+
+1. GitHub'daki `index.html` dosyanızı aşağıdaki kodla tamamen değiştirin.
+2. GitHub'da `app-icon.png` ve `splash-screen.png` dosyalarınızın yüklü olduğundan emin olun (Harf hatası olmamalı).
+3. **iPhone'unuzda:** Daha önce eklediğiniz uygulamayı silin. Safari geçmişini temizleyin veya telefonunuzu yeniden başlatın. Sonra tekrar "Ana Ekrana Ekle" yapın.
+
+İşte tam kod:
+
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -5,18 +22,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <title>Ana Ekran</title>
+    <meta name="theme-color" content="#aebad0"> <title>Ana Ekran</title>
     
-    <link rel="apple-touch-icon" href="app-icon.png">
-    <link rel="icon" type="image/png" href="app-icon.png">
-    <link rel="shortcut icon" href="app-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="app-icon.png?v=2">
+    <link rel="apple-touch-icon-precomposed" href="app-icon.png?v=2">
+    <link rel="icon" type="image/png" href="app-icon.png?v=2">
+    <link rel="shortcut icon" href="app-icon.png?v=2">
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
             --text-color: #ffffff;
             --primary-color: #0a84ff;
         }
@@ -38,70 +55,68 @@
         #loading-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* Arkaplan görseli + Üzerine hafif karartma katmanı */
-            background: 
-                linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6)),
-                url('splash-screen.png') no-repeat center center;
+            /* Görselin kendi renklerini bozmamak için karartmayı azalttık */
+            background: url('splash-screen.png') no-repeat center center;
             background-size: cover;
             z-index: 99999;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            justify-content: flex-end; /* İçeriği alta it */
             align-items: center;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 90px);
             transition: opacity 0.8s ease-out, visibility 0.8s;
         }
 
-        /* Liquid Glass Panel */
+        /* Liquid Glass Panel - Görselin pastel tonlarına uygun */
         .loading-content-panel {
-            background: rgba(255, 255, 255, 0.03);
-            background-image: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.01) 100%);
-            backdrop-filter: blur(35px) saturate(180%);
-            -webkit-backdrop-filter: blur(35px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-top-color: rgba(255, 255, 255, 0.3);
-            padding: 30px 35px;
-            border-radius: 30px;
-            width: 85%;
-            max-width: 340px;
+            background: rgba(255, 255, 255, 0.15); /* Daha parlak cam */
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(25px) saturate(120%);
+            -webkit-backdrop-filter: blur(25px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-top-color: rgba(255, 255, 255, 0.6);
+            padding: 25px 30px;
+            border-radius: 35px;
+            width: 80%;
+            max-width: 300px;
             text-align: center;
             box-shadow: 
-                0 20px 40px rgba(0,0,0,0.5),
-                inset 0 0 0 1px rgba(255,255,255,0.05);
+                0 15px 35px rgba(0,0,0,0.2), /* Daha yumuşak gölge */
+                inset 0 0 0 1px rgba(255,255,255,0.2);
         }
 
         .loading-text {
-            font-size: 17px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.5px;
-            color: rgba(255,255,255,0.9);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 16px; font-weight: 700; margin-bottom: 15px; letter-spacing: 0.5px;
+            color: #ffffff;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .progress-container {
             width: 100%;
-            height: 10px;
-            background: rgba(0,0,0,0.2);
+            height: 8px;
+            background: rgba(0,0,0,0.15); /* Hafif koyu taban */
             border-radius: 20px;
             overflow: hidden;
             position: relative;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, var(--primary-color), #38ef7d);
+            /* Görseldeki mavi/beyaz tonlarına uygun degrade */
+            background: linear-gradient(90deg, #ffffff, #a1c4fd);
             border-radius: 20px;
             transition: width 0.1s linear;
-            box-shadow: 
-                0 0 20px rgba(10, 132, 255, 0.7),
-                inset 0 2px 5px rgba(255,255,255,0.4);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
         }
 
         .progress-percentage {
-            margin-top: 15px; font-size: 14px; font-weight: 600; opacity: 0.8; font-variant-numeric: tabular-nums;
+            margin-top: 10px; font-size: 13px; font-weight: 600; opacity: 0.9; 
+            color: white; font-variant-numeric: tabular-nums;
         }
         /* --- YÜKLEME EKRANI BİTİŞ --- */
+
 
         /* Arkaplan Efektleri (Ana sayfa için) */
         .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
@@ -314,7 +329,6 @@
             let progress = 0;
             const totalTime = 5000; // 5 saniye
             const intervalTime = 50; // Her 50ms'de bir güncelle
-            // 5 saniyede %100'e ulaşmak için her adımda ne kadar artmalı
             const step = 100 / (totalTime / intervalTime);
 
             const loadingInterval = setInterval(() => {
@@ -324,14 +338,13 @@
                     progress = 100;
                     clearInterval(loadingInterval);
                     
-                    // %100'de biraz bekle sonra ekranı gizle
+                    // Bekle ve gizle
                     setTimeout(() => {
                         loadingScreen.style.opacity = '0';
                         loadingScreen.style.visibility = 'hidden';
                     }, 500);
                 }
                 
-                // Görsel güncelleme
                 progressBar.style.width = `${progress}%`;
                 progressText.textContent = `${Math.floor(progress)}%`;
 
@@ -339,23 +352,19 @@
         });
         // --- YÜKLEME EKRANI BİTİŞ ---
 
-        // 1. iPhone Uyumlu Tarih Ayarı
         function setToday() {
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            
             const picker = document.getElementById('mainDatePicker');
             if(!picker.value) picker.value = localISOTime;
         }
 
-        // 2. Sayfa Yönlendirme (Tarih verisini taşıyarak)
         function navigateTo(page) {
             const date = document.getElementById('mainDatePicker').value;
             window.location.href = `${page}?date=${date}`;
         }
 
-        // 3. Şifre Kontrolü ve Yedekleme Menüsü
         function checkPasswordAndOpen() {
             const userPass = prompt("Veri yönetimi için şifre giriniz:");
             if (userPass === APP_PASS) {
@@ -371,7 +380,6 @@
             const allData = JSON.stringify(localStorage);
             const blob = new Blob([allData], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             const dateStr = new Date().toISOString().split('T')[0];
@@ -385,22 +393,15 @@
         function importData(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     localStorage.clear();
-                    
-                    Object.keys(data).forEach(key => {
-                        localStorage.setItem(key, data[key]);
-                    });
-                    
+                    Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); });
                     alert("Veriler başarıyla geri yüklendi!");
                     location.reload(); 
-                } catch (err) {
-                    alert("Dosya bozuk veya hatalı format: " + err);
-                }
+                } catch (err) { alert("Dosya bozuk veya hatalı format: " + err); }
             };
             reader.readAsText(file);
         }
@@ -409,3 +410,5 @@
     </script>
 </body>
 </html>
+
+```
