@@ -105,13 +105,13 @@
         .feedback-success { background: rgba(48, 209, 88, 0.85); }
         .feedback-error { background: rgba(255, 69, 58, 0.85); }
 
-        /* INPUTS - Düzeltildi: width 100% ve box-sizing */
+        /* INPUTS */
         input, select, button.action-btn {
             width: 100%; padding: 16px; margin-bottom: 15px;
             border-radius: 18px; border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.4); color: white; font-size: 16px;
             box-sizing: border-box; outline: none;
-            -webkit-appearance: none; /* iOS için */
+            -webkit-appearance: none;
         }
         button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; }
         
@@ -129,17 +129,22 @@
         .text-low { color: var(--danger-color); }
         .text-warn { color: var(--warning-color); }
 
-        /* AYARLAR */
+        /* AYARLAR - HAFTA LİSTESİ */
         .week-config-container { max-height: 50vh; overflow-y: auto; margin-top:10px; }
         .week-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px; margin-bottom: 8px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: space-between; /* İki uca yasla */
+            padding: 12px; margin-bottom: 8px; border-radius: 12px;
             background: rgba(255,255,255,0.05); font-size: 14px;
         }
+        
+        /* Sol ve Sağ içerik ayrımı */
+        .week-left { font-weight: 600; }
+        .week-right { font-size: 13px; opacity: 0.6; text-align: right; }
+
         .type-normal { border-left: 4px solid var(--success-color); }
         .type-midterm { border-left: 4px solid var(--warning-color); background: rgba(255, 214, 10, 0.1); }
         .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); }
-        .type-resit { border-left: 4px solid #FF9F0A; background: rgba(255, 159, 10, 0.1); } /* Bütünleme - Turuncu */
+        .type-resit { border-left: 4px solid #FF9F0A; background: rgba(255, 159, 10, 0.1); } 
         .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
 
         .back-btn {
@@ -161,7 +166,6 @@
         #qr-display { background: white; padding: 20px; border-radius: 25px; display: inline-block; margin: 20px 0; }
         .hidden { display: none !important; }
         
-        /* Silme butonu için stil */
         .btn-reset-week {
             background: rgba(255, 69, 58, 0.15);
             color: #FF453A;
@@ -321,10 +325,9 @@
     </div>
 
     <script>
-        // GITHUB RAW LINKINIZI BURAYA YAZIN
         const GITHUB_DB_URL = "https://raw.githubusercontent.com/msefagor/MyLifeApp/refs/heads/main/db.json";
         const ADMIN_PASS = "120622";
-        const TOTAL_WEEKS = 18; // 18 Hafta
+        const TOTAL_WEEKS = 18; 
         const ABSENTEEISM_LIMIT_PERCENT = 0.30; 
 
         let db = { courses: [] };
@@ -465,21 +468,24 @@
             const conf = localStorage.getItem(`config_${cId}`);
             if(conf) {
                 activeCourseConfig = JSON.parse(conf);
-                // Eğer eski kayıt 18 haftadan azsa tamamla (Güncelleme uyumu)
                 if(activeCourseConfig.length < TOTAL_WEEKS) {
                     for(let i=activeCourseConfig.length; i<TOTAL_WEEKS; i++) {
                          activeCourseConfig.push({ id: i+1, type: 'normal', date: null });
                     }
                 }
             } else {
+                // VARSAYILAN HAFTA YAPISI
                 activeCourseConfig = [];
                 for(let i=0; i<TOTAL_WEEKS; i++) {
+                    let weekNum = i + 1;
                     let type = 'normal';
-                    // Varsayılan tip atamaları
-                    if(i === 7) type = 'midterm'; // 8. Hafta Vize
-                    if(i === 14 || i === 15) type = 'final'; // 15-16 Final
-                    if(i === 16) type = 'resit'; // 17 Bütünleme
-                    activeCourseConfig.push({ id: i+1, type: type, date: null });
+
+                    if (weekNum === 8) type = 'midterm';
+                    else if (weekNum === 16 || weekNum === 17) type = 'final';
+                    else if (weekNum === 18) type = 'resit';
+                    // 1-7 ve 9-15 Normal kalır
+
+                    activeCourseConfig.push({ id: weekNum, type: type, date: null });
                 }
             }
 
@@ -494,7 +500,7 @@
         function saveCourseSettings() {
             weeklyHours = parseInt(document.getElementById('weeklyHoursInput').value) || 4;
             localStorage.setItem(`hours_${activeCourse.courseId}`, weeklyHours);
-            updateHoursDropdown(); // Dropdown'ı güncelle
+            updateHoursDropdown(); 
             if(document.getElementById('tab-list').style.display !== 'none') renderStudentList();
         }
 
@@ -513,7 +519,6 @@
             updateHoursDropdown();
         }
 
-        // Dinamik Saat Dropdown
         function updateHoursDropdown() {
             const sel = document.getElementById('hoursToProcess');
             sel.innerHTML = "";
@@ -523,8 +528,6 @@
                 opt.textContent = i + " Saat";
                 sel.appendChild(opt);
             }
-            // Varsayılan olarak maksimum saati seçme (tercihen) veya 1
-            // sel.value = weeklyHours; 
         }
 
         function switchTab(tabId) {
@@ -562,13 +565,17 @@
                 const row = document.createElement('div');
                 row.className = `week-row type-${w.type}`;
                 row.onclick = () => toggleWeekType(idx);
-                row.innerHTML = `<div class="week-info"><strong>${w.id}. Hafta - ${labels[w.type]}</strong><span style="font-size:12px;opacity:0.6;">${w.date || '-'}</span></div>`;
+                
+                // İki tarafa yaslanmış yapı
+                row.innerHTML = `
+                    <div class="week-left">${w.id}. Hafta - ${labels[w.type]}</div>
+                    <div class="week-right">${w.date || '-'}</div>
+                `;
                 container.appendChild(row);
             });
         }
 
         function toggleWeekType(idx) {
-            // Döngü Sırası: Normal -> Vize -> Final -> Bütünleme -> Tatil -> Başa Dön
             const types = ['normal', 'midterm', 'final', 'resit', 'holiday'];
             const current = activeCourseConfig[idx].type;
             activeCourseConfig[idx].type = types[(types.indexOf(current) + 1) % types.length];
@@ -599,7 +606,6 @@
             if(w.type === 'normal') {
                 info.textContent = "Yoklama Alınabilir";
                 info.style.color = "var(--success-color)";
-                // Reset butonu aktif
             } else {
                 info.textContent = `${w.type.toUpperCase()} Haftası - Yoklama İşlenmez`;
                 info.style.color = "var(--danger-color)";
@@ -670,15 +676,12 @@
             const weekIdx = document.getElementById('weekSelect').value;
             if(!confirm(`${parseInt(weekIdx)+1}. Haftanın tüm yoklama kayıtlarını silmek istiyor musunuz?`)) return;
 
-            // Verileri temizle
             Object.keys(activeCourseAttendance).forEach(stuId => {
                 if(activeCourseAttendance[stuId][weekIdx]) {
                     delete activeCourseAttendance[stuId][weekIdx];
                 }
             });
             saveData();
-            
-            // Logu Temizle
             document.getElementById('scanLog').innerHTML = "";
             alert("Bu haftanın kayıtları temizlendi.");
         }
@@ -712,7 +715,6 @@
             const totalCourseHours = totalActiveWeeks * weeklyHours;
             const maxAbsentHours = Math.floor(totalCourseHours * ABSENTEEISM_LIMIT_PERCENT);
 
-            // Bugüne kadar işlenen haftaları bul
             let lastActiveIndex = -1;
             Object.values(activeCourseAttendance).forEach(rec => {
                Object.keys(rec).forEach(k => {
@@ -721,8 +723,6 @@
                });
             });
             
-            // Eğer hiç veri yoksa, 0 hafta geçti.
-            // Sadece 'normal' tipindeki haftaları say
             let weeksProcessed = 0;
             for(let i=0; i<=lastActiveIndex; i++) {
                 if(activeCourseConfig[i].type === 'normal') weeksProcessed++;
@@ -743,7 +743,6 @@
 
                 const rate = totalCourseHours === 0 ? 100 : Math.round((attendedHours / totalCourseHours) * 100);
                 
-                // Kalan Hak Mantığı:
                 const currentAbsent = processedHours - attendedHours; 
                 let remainingAllowance = maxAbsentHours - currentAbsent;
                 if(remainingAllowance < 0) remainingAllowance = 0;
