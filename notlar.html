@@ -82,6 +82,7 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 25px; padding-bottom: 15px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
+            min-height: 50px; /* Hizalama için */
         }
 
         /* Butonlar */
@@ -208,28 +209,16 @@
 <div class="app-container">
     <div class="glass-panel">
 
-        <div id="screen-welcome" class="screen active">
-            <div style="margin-top: 20px;">
-                <h1 style="font-size: 32px;">Hoş Geldin.</h1>
-                <p style="opacity: 0.7;">Planlamak istediğin günü seç.</p>
-            </div>
-
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                <input type="date" id="datePicker">
-            </div>
-
-            <button class="btn-main" onclick="openSelectedDate()">
-                Devam Et <i class="fas fa-chevron-right" style="margin-left: 10px;"></i>
-            </button>
-        </div>
-
-        <div id="screen-tasks" class="screen">
+        <div id="screen-tasks" class="screen active">
             <div class="top-bar">
-                <button class="btn-icon" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <div style="text-align: center;">
+                <div style="width: 44px;"></div>
+                
+                <div style="text-align: center; position: relative; width: 60%;">
                     <span style="font-size: 12px; opacity: 0.7; display: block;">Seçili Tarih</span>
-                    <span id="displayDate" style="font-size: 18px; font-weight: 600;">--</span>
+                    <label for="datePicker" id="displayDate" style="font-size: 18px; font-weight: 600; cursor: pointer;">--</label>
+                    <input type="date" id="datePicker" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;" onchange="openSelectedDate()">
                 </div>
+                
                 <button class="btn-icon btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
             </div>
 
@@ -271,7 +260,6 @@
     </div>
 </div>
 
-<!-- Canvas + OCR -->
 <div id="canvasModal" class="canvas-container">
     <div class="canvas-tools">
         <button onclick="closeCanvas()" style="color: white; background: none; border: none; font-size: 16px;">İptal</button>
@@ -310,7 +298,6 @@
     </div>
 </div>
 
-<!-- Fotoğraf seçici (gizli) -->
 <input type="file" id="boardImageInput" accept="image/*" capture="environment" style="display:none">
 
 <audio id="alarmSound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"></audio>
@@ -344,16 +331,23 @@
 
     // --- Başlangıç ---
     window.onload = () => {
-        // 1. Tarih Ayarı
+        // 1. Tarih Ayarı (Bugün)
         const now = new Date();
         const offset = now.getTimezoneOffset() * 60000;
         const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-        document.getElementById('datePicker').value = localISOTime;
+        
+        // Input'a değeri ata
+        const picker = document.getElementById('datePicker');
+        if(picker && !picker.value) picker.value = localISOTime;
 
+        // Diğer yüklemeler
         loadTasks();
         setupSpeech();
         setupCanvas();
         requestNotificationPermission();
+
+        // 2. Doğrudan listeyi aç (Hoşgeldin ekranı yok)
+        openSelectedDate(); 
 
         // Alarm döngüsü
         setInterval(checkAlarms, 10000);
@@ -362,7 +356,7 @@
         initOCR().catch(e => console.log("OCR ön yükleme uyarısı:", e));
     };
 
-    // --- Navigasyon ---
+    // --- Navigasyon / Tarih Seçimi ---
     function openSelectedDate() {
         const dateInput = document.getElementById('datePicker').value;
         if(!dateInput) return;
@@ -372,14 +366,8 @@
         const options = { day: 'numeric', month: 'long', weekday: 'long' };
         document.getElementById('displayDate').innerText = d.toLocaleDateString('tr-TR', options);
 
-        document.getElementById('screen-welcome').classList.remove('active');
-        document.getElementById('screen-tasks').classList.add('active');
+        // Ekran geçişi yok, sadece listeyi yenile
         renderTasks();
-    }
-
-    function goBack() {
-        document.getElementById('screen-tasks').classList.remove('active');
-        document.getElementById('screen-welcome').classList.add('active');
     }
 
     // --- Modal Yönetimi ---
@@ -938,6 +926,7 @@
         else alert("ALARM: " + text);
     }
 </script>
+
 <script>
     (function syncDateFromUrl() {
         try {
@@ -1004,4 +993,3 @@
 </a>
 </body>
 </html>
-
