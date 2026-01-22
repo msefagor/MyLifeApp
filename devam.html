@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ders Takip Sistemi</title>
+    <title>Akıllı Yoklama</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -11,312 +11,457 @@
 
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.2);
             --text-color: #ffffff;
-            --accent-color: #FF5E62; 
+            --accent-color: #0A84FF;
+            --danger-color: #FF453A;
+            --warning-color: #FFD60A;
+            --success-color: #30D158;
+            --bg-grad-1: #1c1c1e;
+            --bg-grad-2: #000000;
         }
 
         body {
-            margin: 0; padding: 20px;
-            background: #000; color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
-            padding-bottom: 80px;
+            overflow-x: hidden;
+            /* iPhone Safe Area */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Yükleme Ekranı */
-        #loader {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid #333;
-            border-top: 4px solid var(--accent-color); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Arkaplan Animasyon */
-        .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
-        .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #FF9966; animation: float 8s infinite ease-in-out; }
-        .blob-2 { bottom: -10%; right: -20%; width: 350px; height: 350px; background: #FF5E62; animation: float 10s infinite ease-in-out reverse; }
-        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
-
-        /* UI Bileşenleri */
-        .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 20px; margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-
-        .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .back-btn { color: white; text-decoration: none; font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; }
-
-        input, button {
-            width: 100%; padding: 14px; margin-bottom: 12px;
-            border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.3); color: white; font-size: 16px;
+        /* --- UI COMPONENTS --- */
+        .full-screen-container {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
             box-sizing: border-box;
         }
-        button { background: var(--accent-color); border: none; font-weight: bold; cursor: pointer; }
-        button:active { transform: scale(0.98); }
-        .btn-secondary { background: rgba(255,255,255,0.15); }
-        .btn-danger { background: #ff3b30; }
 
-        /* Tab Menü */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn { flex: 1; min-width: 90px; padding: 10px; border-radius: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa; text-align: center; font-size: 13px; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { background: var(--accent-color); color: white; border-color: transparent; }
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .big-title { font-size: 32px; font-weight: 800; margin-bottom: 10px; text-align: center; letter-spacing: -0.5px; }
+        .sub-title { font-size: 16px; opacity: 0.6; text-align: center; margin-bottom: 30px; font-weight: 500; }
+
+        /* Büyük Giriş Butonları */
+        .role-btn {
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            width: 100%; padding: 25px; margin-bottom: 15px;
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08); color: white;
+            font-size: 20px; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .role-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
+        .role-btn i { font-size: 24px; }
+        .role-student { background: linear-gradient(90deg, rgba(10,132,255,0.2), rgba(10,132,255,0.05)); border-color: rgba(10,132,255,0.3); }
+        .role-admin { background: linear-gradient(90deg, rgba(255,69,58,0.2), rgba(255,69,58,0.05)); border-color: rgba(255,69,58,0.3); }
+
+        /* Form Elemanları */
+        input, select, button.action-btn {
+            width: 100%; padding: 18px; margin-bottom: 15px;
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.4); color: white; font-size: 18px;
+            box-sizing: border-box; outline: none;
+        }
+        button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; }
+        button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* Liste & Grid */
-        .student-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+        /* Liste Tasarımı (iPhone Ekranı İçin) */
+        .full-list-view {
+            height: 80vh; /* Ekranı kapla */
+            display: flex; flex-direction: column;
+        }
+        .search-bar-lg {
+            padding: 20px; font-size: 20px; background: rgba(0,0,0,0.5); border-color: var(--accent-color);
+        }
+        .student-list-container {
+            flex: 1; overflow-y: auto;
+            margin-top: 10px;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.2);
+        }
         .student-item {
-            padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; margin-top: 15px; }
-        .week-box {
-            padding: 10px 5px; border-radius: 8px; text-align: center; font-size: 12px; cursor: pointer;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); user-select: none;
+        
+        /* Renkler */
+        .text-ok { color: var(--success-color); }
+        .text-low { color: var(--danger-color); }
+
+        /* Hafta Ayarları Grid */
+        .week-config-container { max-height: 60vh; overflow-y: auto; }
+        .week-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; margin-bottom: 8px; border-radius: 12px;
+            background: rgba(255,255,255,0.05); border: 1px solid transparent;
         }
+        .week-info { display: flex; flex-direction: column; }
+        .week-date { font-size: 12px; opacity: 0.6; margin-top: 2px; }
         
-        /* Hafta Tipleri Renkleri */
-        .week-type-normal { background: rgba(48, 209, 88, 0.2); color: #30d158; border-color: #30d158; }
-        .week-type-midterm { background: rgba(255, 214, 10, 0.2); color: #ffd60a; border-color: #ffd60a; }
-        .week-type-holiday { background: rgba(255, 69, 58, 0.2); color: #ff453a; border-color: #ff453a; }
+        .type-normal { border-left: 4px solid var(--success-color); }
+        .type-midterm { border-left: 4px solid var(--warning-color); background: rgba(255, 214, 10, 0.1); }
+        .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
+        .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); } /* Mor */
+        
+        /* Navigasyon */
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; color: white;
+        }
 
-        /* QR Alanı */
-        #qr-display { background: white; padding: 15px; border-radius: 15px; margin: 15px auto; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center;}
+        /* Sekmeler */
+        .tabs { display: flex; gap: 10px; margin: 10px 0 20px 0; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn {
+            flex: 1; min-width: 100px; padding: 12px; border-radius: 14px;
+            background: rgba(255,255,255,0.1); color: #aaa; text-align: center;
+            font-weight: 600; font-size: 14px; white-space: nowrap;
+        }
+        .tab-btn.active { background: var(--accent-color); color: white; }
+
+        /* QR */
+        #qr-area { text-align: center; animation: popIn 0.5s; }
+        #qr-display { background: white; padding: 20px; border-radius: 20px; display: inline-block; margin: 20px 0; }
         
-        /* Görünürlük */
         .hidden { display: none !important; }
-        .section { display: none; animation: fadeIn 0.4s; }
-        .section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Checkbox Özelleştirme */
-        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin: 15px 0; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; }
-        input[type="checkbox"] { width: 20px; height: 20px; margin: 0; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <p style="margin-top:15px; color:#aaa;">Veriler Yükleniyor...</p>
-    </div>
+    <div id="backBtn" class="back-btn hidden" onclick="goBack()"><i class="fas fa-arrow-left"></i></div>
 
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
-    <div class="header-row">
-        <div class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></div>
-        <h3 id="pageTitle" style="margin:0;">Ders Seçimi</h3>
-        <div style="width:40px;"></div>
-    </div>
-
-    <div id="section-courses" class="section active">
-        <div id="courseListContainer"></div>
-        <div style="text-align:center; margin-top:20px;">
-            <button onclick="fetchDataFromGitHub()" class="btn-secondary" style="width:auto; padding: 10px 20px;">
-                <i class="fas fa-sync"></i> Listeyi Yenile
+    <div id="screen-landing" class="full-screen-container">
+        <div class="glass-panel" style="padding: 40px 20px;">
+            <div class="big-title">Yoklama Sistemi</div>
+            <div class="sub-title">Tirebolu Mehmet Bayrak MYO</div>
+            
+            <button class="role-btn role-student" onclick="goToStudentLogin()">
+                <i class="fas fa-user-graduate"></i>
+                ÖĞRENCİ GİRİŞİ
             </button>
-        </div>
-    </div>
-
-    <div id="section-role" class="section">
-        <div class="glass-panel" style="text-align:center;">
-            <h2 id="selectedCourseName" style="color:var(--accent-color);"></h2>
-            <p id="selectedDeptName" style="opacity:0.7; margin-bottom:20px;"></p>
             
-            <button onclick="openStudentLogin()"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</button>
-            <button onclick="openAdminLogin()" class="btn-secondary"><i class="fas fa-chalkboard-teacher"></i> Akademisyen Girişi</button>
+            <button class="role-btn role-admin" onclick="goToAdminLogin()">
+                <i class="fas fa-chalkboard-teacher"></i>
+                AKADEMİSYEN GİRİŞİ
+            </button>
+            
+            <div style="text-align:center; margin-top:20px;">
+                <button onclick="fetchData()" style="background:none; border:none; color:#aaa; font-size:12px;">
+                    <i class="fas fa-sync"></i> Verileri Güncelle
+                </button>
+            </div>
         </div>
     </div>
 
-    <div id="section-student" class="section">
+    <div id="screen-student-id" class="full-screen-container hidden">
         <div class="glass-panel">
-            <h3>Öğrenci Doğrulama</h3>
-            <p style="font-size:13px; opacity:0.7;">Devam karekodunu oluşturmak için numaranızı giriniz.</p>
+            <div class="big-title">Öğrenci Girişi</div>
+            <p class="sub-title">Numaranızı girerek kayıtlı derslerinizi görün.</p>
             
-            <input type="number" id="studentIdInput" placeholder="Öğrenci No (Örn: 221...)" onkeydown="if(event.key === 'Enter') verifyStudent()">
-            <button onclick="verifyStudent()">Sorgula</button>
-
-            <div id="studentVerifyResult" class="hidden" style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
-                <div style="font-size:18px; font-weight:bold; color:#4cd964;" id="studentNameDisplay"></div>
-                
-                <label class="checkbox-wrapper">
-                    <input type="checkbox" id="confirmIdentity">
-                    <span style="font-size:14px;">Bu kişi benim, karekodu oluştur.</span>
-                </label>
-                
-                <button id="btnGenerateQR" onclick="showQR()" disabled class="btn-secondary">Karekodu Göster</button>
-            </div>
-
-            <div id="qrArea" class="hidden" style="text-align:center;">
-                <div id="qr-display"></div>
-                <p style="font-size:12px; opacity:0.5;">Bu kodu okutunuz.</p>
-            </div>
+            <input type="number" id="stuIdInput" placeholder="Öğrenci Numarası" style="font-size:24px; text-align:center; letter-spacing:2px;">
+            <button class="action-btn" onclick="checkStudentCourses()">Dersleri Getir</button>
         </div>
     </div>
 
-    <div id="section-admin" class="section">
+    <div id="screen-student-courses" class="full-screen-container hidden">
+        <div class="glass-panel">
+            <div class="big-title">Merhaba, <span id="stuNameDisplay" style="color:var(--accent-color)"></span></div>
+            <p class="sub-title">Karekod oluşturmak için ders seçiniz:</p>
+            <div id="myCourseList"></div>
+        </div>
+    </div>
+
+    <div id="screen-student-qr" class="full-screen-container hidden">
+        <div class="glass-panel" id="qr-area">
+            <h3 id="qrCourseName"></h3>
+            <div id="qr-display"></div>
+            <p style="opacity:0.6;">Bu kodu ders sorumlusuna okutunuz.</p>
+            <p id="qrStudentId" style="font-weight:bold; font-size:18px; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <div id="screen-admin-courses" class="full-screen-container hidden">
+        <div class="glass-panel">
+            <div class="big-title">Ders Seçimi</div>
+            <p class="sub-title">Yönetmek istediğiniz dersi seçin.</p>
+            <div id="adminCourseList"></div>
+        </div>
+    </div>
+
+    <div id="screen-admin-panel" class="hidden" style="padding: 20px; padding-top: 80px;">
+        <div class="big-title" id="panelTitle" style="font-size:24px;">Ders Adı</div>
         
         <div class="tabs">
-            <div class="tab-btn active" onclick="switchTab('tab-scan')"><i class="fas fa-camera"></i> Yoklama</div>
-            <div class="tab-btn" onclick="switchTab('tab-list')"><i class="fas fa-list"></i> Liste</div>
-            <div class="tab-btn" onclick="switchTab('tab-settings')"><i class="fas fa-cog"></i> Ayarlar</div>
+            <div class="tab-btn active" onclick="switchTab('tab-scan')">Yoklama</div>
+            <div class="tab-btn" onclick="switchTab('tab-list')">Liste</div>
+            <div class="tab-btn" onclick="switchTab('tab-settings')">Ayarlar</div>
         </div>
 
-        <div id="tab-scan" class="tab-content active">
+        <div id="tab-scan" class="tab-content">
             <div class="glass-panel">
-                <select id="weekSelect" onchange="updateWeekStatusUI()">
+                <select id="weekSelect" onchange="updateWeekInfoDisplay()" style="font-weight:bold;">
                     </select>
-                <div id="currentWeekStatus" style="font-size:13px; font-weight:bold; margin-bottom:10px; text-align:center;"></div>
+                <div id="weekDetailText" style="text-align:center; margin-bottom:15px; font-size:14px; opacity:0.8;"></div>
                 
-                <div id="scanner-container" style="border-radius:15px; overflow:hidden; border:2px solid rgba(255,255,255,0.2); height:250px; background:#000;">
-                    <div id="reader"></div>
-                </div>
+                <div id="reader" style="border-radius:20px; overflow:hidden; border:2px solid rgba(255,255,255,0.2);"></div>
                 
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="startScanner()" id="btnStartScan">Kamerayı Aç</button>
-                    <button onclick="stopScanner()" id="btnStopScan" class="btn-secondary hidden">Durdur</button>
-                </div>
-
-                <div style="margin-top:15px;">
-                    <h4 style="margin-bottom:5px; font-size:14px;">Son Okunanlar</h4>
-                    <ul id="scanLog" class="student-list" style="height:100px;"></ul>
+                <button class="action-btn" id="btnStartScan" onclick="startScanner()">KAMERAYI AÇ</button>
+                <button class="action-btn hidden" id="btnStopScan" onclick="stopScanner()" style="background:var(--danger-color);">KAMERAYI KAPAT</button>
+                
+                <div style="margin-top:20px;">
+                    <h4>Son Okunanlar:</h4>
+                    <ul id="scanLog" style="list-style:none; padding:0; font-size:14px; color:#aaa;"></ul>
                 </div>
             </div>
         </div>
 
         <div id="tab-list" class="tab-content hidden">
-            <div class="glass-panel">
-                <input type="text" id="searchInput" placeholder="İsim ara..." onkeyup="renderStudentList()">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; opacity:0.7;">
-                    <span>Öğrenci</span>
-                    <span>Devam Oranı</span>
+            <div class="glass-panel full-list-view">
+                <input type="text" id="searchInput" class="search-bar-lg" placeholder="Öğrenci Ara..." onkeyup="renderStudentList()">
+                
+                <div class="student-list-container">
+                    <ul id="fullStudentList" style="list-style:none; padding:0; margin:0;"></ul>
                 </div>
-                <ul id="fullStudentList" class="student-list"></ul>
+                
+                <div style="text-align:center; padding-top:10px; font-size:12px; opacity:0.5;">
+                    Liste devamsızlığı en yüksek olandan en düşüğe göre sıralanmıştır.
+                </div>
             </div>
         </div>
 
         <div id="tab-settings" class="tab-content hidden">
             <div class="glass-panel">
-                <h3>Hafta Ayarları</h3>
-                <p style="font-size:12px; opacity:0.7;">Haftaların üzerine tıklayarak durumunu (Normal/Vize/Tatil) değiştirebilirsiniz. Vize ve Tatil haftaları devamsızlığa etki etmez.</p>
-                <div class="week-grid" id="weekConfigGrid"></div>
+                <h3>Ders Takvimi Ayarları</h3>
                 
-                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap; font-size:11px;">
-                    <span style="color:#30d158;">● Normal</span>
-                    <span style="color:#ffd60a;">● Vize (Sınav)</span>
-                    <span style="color:#ff453a;">● Tatil</span>
+                <label style="font-size:12px; opacity:0.7;">Ders Başlangıç Tarihi (1. Hafta)</label>
+                <input type="date" id="startDatePicker" onchange="calculateDates()">
+                
+                <div class="week-config-container" id="weekConfigList"></div>
+                
+                <div style="margin-top:20px; font-size:12px; color:#aaa;">
+                    <p><span style="color:var(--success-color)">■</span> Normal (Yoklama var)</p>
+                    <p><span style="color:var(--warning-color)">■</span> Vize (Yoklama yok)</p>
+                    <p><span style="color:#BF5AF2">■</span> Final/Büt (Yoklama yok)</p>
+                    <p><span style="color:var(--danger-color)">■</span> Tatil (Yoklama yok)</p>
                 </div>
+
+                <button class="action-btn" style="background:var(--danger-color); margin-top:20px;" onclick="resetAttendance()">
+                    BU DERSİN YOKLAMASINI SIFIRLA
+                </button>
             </div>
-            
-            <button onclick="clearCourseData()" class="btn-danger">Bu Dersin Yoklamalarını Sıfırla</button>
+        </div>
+    </div>
+
+    <div id="loader" style="position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:40px; color:var(--accent-color);"></i>
+            <p style="margin-top:15px;">Veriler Yükleniyor...</p>
         </div>
     </div>
 
     <script>
-        // *** AYARLAR ***
-        const GITHUB_DB_URL = "https://raw.githubusercontent.com/msefagor/MyLifeApp/refs/heads/main/db.json"; 
+        // *** KONFİGÜRASYON ***
+        // BURAYA GITHUB RAW LINKINI YAPIŞTIR:
+        const GITHUB_DB_URL = "https://raw.githubusercontent.com/KULLANICI_ADI/REPO_ADI/main/db.json";
         const ADMIN_PASS = "120622";
+        const TOTAL_WEEKS = 18;
 
         // *** GLOBAL DEĞİŞKENLER ***
-        let allCourses = [];
+        let db = { courses: [] };
         let activeCourse = null;
-        let activeCourseConfig = []; // Haftaların durumunu tutar
-        let activeCourseAttendance = {}; // Yoklamaları tutar
-        let html5QrcodeScanner = null;
+        let activeCourseConfig = []; // Hafta tipleri ve tarihleri
+        let activeCourseAttendance = {}; // { studentId: [false, true, ...] }
+        let scanner = null;
 
         // *** BAŞLANGIÇ ***
         document.addEventListener("DOMContentLoaded", () => {
-            fetchDataFromGitHub();
-            
-            // Checkbox dinleyicisi
-            document.getElementById('confirmIdentity').addEventListener('change', function() {
-                const btn = document.getElementById('btnGenerateQR');
-                if(this.checked) {
-                    btn.disabled = false;
-                    btn.classList.remove('btn-secondary');
-                } else {
-                    btn.disabled = true;
-                    btn.classList.add('btn-secondary');
-                }
-            });
+            fetchData();
         });
 
-        // *** VERİ YÖNETİMİ ***
-        async function fetchDataFromGitHub() {
-            document.getElementById('loader').style.display = 'flex';
+        async function fetchData() {
             try {
                 const res = await fetch(GITHUB_DB_URL + "?t=" + Date.now());
-                if(!res.ok) throw new Error("Veri çekilemedi");
-                const data = await res.json();
-                allCourses = data.courses;
-                renderCourseList();
+                if(!res.ok) throw new Error("Bağlantı Hatası");
+                db = await res.json();
+                document.getElementById('loader').style.display = 'none';
             } catch (err) {
-                alert("Veri tabanı hatası: " + err.message);
-            } finally {
+                alert("Veri çekilemedi: " + err.message);
+                // Demo verisi ile devam edilebilir (opsiyonel)
                 document.getElementById('loader').style.display = 'none';
             }
         }
 
-        function renderCourseList() {
-            const container = document.getElementById('courseListContainer');
-            container.innerHTML = "";
+        // *** NAVİGASYON ***
+        const historyStack = ['screen-landing'];
+        function navigateTo(screenId) {
+            // Aktif ekranı gizle
+            document.querySelectorAll('.full-screen-container, #screen-admin-panel').forEach(el => el.classList.add('hidden'));
+            // Yeni ekranı göster
+            document.getElementById(screenId).classList.remove('hidden');
             
-            if(allCourses.length === 0) {
-                container.innerHTML = "<p style='text-align:center;'>Ders bulunamadı.</p>";
+            // Back butonu kontrolü
+            if(screenId === 'screen-landing') {
+                document.getElementById('backBtn').classList.add('hidden');
+                historyStack.length = 0;
+                historyStack.push(screenId);
+            } else {
+                document.getElementById('backBtn').classList.remove('hidden');
+                if(historyStack[historyStack.length-1] !== screenId) historyStack.push(screenId);
+            }
+
+            // Kamera açıksa kapat
+            if(screenId !== 'screen-admin-panel' && scanner) stopScanner();
+        }
+
+        function goBack() {
+            if(historyStack.length > 1) {
+                historyStack.pop();
+                const prev = historyStack[historyStack.length-1];
+                navigateTo(prev);
+                // Stack'e tekrar eklemeyi önle (navigateTo ekliyor)
+                historyStack.pop(); 
+            }
+        }
+
+        // *** 1. ÖĞRENCİ AKIŞI ***
+        function goToStudentLogin() { navigateTo('screen-student-id'); }
+
+        function checkStudentCourses() {
+            const id = document.getElementById('stuIdInput').value.trim();
+            if(!id) return alert("Lütfen numara giriniz.");
+
+            // Öğrencinin olduğu dersleri bul
+            const enrolledCourses = [];
+            let studentName = "";
+
+            db.courses.forEach(c => {
+                const found = c.students.find(s => s.id === id);
+                if(found) {
+                    enrolledCourses.push(c);
+                    studentName = found.name + " " + found.surname;
+                }
+            });
+
+            if(enrolledCourses.length === 0) {
+                alert("Bu numara ile kayıtlı ders bulunamadı.");
                 return;
             }
 
-            allCourses.forEach(course => {
-                const div = document.createElement('div');
-                div.className = 'glass-panel';
-                div.style.cursor = 'pointer';
-                div.onclick = () => selectCourse(course);
-                div.innerHTML = `
-                    <div style="font-weight:bold; font-size:18px;">${course.name}</div>
-                    <div style="opacity:0.7; font-size:14px; margin-top:5px;">${course.department}</div>
-                    <div style="font-size:12px; margin-top:10px; color:var(--accent-color);">${course.students.length} Öğrenci</div>
-                `;
-                container.appendChild(div);
+            // Dersleri Listele
+            document.getElementById('stuNameDisplay').textContent = studentName;
+            const list = document.getElementById('myCourseList');
+            list.innerHTML = "";
+
+            enrolledCourses.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = "role-btn";
+                btn.style.textAlign = "left";
+                btn.style.fontSize = "16px";
+                btn.innerHTML = `<i class="fas fa-book"></i> ${c.name}`;
+                btn.onclick = () => generateQR(c, id, studentName);
+                list.appendChild(btn);
             });
+
+            navigateTo('screen-student-courses');
         }
 
-        function selectCourse(course) {
-            activeCourse = course;
-            
-            // LocalStorage'dan bu derse ait verileri çek
-            loadLocalData(course.courseId);
+        function generateQR(course, id, name) {
+            if(confirm(`${course.name} dersi için karekod oluşturulsun mu?`)) {
+                document.getElementById('qrCourseName').textContent = course.name;
+                document.getElementById('qrStudentId').textContent = `${name} (${id})`;
+                const display = document.getElementById('qr-display');
+                display.innerHTML = "";
+                
+                new QRCode(display, {
+                    text: id, // Sadece ID yeterli
+                    width: 200, height: 200,
+                    colorDark : "#000000", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
 
-            document.getElementById('selectedCourseName').textContent = course.name;
-            document.getElementById('selectedDeptName').textContent = course.department;
-            
-            navigate('section-role');
+                navigateTo('screen-student-qr');
+            }
         }
 
-        function loadLocalData(courseId) {
-            // 1. Yoklamaları Çek
-            const att = localStorage.getItem(`attendance_${courseId}`);
+        // *** 2. AKADEMİSYEN AKIŞI ***
+        function goToAdminLogin() {
+            const list = document.getElementById('adminCourseList');
+            list.innerHTML = "";
+            
+            db.courses.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = "role-btn role-admin";
+                btn.style.fontSize = "16px";
+                btn.innerHTML = `${c.name} <br><small>${c.department}</small>`;
+                btn.onclick = () => loginAdmin(c);
+                list.appendChild(btn);
+            });
+            
+            navigateTo('screen-admin-courses');
+        }
+
+        function loginAdmin(course) {
+            const pass = prompt("Yönetici Şifresi:");
+            if(pass === ADMIN_PASS) {
+                activeCourse = course;
+                loadCourseData(course.courseId);
+                initAdminPanel();
+                navigateTo('screen-admin-panel');
+            } else {
+                if(pass) alert("Hatalı Şifre!");
+            }
+        }
+
+        // *** VERİ YÖNETİMİ (LOCALSTORAGE) ***
+        function loadCourseData(cId) {
+            // 1. Yoklama Verisi
+            const att = localStorage.getItem(`attendance_${cId}`);
             activeCourseAttendance = att ? JSON.parse(att) : {};
 
-            // 2. Hafta Ayarlarını Çek
-            const conf = localStorage.getItem(`config_${courseId}`);
+            // 2. Hafta Konfigürasyonu
+            const conf = localStorage.getItem(`config_${cId}`);
             if(conf) {
                 activeCourseConfig = JSON.parse(conf);
             } else {
-                // Varsayılan: Hepsi Normal
+                // Varsayılan Oluştur (18 Hafta)
                 activeCourseConfig = [];
-                for(let i=1; i<=activeCourse.totalWeeks; i++) {
-                    activeCourseConfig.push({ id: i, type: 'normal' });
+                for(let i=0; i<TOTAL_WEEKS; i++) {
+                    // Varsayılan Tip Atamaları
+                    let type = 'normal';
+                    if(i === 7) type = 'midterm'; // 8. Hafta Vize (index 7)
+                    if(i === 14 || i === 15) type = 'final'; // 15-16 Final
+                    if(i === 16) type = 'final'; // 17 Büt (Final kategorisinde sayalım)
+                    
+                    activeCourseConfig.push({
+                        id: i+1,
+                        type: type, 
+                        date: null 
+                    });
                 }
+            }
+
+            // Başlangıç Tarihi
+            const storedDate = localStorage.getItem(`startDate_${cId}`);
+            if(storedDate) {
+                document.getElementById('startDatePicker').value = storedDate;
             }
         }
 
@@ -325,273 +470,221 @@
             localStorage.setItem(`config_${activeCourse.courseId}`, JSON.stringify(activeCourseConfig));
         }
 
-        // *** NAVIGASYON ***
-        const historyStack = ['section-courses'];
-        
-        function navigate(targetId) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(targetId).classList.add('active');
-            
-            // Başlık Güncelleme
-            const titles = {
-                'section-courses': 'Ders Seçimi',
-                'section-role': 'Giriş Yöntemi',
-                'section-student': 'Öğrenci Girişi',
-                'section-admin': 'Yönetim Paneli'
-            };
-            document.getElementById('pageTitle').textContent = titles[targetId] || 'Ders Takip';
-
-            if(historyStack[historyStack.length-1] !== targetId) {
-                historyStack.push(targetId);
-            }
-            
-            // Kamera açıksa kapat
-            if(targetId !== 'section-admin') stopScanner();
-        }
-
-        function goBack() {
-            if(historyStack.length > 1) {
-                historyStack.pop();
-                const prev = historyStack[historyStack.length-1];
-                
-                // Bölümler arası geçiş
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                document.getElementById(prev).classList.add('active');
-                
-                // Başlık
-                const titles = {
-                    'section-courses': 'Ders Seçimi',
-                    'section-role': 'Giriş Yöntemi',
-                    'section-student': 'Öğrenci Girişi',
-                    'section-admin': 'Yönetim Paneli'
-                };
-                document.getElementById('pageTitle').textContent = titles[prev];
-                
-                if(prev === 'section-courses') activeCourse = null;
-                stopScanner();
-            }
-        }
-
-        // *** ÖĞRENCİ İŞLEMLERİ ***
-        function openStudentLogin() {
-            document.getElementById('studentIdInput').value = "";
-            document.getElementById('studentVerifyResult').classList.add('hidden');
-            document.getElementById('qrArea').classList.add('hidden');
-            document.getElementById('confirmIdentity').checked = false;
-            document.getElementById('btnGenerateQR').disabled = true;
-            document.getElementById('btnGenerateQR').classList.add('btn-secondary');
-            navigate('section-student');
-        }
-
-        function verifyStudent() {
-            const inputId = document.getElementById('studentIdInput').value.trim();
-            const student = activeCourse.students.find(s => s.id === inputId);
-            
-            if(student) {
-                document.getElementById('studentNameDisplay').textContent = `${student.name} ${student.surname}`;
-                document.getElementById('studentVerifyResult').classList.remove('hidden');
-                document.getElementById('qrArea').classList.add('hidden');
-            } else {
-                alert("Öğrenci numarası bu dersin listesinde bulunamadı.");
-                document.getElementById('studentVerifyResult').classList.add('hidden');
-            }
-        }
-
-        function showQR() {
-            const id = document.getElementById('studentIdInput').value.trim();
-            const display = document.getElementById('qr-display');
-            display.innerHTML = ""; // Temizle
-            
-            new QRCode(display, {
-                text: id,
-                width: 180, height: 180,
-                colorDark : "#000", colorLight : "#fff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-            
-            document.getElementById('qrArea').classList.remove('hidden');
-        }
-
-        // *** ADMİN İŞLEMLERİ ***
-        function openAdminLogin() {
-            const pass = prompt("Yönetici Şifresi:");
-            if(pass === ADMIN_PASS) {
-                prepareAdminPanel();
-                navigate('section-admin');
-            } else {
-                if(pass !== null) alert("Hatalı şifre!");
-            }
-        }
-
-        function prepareAdminPanel() {
-            // Hafta Seçicisini Doldur
-            const sel = document.getElementById('weekSelect');
-            sel.innerHTML = "";
-            activeCourseConfig.forEach((week, idx) => {
-                const opt = document.createElement('option');
-                opt.value = idx;
-                opt.textContent = `${week.id}. Hafta`;
-                sel.appendChild(opt);
-            });
-            
-            updateWeekStatusUI();
-            renderWeekGrid();
-            renderStudentList();
+        // *** ADMIN PANEL FONKSİYONLARI ***
+        function initAdminPanel() {
+            document.getElementById('panelTitle').textContent = activeCourse.name;
+            switchTab('tab-scan');
+            calculateDates(); // Tarihleri güncelle
+            renderWeekSettings();
+            updateWeekSelector();
         }
 
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(tabId).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
             
-            if(tabId !== 'tab-scan') stopScanner();
+            if(tabId === 'tab-list') renderStudentList();
+            if(tabId !== 'tab-scan' && scanner) stopScanner();
         }
 
-        // *** HAFTA VE AYARLAR YÖNETİMİ ***
-        function updateWeekStatusUI() {
-            const weekIdx = document.getElementById('weekSelect').value;
-            const week = activeCourseConfig[weekIdx];
-            const statusEl = document.getElementById('currentWeekStatus');
-            
-            if(week.type === 'normal') {
-                statusEl.textContent = "DURUM: NORMAL DERS (Yoklama Alınır)";
-                statusEl.style.color = "#30d158";
-            } else if(week.type === 'midterm') {
-                statusEl.textContent = "DURUM: VİZE HAFTASI (Yoklama Alınmaz)";
-                statusEl.style.color = "#ffd60a";
-            } else {
-                statusEl.textContent = "DURUM: TATİL (Yoklama Alınmaz)";
-                statusEl.style.color = "#ff453a";
+        // *** HAFTA VE TARİH AYARLARI ***
+        function calculateDates() {
+            const startStr = document.getElementById('startDatePicker').value;
+            if(startStr) {
+                localStorage.setItem(`startDate_${activeCourse.courseId}`, startStr);
+                const startDate = new Date(startStr);
+                
+                activeCourseConfig.forEach((w, idx) => {
+                    const d = new Date(startDate);
+                    d.setDate(d.getDate() + (idx * 7));
+                    w.date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+                });
+                saveData();
+                renderWeekSettings();
+                updateWeekSelector();
             }
         }
 
-        function renderWeekGrid() {
-            const grid = document.getElementById('weekConfigGrid');
-            grid.innerHTML = "";
+        function renderWeekSettings() {
+            const container = document.getElementById('weekConfigList');
+            container.innerHTML = "";
             
-            activeCourseConfig.forEach((week, idx) => {
-                const box = document.createElement('div');
-                box.className = `week-box week-type-${week.type}`;
-                box.textContent = week.id;
-                box.onclick = () => toggleWeekType(idx);
-                grid.appendChild(box);
+            const typeLabels = {
+                'normal': 'Normal Ders',
+                'midterm': 'Vize Haftası',
+                'final': 'Final/Büt',
+                'holiday': 'Tatil'
+            };
+
+            activeCourseConfig.forEach((w, idx) => {
+                const row = document.createElement('div');
+                row.className = `week-row type-${w.type}`;
+                row.onclick = () => toggleWeekType(idx);
+                
+                row.innerHTML = `
+                    <div class="week-info">
+                        <span style="font-weight:bold;">${w.id}. Hafta - ${typeLabels[w.type]}</span>
+                        <span class="week-date">${w.date || 'Tarih Ayarlanmadı'}</span>
+                    </div>
+                    <i class="fas fa-chevron-right" style="opacity:0.3"></i>
+                `;
+                container.appendChild(row);
             });
         }
 
-        function toggleWeekType(index) {
-            const types = ['normal', 'midterm', 'holiday'];
-            const currentType = activeCourseConfig[index].type;
-            let nextIndex = (types.indexOf(currentType) + 1) % types.length;
-            
-            activeCourseConfig[index].type = types[nextIndex];
+        function toggleWeekType(idx) {
+            const types = ['normal', 'midterm', 'final', 'holiday'];
+            const current = activeCourseConfig[idx].type;
+            const next = types[(types.indexOf(current) + 1) % types.length];
+            activeCourseConfig[idx].type = next;
             saveData();
-            renderWeekGrid();
-            updateWeekStatusUI(); // Eğer seçili hafta ise günceller
+            renderWeekSettings();
+            updateWeekSelector();
         }
 
-        function clearCourseData() {
-            if(confirm("Bu ders için tüm yoklamaları silmek istediğinize emin misiniz?")) {
-                activeCourseAttendance = {};
-                saveData();
-                alert("Sıfırlandı.");
-                renderStudentList();
+        function updateWeekSelector() {
+            const sel = document.getElementById('weekSelect');
+            const currentVal = sel.value; // Seçiliyi koru
+            sel.innerHTML = "";
+            
+            activeCourseConfig.forEach((w, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `${w.id}. Hafta (${w.date ? w.date.split(' ')[0] + ' ' + w.date.split(' ')[1] : '...' })`;
+                sel.appendChild(opt);
+            });
+            
+            if(currentVal && currentVal < activeCourseConfig.length) sel.value = currentVal;
+            updateWeekInfoDisplay();
+        }
+
+        function updateWeekInfoDisplay() {
+            const idx = document.getElementById('weekSelect').value;
+            const w = activeCourseConfig[idx];
+            const info = document.getElementById('weekDetailText');
+            
+            if(w.type === 'normal') {
+                info.textContent = `${w.date || ''} - Yoklama Alınabilir`;
+                info.style.color = "var(--success-color)";
+            } else {
+                info.textContent = `Bu hafta ${w.type.toUpperCase()} haftasıdır. Devamsızlık işlenmez.`;
+                info.style.color = "var(--danger-color)";
             }
         }
 
         // *** TARAYICI (SCANNER) ***
         function startScanner() {
-            const weekIdx = document.getElementById('weekSelect').value;
+            const idx = document.getElementById('weekSelect').value;
+            const w = activeCourseConfig[idx];
             
-            // Kontrol: Tatil veya Vize mi?
-            if(activeCourseConfig[weekIdx].type !== 'normal') {
-                alert("Seçili hafta 'Tatil' veya 'Vize' olarak ayarlanmış. Yoklama alınamaz. Ayarlardan değiştirebilirsiniz.");
+            if(w.type !== 'normal') {
+                alert("Bu hafta yoklama alınamaz (Tatil veya Sınav Haftası).");
                 return;
             }
 
             document.getElementById('btnStartScan').classList.add('hidden');
             document.getElementById('btnStopScan').classList.remove('hidden');
 
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, 
+            scanner = new Html5Qrcode("reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, 
             (decodedText) => {
-                registerAttendance(decodedText, weekIdx);
+                handleScan(decodedText, idx);
             });
         }
 
         function stopScanner() {
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
-                html5QrcodeScanner = null;
+            if(scanner) {
+                scanner.stop().then(() => scanner.clear());
+                scanner = null;
             }
             document.getElementById('btnStartScan').classList.remove('hidden');
             document.getElementById('btnStopScan').classList.add('hidden');
         }
 
-        function registerAttendance(studentId, weekIdx) {
+        function handleScan(studentId, weekIdx) {
             const student = activeCourse.students.find(s => s.id === studentId);
-            if(!student) return; // Yabancı QR
-
-            // Kayıt var mı başlat
-            if(!activeCourseAttendance[student.id]) {
-                activeCourseAttendance[student.id] = {};
-            }
-
-            // O hafta zaten var mı?
-            if(!activeCourseAttendance[student.id][weekIdx]) {
-                activeCourseAttendance[student.id][weekIdx] = true;
-                saveData();
+            
+            if(student) {
+                if(!activeCourseAttendance[studentId]) activeCourseAttendance[studentId] = {};
                 
-                // Loga ekle
+                // *** KRİTİK: TEKRAR OKUMA ENGELİ ***
+                if(activeCourseAttendance[studentId][weekIdx]) {
+                    // Zaten okundu, sessizce geç veya UI'da belirt
+                    return; 
+                }
+
+                // Yoklamayı Kaydet
+                activeCourseAttendance[studentId][weekIdx] = true;
+                saveData();
+
+                // UI Güncelle
                 const ul = document.getElementById('scanLog');
                 const li = document.createElement('li');
-                li.className = 'student-item';
-                li.innerHTML = `<span style="color:#fff;">${student.name} ${student.surname}</span> <span style="color:#30d158; font-weight:bold;">OK</span>`;
+                li.innerHTML = `✓ ${student.name} ${student.surname}`;
                 ul.insertBefore(li, ul.firstChild);
+                
+                // Ses efekti eklenebilir
             }
         }
 
-        // *** LİSTE VE HESAPLAMA ***
+        // *** LİSTE VE SIRALAMA ***
         function renderStudentList() {
             const ul = document.getElementById('fullStudentList');
-            const term = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             ul.innerHTML = "";
 
-            activeCourse.students.forEach(s => {
-                if(s.name.toLowerCase().includes(term) || s.surname.toLowerCase().includes(term) || s.id.includes(term)) {
-                    
-                    // Oran Hesapla
-                    let attendedCount = 0;
-                    let activeWeeksCount = 0;
-                    
-                    activeCourseConfig.forEach((week, idx) => {
-                        if(week.type === 'normal') {
-                            activeWeeksCount++;
-                            // Yoklama kaydı var mı?
-                            if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) {
-                                attendedCount++;
-                            }
+            // 1. Hesaplama ve Veri Hazırlama
+            let listData = activeCourse.students.map(s => {
+                let attended = 0;
+                let activeWeeks = 0;
+                
+                activeCourseConfig.forEach((w, idx) => {
+                    if(w.type === 'normal') {
+                        activeWeeks++;
+                        if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) {
+                            attended++;
                         }
-                    });
+                    }
+                });
 
-                    const rate = activeWeeksCount === 0 ? 0 : Math.round((attendedCount / activeWeeksCount) * 100);
-                    const color = rate >= 70 ? '#30d158' : '#ff453a';
+                const rate = activeWeeks === 0 ? 100 : Math.round((attended / activeWeeks) * 100);
+                return { ...s, rate };
+            });
 
+            // 2. Sıralama (Düşük oran en üstte - Devamsızlığı çok olan)
+            listData.sort((a, b) => a.rate - b.rate);
+
+            // 3. Render
+            listData.forEach(s => {
+                if(s.name.toLowerCase().includes(searchTerm) || s.surname.toLowerCase().includes(searchTerm)) {
                     const li = document.createElement('li');
                     li.className = 'student-item';
+                    
+                    const colorClass = s.rate < 70 ? 'text-low' : 'text-ok';
+                    
                     li.innerHTML = `
                         <div>
-                            <div style="font-weight:600;">${s.name} ${s.surname}</div>
-                            <div style="font-size:12px; opacity:0.6;">${s.id}</div>
+                            <div style="font-size:20px; font-weight:600;">${s.name} ${s.surname}</div>
+                            <div style="font-size:14px; opacity:0.6;">${s.id}</div>
                         </div>
-                        <div style="font-size:18px; font-weight:bold; color:${color};">
-                            %${rate}
+                        <div style="font-size:24px; font-weight:800;" class="${colorClass}">
+                            %${s.rate}
                         </div>
                     `;
                     ul.appendChild(li);
                 }
             });
+        }
+
+        function resetAttendance() {
+            if(confirm("DİKKAT! Bu dersin tüm yoklama verileri silinecek. Emin misiniz?")) {
+                activeCourseAttendance = {};
+                saveData();
+                alert("Veriler sıfırlandı.");
+                initAdminPanel();
+            }
         }
 
     </script>
