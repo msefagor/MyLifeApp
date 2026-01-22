@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>Ana Ekran</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --text-color: #ffffff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; }
+
+        body {
+            margin: 0; padding: 0;
+            background: #000;
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+        }
+
+        /* Arkaplan Efektleri */
+        .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: -1; }
+        .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #ff00cc; animation: float 8s infinite ease-in-out; }
+        .blob-2 { bottom: -10%; right: -20%; width: 350px; height: 350px; background: #3333ff; animation: float 10s infinite ease-in-out reverse; }
+        .blob-3 { top: 40%; left: 30%; width: 200px; height: 200px; background: #00f2ff; opacity: 0.4; }
+
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+
+        /* Üst Bar */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 0; margin-bottom: 20px;
+        }
+        .header h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
+        
+        .backup-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid var(--glass-border);
+            color: white; width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Tarih Seçici */
+        .date-container {
+            background: var(--glass-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 20px; text-align: center; margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .date-label { font-size: 13px; opacity: 0.7; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="date"] {
+            background: transparent; border: none; color: white;
+            font-size: 24px; font-weight: 700; font-family: inherit;
+            outline: none; text-align: center; width: 100%;
+        }
+
+        /* Menü Grid */
+        .grid-menu {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            overflow-y: auto; padding-bottom: 20px;
+        }
+
+        .menu-item {
+            background: var(--glass-bg); backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 15px; aspect-ratio: 1; text-decoration: none; color: white;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .menu-item:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+        
+        .icon-box {
+            width: 50px; height: 50px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; background: rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .item-title { font-size: 16px; font-weight: 600; }
+
+        /* Renk Temaları */
+        .theme-namaz .icon-box { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #000; }
+        .theme-not .icon-box { background: linear-gradient(135deg, #f83600 0%, #f9d423 100%); color: #000; }
+        .theme-eng .icon-box { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; }
+        .theme-book .icon-box { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #000; }
+        .theme-money .icon-box { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+
+        /* Modal (Yedekleme) */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            z-index: 100; display: none; align-items: center; justify-content: center;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: #1c1c1e; width: 85%; max-width: 400px;
+            border-radius: 24px; padding: 25px; border: 1px solid var(--glass-border);
+            text-align: center;
+        }
+        .modal-btn {
+            width: 100%; padding: 15px; margin-top: 10px; border-radius: 14px;
+            border: none; font-size: 16px; font-weight: 600; cursor: pointer;
+        }
+        .btn-download { background: #0a84ff; color: white; }
+        .btn-upload { background: #30d158; color: white; }
+        .btn-close { background: rgba(255,255,255,0.1); color: white; margin-top: 20px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="header">
+        <h1>Günlük Akış</h1>
+        <div class="backup-btn" onclick="openBackupModal()">
+            <i class="fas fa-cloud-arrow-down"></i>
+        </div>
+    </div>
+
+    <div class="date-container">
+        <div class="date-label">Seçili Tarih</div>
+        <input type="date" id="mainDatePicker">
+    </div>
+
+    <div class="grid-menu">
+        <a href="#" onclick="navigateTo('namaz.html')" class="menu-item theme-namaz">
+            <div class="icon-box"><i class="fas fa-mosque"></i></div>
+            <span class="item-title">Namaz</span>
+        </a>
+        
+        <a href="#" onclick="navigateTo('notlar.html')" class="menu-item theme-not">
+            <div class="icon-box"><i class="fas fa-sticky-note"></i></div>
+            <span class="item-title">Notlar</span>
+        </a>
+
+        <a href="#" onclick="navigateTo('ingilizce.html')" class="menu-item theme-eng">
+            <div class="icon-box"><i class="fas fa-language"></i></div>
+            <span class="item-title">İngilizce</span>
+        </a>
+
+        <a href="#" onclick="navigateTo('kitap1.html')" class="menu-item theme-book">
+            <div class="icon-box"><i class="fas fa-book"></i></div>
+            <span class="item-title">Kitap</span>
+        </a>
+
+        <a href="#" onclick="navigateTo('yatirim1.html')" class="menu-item theme-money">
+            <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+            <span class="item-title">Bütçe</span>
+        </a>
+    </div>
+
+    <div id="backupModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0;">Veri Yönetimi</h2>
+            <p style="color:#aaa; font-size:14px; margin-bottom:20px;">Tüm uygulamalardaki verilerinizi (Notlar, Bütçe, Kitap vb.) tek bir dosya olarak indirin veya geri yükleyin.</p>
+            
+            <button class="modal-btn btn-download" onclick="exportData()">
+                <i class="fas fa-download"></i> Verileri İndir (Yedekle)
+            </button>
+            
+            <button class="modal-btn btn-upload" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-upload"></i> Verileri Yükle (Geri Getir)
+            </button>
+            
+            <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importData(this)">
+            
+            <button class="modal-btn btn-close" onclick="closeBackupModal()">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. iPhone Uyumlu Tarih Ayarı
+        function setToday() {
+            const now = new Date();
+            // Yerel saat farkını düzelt
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
+            
+            const picker = document.getElementById('mainDatePicker');
+            if(!picker.value) picker.value = localISOTime;
+        }
+
+        // 2. Sayfa Yönlendirme (Tarih verisini taşıyarak)
+        function navigateTo(page) {
+            const date = document.getElementById('mainDatePicker').value;
+            // Tarihi URL parametresi olarak ekle
+            window.location.href = `${page}?date=${date}`;
+        }
+
+        // 3. Yedekleme Fonksiyonları
+        function openBackupModal() { document.getElementById('backupModal').classList.add('open'); }
+        function closeBackupModal() { document.getElementById('backupModal').classList.remove('open'); }
+
+        function exportData() {
+            const allData = JSON.stringify(localStorage);
+            const blob = new Blob([allData], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            a.download = `backup_full_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            alert("Yedek dosyası indirildi.");
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // Mevcut veriyi temizle ve yenisini yükle (Çakışmayı önlemek için)
+                    localStorage.clear();
+                    
+                    Object.keys(data).forEach(key => {
+                        localStorage.setItem(key, data[key]);
+                    });
+                    
+                    alert("Veriler başarıyla geri yüklendi!");
+                    location.reload(); 
+                } catch (err) {
+                    alert("Dosya bozuk veya hatalı format: " + err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = setToday;
+    </script>
+</body>
+</html>
