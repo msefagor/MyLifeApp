@@ -28,14 +28,10 @@
             --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: var(--font-family);
             background: var(--bg-gradient);
             color: var(--text-color);
@@ -45,46 +41,28 @@
             align-items: flex-start;
             overflow-x: hidden;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Alt menü için boşluk */
+            padding-bottom: calc(90px + env(safe-area-inset-bottom));
         }
 
         /* Blobs */
-        .blobs {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
-        }
-        .blob {
-            position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate;
-        }
+        .blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate; }
         .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
         .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
-
-        @keyframes move {
-            from { transform: translate(0, 0) rotate(0deg); }
-            to { transform: translate(20px, 40px) rotate(20deg); }
-        }
+        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
 
         /* Container */
         .container {
-            width: 100%;
-            max-width: 600px;
-            padding: 20px 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
+            width: 100%; max-width: 600px; padding: 20px 25px;
+            display: flex; flex-direction: column; gap: 25px;
         }
 
-        /* Sekme Sistemi (Tabs) */
-        .tab-content {
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-            animation: fadeIn 0.3s ease;
-        }
+        /* Tab Content */
+        .tab-content { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: flex; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Başlık Tasarımı */
+        /* Header */
         .app-header { text-align: center; margin-top: 10px; margin-bottom: 10px; }
         .liquid-brand {
             font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
@@ -101,39 +79,39 @@
 
         /* Glass Cards */
         .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px;
-            padding: 30px 25px; box-shadow: var(--glass-shadow);
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px 25px; box-shadow: var(--glass-shadow);
         }
 
         h3 { font-size: 20px; margin: 0 0 20px 0; font-weight: 700; letter-spacing: 0.5px; }
         
-        /* Date Picker */
-        .date-section { text-align: center; padding-top: 10px; }
-        .date-subtitle { opacity: 0.7; font-size: 15px; margin-bottom: 15px; display: block; }
-        input[type="date"] {
+        /* Inputs & Buttons */
+        input[type="date"], input[type="text"], textarea {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; padding: 16px; border-radius: 18px;
-            font-size: 20px; font-weight: 600; font-family: var(--font-family);
-            outline: none; width: 100%; text-align: center; -webkit-appearance: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
+            outline: none; width: 100%; margin-bottom: 15px;
+        }
+        textarea { height: 100px; resize: none; }
+        
+        .btn-primary {
+            width: 100%; padding: 16px; border-radius: 18px; border: none;
+            background: var(--vakit-gradient); color: white; font-size: 16px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3);
         }
 
-        /* Prayer List */
+        /* Prayer List Styles */
         .prayer-list { display: flex; flex-direction: column; gap: 15px; }
         .prayer-item {
             padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px;
-            transition: all 0.3s ease; display: grid; grid-template-columns: 1fr auto;
-            align-items: center; border: 1px solid rgba(255,255,255,0.05);
+            display: grid; grid-template-columns: 1fr auto; align-items: center; border: 1px solid rgba(255,255,255,0.05);
         }
-        .prayer-item.status-vakit { background: rgba(0, 242, 254, 0.15); border: 1px solid rgba(0, 242, 254, 0.4); box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
-        .prayer-item.status-kaza { background: rgba(247, 183, 51, 0.15); border: 1px solid rgba(247, 183, 51, 0.4); }
-        .prayer-info { display: flex; flex-direction: column; }
+        .prayer-item.status-vakit { background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.4); }
+        .prayer-item.status-kaza { background: rgba(247, 183, 51, 0.15); border-color: rgba(247, 183, 51, 0.4); }
+        
         .prayer-name { font-size: 20px; font-weight: 700; }
         .prayer-rekat { font-size: 14px; opacity: 0.7; margin-top: 4px; }
-
-        /* Controls */
+        
+        /* Toggle & Controls */
         .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         .toggle-wrapper { display: flex; align-items: center; gap: 12px; }
         .toggle-label { font-size: 13px; opacity: 0.9; font-weight: 500; }
@@ -143,81 +121,100 @@
         }
         .toggle::after {
             content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px;
-            background: #fff; border-radius: 50%; transition: 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            background: #fff; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         .prayer-item.status-vakit .toggle { background: var(--vakit-gradient); }
         .prayer-item.status-vakit .toggle::after { left: 27px; }
-        .prayer-item.status-kaza .toggle { opacity: 0.5; }
         .kaza-btn {
             background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8);
-            padding: 6px 12px; border-radius: 10px; font-size: 12px; cursor: pointer; transition: all 0.3s;
+            padding: 6px 12px; border-radius: 10px; font-size: 12px; cursor: pointer;
         }
-        .prayer-item.status-kaza .kaza-btn {
-            background: var(--kaza-gradient); color: #fff; border-color: transparent; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(247, 183, 51, 0.3);
-        }
+        .prayer-item.status-kaza .kaza-btn { background: var(--kaza-gradient); color: #fff; border-color: transparent; font-weight: bold; }
 
-        /* Stats */
+        /* Stats & Progress */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
-        .stat-box {
-            background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .stat-value { font-size: 28px; font-weight: 800; color: var(--missed-color); margin-top: 8px; text-shadow: 0 0 10px rgba(255, 75, 31, 0.4); }
+        .stat-box { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-value { font-size: 28px; font-weight: 800; color: var(--missed-color); margin-top: 8px; }
         .stat-label { font-size: 13px; opacity: 0.8; font-weight: 500; }
-
-        /* Progress */
         .progress-container { margin-top: 25px; }
         .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; font-weight: 600; }
         .progress-bar-bg { width: 100%; height: 16px; background: rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: var(--vakit-gradient); width: 0%; border-radius: 12px; transition: width 0.5s ease-in-out, background 0.3s; box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); }
-
-        /* Missed List */
-        .missed-list-container { max-height: 350px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent; }
+        .progress-bar-fill { height: 100%; background: var(--vakit-gradient); width: 0%; border-radius: 12px; transition: width 0.5s ease-in-out; }
+        .missed-list-container { max-height: 350px; overflow-y: auto; }
         .missed-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
-        .missed-item:last-child { border-bottom: none; }
-        .missed-date { font-weight: 700; color: var(--missed-color); margin-bottom: 5px; display: block; }
-        .missed-prayers { opacity: 0.8; font-size: 14px; }
+        .missed-date { font-weight: 700; color: var(--missed-color); display: block; margin-bottom: 5px; }
 
-        /* --- SÜRELER SEKMESİ --- */
-        .surah-list { display: flex; flex-direction: column; gap: 20px; }
-        .surah-card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 24px; padding: 25px;
-            display: flex; flex-direction: column; gap: 15px;
+        /* --- SÜRELER SEKMESİ TASARIMI --- */
+        .surah-list-item {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .surah-header {
-            font-size: 16px; font-weight: 700; color: var(--accent-green);
-            text-transform: uppercase; letter-spacing: 1px;
-            padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);
+        .surah-list-item:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .surah-list-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .surah-delete-btn {
+            background: rgba(255, 75, 31, 0.2); border: 1px solid var(--missed-color); color: var(--missed-color);
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
         }
-        .surah-arabic {
-            font-family: 'Amiri', serif; font-size: 28px; line-height: 1.8;
-            text-align: right; color: #fff; margin-bottom: 5px;
-        }
-        .surah-reading { font-size: 16px; font-weight: 600; color: #e0e0e0; line-height: 1.5; font-style: italic; }
-        .surah-meaning { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.5; }
 
-        /* --- BOTTOM NAV BAR (Liquid Glass) --- */
+        /* Detail Card (Flash Card) */
+        .surah-detail-card {
+            background: linear-gradient(180deg, rgba(30,30,40,0.9) 0%, rgba(20,20,30,0.95) 100%);
+            backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 30px; padding: 30px 25px; display: flex; flex-direction: column; gap: 20px;
+            animation: slideUp 0.3s ease; min-height: 400px; justify-content: center;
+        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .detail-header {
+            font-size: 20px; font-weight: 800; color: var(--accent-green);
+            text-align: center; text-transform: uppercase; letter-spacing: 1px;
+            padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .detail-arabic {
+            font-family: 'Amiri', serif; font-size: 32px; line-height: 2;
+            text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        .detail-reading { font-size: 18px; font-weight: 600; color: #e0e0e0; line-height: 1.6; text-align: center; font-style: italic; }
+        .detail-meaning { font-size: 16px; color: rgba(255,255,255,0.7); line-height: 1.6; text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 12px 20px; border-radius: 15px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px; width: fit-content; margin-bottom: 15px; cursor: pointer;
+        }
+
+        /* FAB Button */
+        .fab {
+            position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); right: 20px;
+            width: 60px; height: 60px; border-radius: 50%; background: var(--vakit-gradient);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 242, 254, 0.4); color: #fff; font-size: 30px; border: none; cursor: pointer;
+            z-index: 90;
+        }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: flex-end; }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: #151520; width: 100%; border-radius: 30px 30px 0 0; padding: 30px 25px 50px 25px;
+            border-top: 1px solid var(--glass-border); animation: slideUpModal 0.3s ease;
+        }
+        @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Nav Bar */
         .nav-bar {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 380px; height: 70px;
-            background: rgba(25, 25, 35, 0.85);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 40px;
+            background: rgba(25, 25, 35, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 40px;
             display: flex; justify-content: space-around; align-items: center;
-            z-index: 100;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            padding: 0 10px;
+            z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.6); padding: 0 10px;
         }
         .nav-item {
             color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 600;
             display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-            background: none; border: none; padding: 0; width: 80px; height: 100%;
-            transition: all 0.3s ease;
+            background: none; border: none; padding: 0; width: 80px; height: 100%; transition: all 0.3s ease;
         }
         .nav-item.active { color: white; transform: translateY(-5px); }
         .nav-item.active .nav-icon-bg {
@@ -230,6 +227,8 @@
             background: rgba(255,255,255,0.05); transition: all 0.3s ease;
         }
         .nav-icon { width: 22px; height: 22px; fill: white; }
+
+        .hidden { display: none !important; }
 
     </style>
 </head>
@@ -295,8 +294,33 @@
         </div>
 
         <div id="tab-surahs" class="tab-content">
-            <div class="surah-list" id="surahContainer">
-                </div>
+            <div id="surahListView">
+                <div class="surah-list" id="surahListContainer" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                <div style="height: 80px;"></div>
+            </div>
+
+            <div id="surahDetailView" class="hidden">
+                <button class="back-btn" onclick="closeSurahDetail()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Listeye Dön
+                </button>
+                <div id="surahDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <button id="fabAddSurah" class="fab hidden" onclick="openAddModal()">+</button>
+
+    <div id="modalAddSurah" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px;">Yeni Sure Ekle</h3>
+            <input type="text" id="newSurahTitle" placeholder="Başlık (Örn: 1-Fatiha Suresi)">
+            <textarea id="newSurahArabic" placeholder="Arapça Metin"></textarea>
+            <textarea id="newSurahReading" placeholder="Okunuşu (Latin harfleriyle)"></textarea>
+            <textarea id="newSurahMeaning" placeholder="Anlamı (Meal)"></textarea>
+            
+            <button class="btn-primary" onclick="saveSurah()">Kaydet</button>
+            <button class="btn-primary" style="background:rgba(255,255,255,0.1); margin-top:10px;" onclick="closeAddModal()">İptal</button>
         </div>
     </div>
 
@@ -316,7 +340,11 @@
     </nav>
 
     <script>
-        // --- NAMAZ TAKİP VERİLERİ ---
+        // --- DATA KEYS ---
+        const PRAYER_KEY = 'namazTakipData_v2';
+        const SURAH_KEY = 'namaz_surahs_v1';
+
+        // --- NAMAZ CONSTANTS ---
         const prayers = [
             { id: 'sabah', name: 'Sabah', rekat: 4 },
             { id: 'ogle', name: 'Öğle', rekat: 10 },
@@ -325,30 +353,9 @@
             { id: 'yatsi', name: 'Yatsı', rekat: 13 }
         ];
 
-        // --- SURE VERİLERİ ---
-        const surahs = [
-            {
-                title: "1-Fatiha Suresi 1. Ayet",
-                arabic: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-                reading: "Bismillâhir rahmânir rahîm.",
-                meaning: "Rahmân ve Rahîm olan Allah'ın adıyla."
-            },
-            {
-                title: "1-Fatiha Suresi 3. Ayet",
-                arabic: "ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-                reading: "Er rahmânir rahîm(rahîmi).",
-                meaning: "(2-4) Hamd , Âlemlerin Rabbi , Rahmân , Rahîm , hesap ve ceza gününün (ahiret gününün) mâliki Allah’a mahsustur."
-            }
-        ];
-
+        // --- GLOBAL VARS ---
         const datePicker = document.getElementById('datePicker');
-        const prayerListContainer = document.getElementById('prayerListContainer');
-        const missedCountEl = document.getElementById('missedCount');
-        const missedRakatEl = document.getElementById('missedRakat');
-        const progressBarEl = document.getElementById('progressBar');
-        const percentTextEl = document.getElementById('percentText');
-        const missedListLogEl = document.getElementById('missedListLog');
-        const surahContainer = document.getElementById('surahContainer');
+        let currentSurahs = [];
 
         function getLocalTodayDate() {
             const now = new Date();
@@ -362,10 +369,13 @@
         datePicker.value = today;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Namaz Init
             loadDay(today);
             calculateStats();
             renderMissedList();
-            renderSurahs();
+            
+            // Sure Init
+            loadSurahs();
         });
 
         datePicker.addEventListener('change', (e) => {
@@ -374,47 +384,155 @@
 
         // --- TAB YÖNETİMİ ---
         function switchTab(tabId, btn) {
-            // Butonları resetle
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            // İçerikleri gizle/göster
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             
-            // Yukarı kaydır
+            // FAB Kontrolü
+            const fab = document.getElementById('fabAddSurah');
+            if(tabId === 'surahs') {
+                fab.classList.remove('hidden');
+                // Tab değişince liste görünümüne dön
+                closeSurahDetail();
+            } else {
+                fab.classList.add('hidden');
+            }
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- SURE RENDER ---
-        function renderSurahs() {
-            surahContainer.innerHTML = '';
-            surahs.forEach(s => {
-                const card = document.createElement('div');
-                card.className = 'glass-card surah-card';
-                card.innerHTML = `
-                    <div class="surah-header">${s.title}</div>
-                    <div class="surah-arabic">${s.arabic}</div>
-                    <div class="surah-reading">${s.reading}</div>
-                    <div class="surah-meaning">${s.meaning}</div>
-                `;
-                surahContainer.appendChild(card);
+        // ==========================================
+        //  SURELER (EZBER) BÖLÜMÜ
+        // ==========================================
+
+        function loadSurahs() {
+            const stored = localStorage.getItem(SURAH_KEY);
+            if(stored) {
+                currentSurahs = JSON.parse(stored);
+            } else {
+                // Varsayılan boş veya örnek veri
+                currentSurahs = []; 
+            }
+            renderSurahList();
+        }
+
+        function saveAllSurahs() {
+            localStorage.setItem(SURAH_KEY, JSON.stringify(currentSurahs));
+            renderSurahList();
+        }
+
+        // Listeyi numaraya göre sırala (1-Fatiha, 2-Bakara...)
+        function sortSurahs() {
+            currentSurahs.sort((a, b) => {
+                const numA = parseInt(a.title.match(/^\d+/) || 0);
+                const numB = parseInt(b.title.match(/^\d+/) || 0);
+                return numA - numB;
             });
         }
 
-        // --- NAMAZ FONKSİYONLARI ---
-        function getStoredData() {
-            const stored = localStorage.getItem('namazTakipData_v2');
+        function renderSurahList() {
+            sortSurahs();
+            const container = document.getElementById('surahListContainer');
+            container.innerHTML = '';
+
+            if(currentSurahs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; opacity:0.6; padding:20px;">Henüz sure eklenmemiş.<br>+ butonuna basarak ekleyin.</div>';
+                return;
+            }
+
+            currentSurahs.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'surah-list-item';
+                item.innerHTML = `
+                    <div class="surah-list-title" onclick="openSurahDetail(${s.id})">${s.title}</div>
+                    <div class="surah-delete-btn" onclick="deleteSurah(${s.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function openAddModal() {
+            document.getElementById('newSurahTitle').value = '';
+            document.getElementById('newSurahArabic').value = '';
+            document.getElementById('newSurahReading').value = '';
+            document.getElementById('newSurahMeaning').value = '';
+            document.getElementById('modalAddSurah').classList.add('open');
+        }
+
+        function closeAddModal() {
+            document.getElementById('modalAddSurah').classList.remove('open');
+        }
+
+        function saveSurah() {
+            const title = document.getElementById('newSurahTitle').value;
+            const arabic = document.getElementById('newSurahArabic').value;
+            const reading = document.getElementById('newSurahReading').value;
+            const meaning = document.getElementById('newSurahMeaning').value;
+
+            if(!title) { alert("Lütfen en azından bir başlık girin."); return; }
+
+            const newSurah = {
+                id: Date.now(),
+                title, arabic, reading, meaning
+            };
+
+            currentSurahs.push(newSurah);
+            saveAllSurahs();
+            closeAddModal();
+        }
+
+        function deleteSurah(id) {
+            if(confirm("Bu sureyi listeden silmek istiyor musunuz?")) {
+                currentSurahs = currentSurahs.filter(s => s.id !== id);
+                saveAllSurahs();
+            }
+        }
+
+        function openSurahDetail(id) {
+            const surah = currentSurahs.find(s => s.id === id);
+            if(!surah) return;
+
+            const contentDiv = document.getElementById('surahDetailContent');
+            contentDiv.innerHTML = `
+                <div class="surah-detail-card">
+                    <div class="detail-header">${surah.title}</div>
+                    ${surah.arabic ? `<div class="detail-arabic">${surah.arabic}</div>` : ''}
+                    ${surah.reading ? `<div class="detail-reading">${surah.reading}</div>` : ''}
+                    ${surah.meaning ? `<div class="detail-meaning">${surah.meaning}</div>` : ''}
+                </div>
+            `;
+
+            document.getElementById('surahListView').classList.add('hidden');
+            document.getElementById('surahDetailView').classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function closeSurahDetail() {
+            document.getElementById('surahDetailView').classList.add('hidden');
+            document.getElementById('surahListView').classList.remove('hidden');
+        }
+
+
+        // ==========================================
+        //  NAMAZ TAKİP MANTIĞI (Önceki kodların aynısı)
+        // ==========================================
+        function getStoredPrayerData() {
+            const stored = localStorage.getItem(PRAYER_KEY);
             return stored ? JSON.parse(stored) : {};
         }
 
-        function saveData(data) {
-            localStorage.setItem('namazTakipData_v2', JSON.stringify(data));
+        function savePrayerData(data) {
+            localStorage.setItem(PRAYER_KEY, JSON.stringify(data));
         }
 
         function loadDay(date) {
-            prayerListContainer.innerHTML = '';
-            const data = getStoredData();
+            const container = document.getElementById('prayerListContainer');
+            container.innerHTML = '';
+            const data = getStoredPrayerData();
             const dayData = data[date] || {}; 
 
             prayers.forEach(prayer => {
@@ -440,12 +558,12 @@
                         </button>
                     </div>
                 `;
-                prayerListContainer.appendChild(item);
+                container.appendChild(item);
             });
         }
 
         function toggleStatus(date, prayerId, requestedType) {
-            const data = getStoredData();
+            const data = getStoredPrayerData();
             if (!data[date]) data[date] = {};
             
             let currentStatus = data[date][prayerId];
@@ -457,42 +575,32 @@
                 data[date][prayerId] = requestedType;
             }
 
-            saveData(data);
+            savePrayerData(data);
             loadDay(date);
             calculateStats();
             renderMissedList(); 
         }
 
         function calculateStats() {
-            const data = getStoredData();
+            const data = getStoredPrayerData();
             const currentYear = new Date().getFullYear();
             const startOfYear = new Date(currentYear, 0, 1);
-            
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
             const oneDay = 24 * 60 * 60 * 1000;
             const daysPassed = Math.round((todayStart - startOfYear) / oneDay) + 1;
 
-            let totalPrayersShouldBe = 0;
-            let totalCompleted = 0;
-            let totalMissedCount = 0;
-            let totalMissedRakat = 0;
+            let totalPrayersShouldBe = 0, totalCompleted = 0, totalMissedCount = 0, totalMissedRakat = 0;
 
             for (let i = 0; i < daysPassed; i++) {
                 const loopDate = new Date(currentYear, 0, 1 + i);
-                const loopYear = loopDate.getFullYear();
-                const loopMonth = String(loopDate.getMonth() + 1).padStart(2, '0');
-                const loopDay = String(loopDate.getDate()).padStart(2, '0');
-                const dateString = `${loopYear}-${loopMonth}-${loopDay}`;
-                
+                const dateString = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
                 const dayRecord = data[dateString] || {};
 
                 prayers.forEach(p => {
                     totalPrayersShouldBe++;
                     let status = dayRecord[p.id];
                     if (status === true) status = 'vakit';
-
                     if (status === 'vakit' || status === 'kaza') {
                         totalCompleted++;
                     } else {
@@ -502,34 +610,28 @@
                 });
             }
 
-            missedCountEl.textContent = totalMissedCount;
-            missedRakatEl.textContent = totalMissedRakat;
+            document.getElementById('missedCount').textContent = totalMissedCount;
+            document.getElementById('missedRakat').textContent = totalMissedRakat;
 
             let percentage = 0;
-            if (totalPrayersShouldBe > 0) {
-                percentage = Math.round((totalCompleted / totalPrayersShouldBe) * 100);
-            }
-
-            percentTextEl.textContent = `%${percentage}`;
-            progressBarEl.style.width = `${percentage}%`;
-
-            if(percentage < 50) {
-                progressBarEl.style.background = 'linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%)';
-            } else {
-                progressBarEl.style.background = 'var(--vakit-gradient)';
-            }
+            if (totalPrayersShouldBe > 0) percentage = Math.round((totalCompleted / totalPrayersShouldBe) * 100);
+            
+            document.getElementById('percentText').textContent = `%${percentage}`;
+            const pb = document.getElementById('progressBar');
+            pb.style.width = `${percentage}%`;
+            pb.style.background = percentage < 50 ? 'linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%)' : 'var(--vakit-gradient)';
         }
 
         function renderMissedList() {
-            const data = getStoredData();
+            const data = getStoredPrayerData();
             const currentYear = new Date().getFullYear();
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const listEl = document.getElementById('missedListLog');
+            listEl.innerHTML = '';
             
-            missedListLogEl.innerHTML = '';
             let htmlContent = '';
             let hasMissed = false;
-
             const oneDay = 24 * 60 * 60 * 1000;
             const startOfYear = new Date(currentYear, 0, 1);
             const daysSinceYearStart = Math.floor((todayStart - startOfYear) / oneDay);
@@ -537,44 +639,27 @@
             for (let i = 1; i <= daysSinceYearStart; i++) {
                 const loopDate = new Date(todayStart);
                 loopDate.setDate(todayStart.getDate() - i);
-                
                 if(loopDate.getFullYear() < currentYear) break;
 
-                const loopYear = loopDate.getFullYear();
-                const loopMonth = String(loopDate.getMonth() + 1).padStart(2, '0');
-                const loopDay = String(loopDate.getDate()).padStart(2, '0');
-                const dateString = `${loopYear}-${loopMonth}-${loopDay}`;
-
+                const dateString = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
                 const dayRecord = data[dateString] || {};
-                
                 let missingPrayersArr = [];
 
                 prayers.forEach(p => {
                     let status = dayRecord[p.id];
                     if (status === true) status = 'vakit';
-                    if (!status) {
-                        missingPrayersArr.push(p.name);
-                    }
+                    if (!status) missingPrayersArr.push(p.name);
                 });
 
                 if (missingPrayersArr.length > 0) {
                     hasMissed = true;
                     const formattedDate = loopDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
-                    
-                    htmlContent += `
-                        <div class="missed-item">
-                            <span class="missed-date">${formattedDate}</span>
-                            <span class="missed-prayers">${missingPrayersArr.join(', ')}</span>
-                        </div>
-                    `;
+                    htmlContent += `<div class="missed-item"><span class="missed-date">${formattedDate}</span><span class="missed-prayers">${missingPrayersArr.join(', ')}</span></div>`;
                 }
             }
 
-            if (!hasMissed) {
-                missedListLogEl.innerHTML = '<div style="padding:15px; opacity:0.6; text-align:center;">Geçmişe dönük eksik namaz bulunamadı.</div>';
-            } else {
-                missedListLogEl.innerHTML = htmlContent;
-            }
+            if (!hasMissed) listEl.innerHTML = '<div style="padding:15px; opacity:0.6; text-align:center;">Geçmişe dönük eksik namaz bulunamadı.</div>';
+            else listEl.innerHTML = htmlContent;
         }
     </script>
     
@@ -584,22 +669,12 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const externalDate = urlParams.get('date');
                 if (externalDate) {
-                    const dateInputs = ['datePicker'];
-                    let targetInput = null;
-                    for (let id of dateInputs) {
-                        targetInput = document.getElementById(id);
-                        if (targetInput) break;
-                    }
-                    if (targetInput) {
-                        targetInput.value = externalDate;
-                        targetInput.dispatchEvent(new Event('change'));
-                        targetInput.dispatchEvent(new Event('input'));
-                        if(typeof openSelectedDate === 'function') {
-                             setTimeout(() => openSelectedDate(), 100);
-                        }
-                        if(typeof checkDateAllowed === 'function') {
-                            checkDateAllowed();
-                        }
+                    const picker = document.getElementById('datePicker');
+                    if (picker) {
+                        picker.value = externalDate;
+                        picker.dispatchEvent(new Event('change'));
+                        // Eğer takip sekmesi açıksa veriyi yükle
+                        if(typeof loadDay === 'function') loadDay(externalDate);
                     }
                 }
             } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
