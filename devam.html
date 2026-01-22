@@ -105,12 +105,13 @@
         .feedback-success { background: rgba(48, 209, 88, 0.85); }
         .feedback-error { background: rgba(255, 69, 58, 0.85); }
 
-        /* INPUTS */
+        /* INPUTS - Düzeltildi: width 100% ve box-sizing */
         input, select, button.action-btn {
             width: 100%; padding: 16px; margin-bottom: 15px;
             border-radius: 18px; border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.4); color: white; font-size: 16px;
             box-sizing: border-box; outline: none;
+            -webkit-appearance: none; /* iOS için */
         }
         button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; }
         
@@ -138,6 +139,7 @@
         .type-normal { border-left: 4px solid var(--success-color); }
         .type-midterm { border-left: 4px solid var(--warning-color); background: rgba(255, 214, 10, 0.1); }
         .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); }
+        .type-resit { border-left: 4px solid #FF9F0A; background: rgba(255, 159, 10, 0.1); } /* Bütünleme - Turuncu */
         .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
 
         .back-btn {
@@ -158,6 +160,15 @@
         
         #qr-display { background: white; padding: 20px; border-radius: 25px; display: inline-block; margin: 20px 0; }
         .hidden { display: none !important; }
+        
+        /* Silme butonu için stil */
+        .btn-reset-week {
+            background: rgba(255, 69, 58, 0.15);
+            color: #FF453A;
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            margin-top: 15px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -243,12 +254,7 @@
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
                     <span style="font-size:14px; white-space:nowrap;">Yoklama Saati:</span>
                     <select id="hoursToProcess" style="margin-bottom:0; padding:10px;">
-                        <option value="1">1 Saat</option>
-                        <option value="2">2 Saat</option>
-                        <option value="3">3 Saat</option>
-                        <option value="4">4 Saat</option>
-                        <option value="5">5 Saat</option>
-                    </select>
+                        </select>
                 </div>
 
                 <div id="weekDetailText" style="text-align:center; margin-bottom:15px; font-size:14px; opacity:0.8;"></div>
@@ -258,6 +264,10 @@
                 <button class="action-btn" id="btnStartScan" onclick="startScanner()">KAMERAYI AÇ</button>
                 <button class="action-btn hidden" id="btnStopScan" onclick="stopScanner()" style="background:var(--danger-color);">KAMERAYI KAPAT</button>
                 
+                <button class="action-btn btn-reset-week" onclick="resetCurrentWeek()">
+                    <i class="fas fa-trash"></i> Bu Haftanın Kayıtlarını Sil
+                </button>
+
                 <div style="margin-top:20px;">
                     <h4>Son Okunanlar:</h4>
                     <ul id="scanLog" style="list-style:none; padding:0; font-size:14px; color:#aaa;"></ul>
@@ -295,8 +305,16 @@
                 
                 <div class="week-config-container" id="weekConfigList"></div>
                 
+                <div style="margin-top:20px; font-size:11px; color:#aaa;">
+                    <p><span style="color:var(--success-color)">■</span> Normal</p>
+                    <p><span style="color:var(--warning-color)">■</span> Vize</p>
+                    <p><span style="color:#BF5AF2">■</span> Final</p>
+                    <p><span style="color:#FF9F0A">■</span> Bütünleme</p>
+                    <p><span style="color:var(--danger-color)">■</span> Tatil</p>
+                </div>
+
                 <button class="action-btn" style="background:var(--danger-color); margin-top:20px;" onclick="resetAttendance()">
-                    DERSİ SIFIRLA
+                    TÜM DERSİ SIFIRLA
                 </button>
             </div>
         </div>
@@ -306,14 +324,14 @@
         // GITHUB RAW LINKINIZI BURAYA YAZIN
         const GITHUB_DB_URL = "https://raw.githubusercontent.com/msefagor/MyLifeApp/refs/heads/main/db.json";
         const ADMIN_PASS = "120622";
-        const TOTAL_WEEKS = 18;
-        const ABSENTEEISM_LIMIT_PERCENT = 0.30; // %30 Devamsızlık Hakkı
+        const TOTAL_WEEKS = 18; // 18 Hafta
+        const ABSENTEEISM_LIMIT_PERCENT = 0.30; 
 
         let db = { courses: [] };
         let activeCourse = null;
         let activeCourseConfig = [];
         let activeCourseAttendance = {}; 
-        let weeklyHours = 4; // Varsayılan
+        let weeklyHours = 4; 
         let scanner = null;
         let scanFeedbackTimeout = null;
 
@@ -390,7 +408,6 @@
                 btn.style.textAlign = "left";
                 btn.style.background = "rgba(255,255,255,0.1)";
                 btn.innerHTML = `<i class="fas fa-book"></i> ${c.name}`;
-                // GÜVENLİK İÇİN: QR içine ders ID'sini de gömüyoruz (Ayraç: | )
                 btn.onclick = () => generateQR(c, id, studentName);
                 list.appendChild(btn);
             });
@@ -405,7 +422,6 @@
                 const display = document.getElementById('qr-display');
                 display.innerHTML = "";
                 
-                // QR DATA FORMATI: ÖĞRENCİNO|DERSID
                 const qrData = `${id}|${course.courseId}`;
 
                 new QRCode(display, {
@@ -443,31 +459,34 @@
         }
 
         function loadCourseData(cId) {
-            // 1. Yoklama (Object: { studentId: { weekIdx: hourCount } })
-            // Eskiden boolean idi, şimdi saat sayısı (integer) tutacak.
             const att = localStorage.getItem(`attendance_${cId}`);
             activeCourseAttendance = att ? JSON.parse(att) : {};
 
-            // 2. Hafta Ayarları
             const conf = localStorage.getItem(`config_${cId}`);
             if(conf) {
                 activeCourseConfig = JSON.parse(conf);
+                // Eğer eski kayıt 18 haftadan azsa tamamla (Güncelleme uyumu)
+                if(activeCourseConfig.length < TOTAL_WEEKS) {
+                    for(let i=activeCourseConfig.length; i<TOTAL_WEEKS; i++) {
+                         activeCourseConfig.push({ id: i+1, type: 'normal', date: null });
+                    }
+                }
             } else {
                 activeCourseConfig = [];
                 for(let i=0; i<TOTAL_WEEKS; i++) {
                     let type = 'normal';
-                    if(i === 7) type = 'midterm';
-                    if(i >= 14) type = 'final';
+                    // Varsayılan tip atamaları
+                    if(i === 7) type = 'midterm'; // 8. Hafta Vize
+                    if(i === 14 || i === 15) type = 'final'; // 15-16 Final
+                    if(i === 16) type = 'resit'; // 17 Bütünleme
                     activeCourseConfig.push({ id: i+1, type: type, date: null });
                 }
             }
 
-            // 3. Haftalık Ders Saati
             const hours = localStorage.getItem(`hours_${cId}`);
             weeklyHours = hours ? parseInt(hours) : 4;
             document.getElementById('weeklyHoursInput').value = weeklyHours;
 
-            // 4. Tarih
             const storedDate = localStorage.getItem(`startDate_${cId}`);
             if(storedDate) document.getElementById('startDatePicker').value = storedDate;
         }
@@ -475,7 +494,7 @@
         function saveCourseSettings() {
             weeklyHours = parseInt(document.getElementById('weeklyHoursInput').value) || 4;
             localStorage.setItem(`hours_${activeCourse.courseId}`, weeklyHours);
-            // Listeyi güncellemek için
+            updateHoursDropdown(); // Dropdown'ı güncelle
             if(document.getElementById('tab-list').style.display !== 'none') renderStudentList();
         }
 
@@ -491,6 +510,21 @@
             calculateDates();
             renderWeekSettings();
             updateWeekSelector();
+            updateHoursDropdown();
+        }
+
+        // Dinamik Saat Dropdown
+        function updateHoursDropdown() {
+            const sel = document.getElementById('hoursToProcess');
+            sel.innerHTML = "";
+            for(let i=1; i<=weeklyHours; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = i + " Saat";
+                sel.appendChild(opt);
+            }
+            // Varsayılan olarak maksimum saati seçme (tercihen) veya 1
+            // sel.value = weeklyHours; 
         }
 
         function switchTab(tabId) {
@@ -522,7 +556,8 @@
         function renderWeekSettings() {
             const container = document.getElementById('weekConfigList');
             container.innerHTML = "";
-            const labels = { 'normal': 'Normal', 'midterm': 'Vize', 'final': 'Final', 'holiday': 'Tatil' };
+            const labels = { 'normal': 'Normal', 'midterm': 'Vize', 'final': 'Final', 'resit': 'Bütünleme', 'holiday': 'Tatil' };
+            
             activeCourseConfig.forEach((w, idx) => {
                 const row = document.createElement('div');
                 row.className = `week-row type-${w.type}`;
@@ -533,7 +568,8 @@
         }
 
         function toggleWeekType(idx) {
-            const types = ['normal', 'midterm', 'final', 'holiday'];
+            // Döngü Sırası: Normal -> Vize -> Final -> Bütünleme -> Tatil -> Başa Dön
+            const types = ['normal', 'midterm', 'final', 'resit', 'holiday'];
             const current = activeCourseConfig[idx].type;
             activeCourseConfig[idx].type = types[(types.indexOf(current) + 1) % types.length];
             saveData();
@@ -559,9 +595,11 @@
             const idx = document.getElementById('weekSelect').value;
             const w = activeCourseConfig[idx];
             const info = document.getElementById('weekDetailText');
+            
             if(w.type === 'normal') {
                 info.textContent = "Yoklama Alınabilir";
                 info.style.color = "var(--success-color)";
+                // Reset butonu aktif
             } else {
                 info.textContent = `${w.type.toUpperCase()} Haftası - Yoklama İşlenmez`;
                 info.style.color = "var(--danger-color)";
@@ -588,49 +626,31 @@
         }
 
         function handleScan(decodedText, weekIdx) {
-            // QR FORMAT: StudentID|CourseID
-            // Split ile ayır
             const parts = decodedText.split('|');
-            let studentId = "";
-            let qrCourseId = "";
+            let studentId = parts.length === 2 ? parts[0] : decodedText;
+            let qrCourseId = parts.length === 2 ? parts[1] : "";
 
-            if(parts.length === 2) {
-                studentId = parts[0];
-                qrCourseId = parts[1];
-            } else {
-                studentId = decodedText; // Eski format desteği (sadece ID)
-            }
-
-            // GÜVENLİK KONTROLÜ
             if(qrCourseId && qrCourseId !== activeCourse.courseId) {
-                showFeedback(`HATA: Bu kod ${qrCourseId} dersine ait!`, "error");
-                return; // İşlemi durdur
+                showFeedback(`HATA: Yanlış Ders!`, "error");
+                return;
             }
 
             const student = activeCourse.students.find(s => s.id === studentId);
             if(student) {
                 if(!activeCourseAttendance[studentId]) activeCourseAttendance[studentId] = {};
                 
-                // Mevcut saati al
                 let currentHours = activeCourseAttendance[studentId][weekIdx] || 0;
-                
-                // Seçilen saati ekle
                 const hoursToAdd = parseInt(document.getElementById('hoursToProcess').value);
                 
-                // Eğer zaten bu saat kadar veya daha fazla işlendiyse uyarı ver
                 if(currentHours >= weeklyHours) {
-                    showFeedback("Haftalık Limit Doldu", "error");
+                    showFeedback("Limit Doldu", "error");
                     return; 
                 }
 
-                // Yeni saati kaydet
-                // Basit mantık: Her okutmada seçilen saati ekle, ama limiti aşma.
-                // Pratikte hoca "2 saat" seçtiyse ve öğrenciyi okuttuysa, o hafta için 2 saat yazar.
-                // Eğer zaten 2 saati varsa ve tekrar 2 saat okutursa 4 olur.
                 let newTotal = currentHours + hoursToAdd;
-                if(newTotal > weeklyHours) newTotal = weeklyHours; // Limitle
+                if(newTotal > weeklyHours) newTotal = weeklyHours;
                 
-                if(newTotal === currentHours) return; // Değişiklik yoksa çık
+                if(newTotal === currentHours) return;
 
                 activeCourseAttendance[studentId][weekIdx] = newTotal;
                 saveData();
@@ -644,6 +664,23 @@
             } else {
                 showFeedback("Öğrenci Bulunamadı", "error");
             }
+        }
+
+        function resetCurrentWeek() {
+            const weekIdx = document.getElementById('weekSelect').value;
+            if(!confirm(`${parseInt(weekIdx)+1}. Haftanın tüm yoklama kayıtlarını silmek istiyor musunuz?`)) return;
+
+            // Verileri temizle
+            Object.keys(activeCourseAttendance).forEach(stuId => {
+                if(activeCourseAttendance[stuId][weekIdx]) {
+                    delete activeCourseAttendance[stuId][weekIdx];
+                }
+            });
+            saveData();
+            
+            // Logu Temizle
+            document.getElementById('scanLog').innerHTML = "";
+            alert("Bu haftanın kayıtları temizlendi.");
         }
 
         function showFeedback(msg, type) {
@@ -669,17 +706,33 @@
             const term = document.getElementById('searchInput').value.toLowerCase();
             ul.innerHTML = "";
 
-            // Toplam eğitim haftası (Tatiller hariç)
             let totalActiveWeeks = 0;
             activeCourseConfig.forEach(w => { if(w.type === 'normal') totalActiveWeeks++; });
             
             const totalCourseHours = totalActiveWeeks * weeklyHours;
             const maxAbsentHours = Math.floor(totalCourseHours * ABSENTEEISM_LIMIT_PERCENT);
 
+            // Bugüne kadar işlenen haftaları bul
+            let lastActiveIndex = -1;
+            Object.values(activeCourseAttendance).forEach(rec => {
+               Object.keys(rec).forEach(k => {
+                   const ki = parseInt(k);
+                   if(ki > lastActiveIndex) lastActiveIndex = ki;
+               });
+            });
+            
+            // Eğer hiç veri yoksa, 0 hafta geçti.
+            // Sadece 'normal' tipindeki haftaları say
+            let weeksProcessed = 0;
+            for(let i=0; i<=lastActiveIndex; i++) {
+                if(activeCourseConfig[i].type === 'normal') weeksProcessed++;
+            }
+            
+            const processedHours = weeksProcessed * weeklyHours;
+
             let listData = activeCourse.students.map(s => {
                 let attendedHours = 0;
                 
-                // Bu zamana kadar geçen haftalardaki yoklama
                 activeCourseConfig.forEach((w, idx) => {
                     if(w.type === 'normal') {
                         if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) {
@@ -688,88 +741,14 @@
                     }
                 });
 
-                // Şu ana kadar işlenen (geçmiş) ders saati üzerinden oran hesaplayalım mı?
-                // Yoksa toplam dönem üzerinden mi? Genelde oran toplam döneme göre değil, 
-                // mevcut duruma göre hesaplanır ama "Kalan Hak" toplam döneme göredir.
+                const rate = totalCourseHours === 0 ? 100 : Math.round((attendedHours / totalCourseHours) * 100);
                 
-                // Biz basitlik için "Şu ana kadar işlenmesi gereken" saati bulalım
-                // (Pratikte hoca tüm haftaları 'normal' bıraktıysa hepsi sayılır)
-                // Şimdilik Oran = (Katıldığı / (AktifHafta * HaftalıkSaat)) formülünü kullanalım.
-                
-                const currentPotentialHours = totalCourseHours; // Basitleştirme: Tüm dönem üzerinden
-                const rate = currentPotentialHours === 0 ? 100 : Math.round((attendedHours / currentPotentialHours) * 100);
-                
-                // Devamsızlık (Kullanılan Hak)
-                // Devamsızlık = (Geçen Hafta Sayısı * Saat) - Katıldığı Saat... bu biraz karışık çünkü gelecek haftalar var.
-                // En doğrusu: Kalan Hak = Toplam İzin Hakkı - (İşlenen Ders Saati - Katıldığı Ders Saati)
-                // Ama işlenen ders saatini tam bilmiyoruz (tarihe bakarak bulabiliriz ama karmaşık).
-                // Basit Yaklaşım: Kalan Hak = MaxAbsent - (Şu ana kadarki devamsızlık)
-                // Şu ana kadarki devamsızlığı "Varsayalım ki her hafta 4 saatti" diye hesaplamak riskli (ya hoca ders yapmadıysa?).
-                // ÇÖZÜM: Kalan Hak = MaxAbsent - (ToplamPotansiyel - Katıldığı) -> Bu da yanlış.
-                
-                // DOĞRU YAKLAŞIM:
-                // Öğrencinin "Devamsızlık Yaptığı Saat" = (Şu ana kadar işlenen dersler) - (Katıldığı).
-                // Ama sistemde "Hangi hafta işlendi" bilgisi manuel yok.
-                // O yüzden şöyle yapalım: Kalan Hak = MaxAbsent - (Devamsızlık).
-                // Devamsızlık = (Kaç haftadır ders işleniyor?) * HaftalıkSaat - Attended.
-                // "Kaç haftadır ders işleniyor"u bulmak için attendance objesindeki dolu haftalara bakabiliriz veya bugünün tarihine.
-                
-                // Şimdilik Basit Gösterim:
-                // Devamsızlık Hakkı (Total) : maxAbsentHours
-                // Yapılan Devamsızlık : ??? (Bunu tam bilmek zor, hocanın girdiği verilere bağlı)
-                // Kullanıcı isteği: "Kalan devamsızlık hakkı 16 saat yazsın."
-                
-                // Varsayım: Hoca sadece ders işlediği haftalara veri giriyor.
-                // Eğer veri girilmemişse o hafta işlenmemiş sayalım mı? Hayır, o zaman gelmedi sayılır.
-                // Çözüm: Bugüne kadar olan haftaları (Index) baz alalım.
-                
-                const today = new Date();
-                let weeksPassed = 0;
-                activeCourseConfig.forEach(w => {
-                    if(w.type === 'normal' && w.date) {
-                        // Tarih formatını parse et (TR formatı biraz zor, basitleştirelim)
-                        // Tarih metin olarak tutuluyor. Karşılaştırma zor.
-                        // Mecburen tüm haftalar "işlenmiş" gibi varsayıp kalan hakkı;
-                        // Kalan Hak = MaxAbsent - (ToplamDersSaati - Attended) -> Bu "Gelecek devamsızlıkları" da düşer.
-                        
-                        // İSTEK: "Kalan devamsızlık hakkı"
-                        // Formül: Toplam İzin - (Bugüne kadarki devamsızlık)
-                        // Bugüne kadarki devamsızlık = (GeçenHafta * Saat) - Attended.
-                        weeksPassed++; // Şimdilik hepsini sayıyoruz (Demo için)
-                    }
-                });
-
-                // Demo için: Kalan Hak = MaxAbsent - (ToplamSaat - Attended).
-                // Bu aslında "Kullanabileceği toplam boşluk".
-                const absentHours = totalCourseHours - attendedHours; // Tüm dönem gelmediği varsayımı (kötü senaryo)
-                // Hayır, kullanıcı "Kalan hakkı" istiyor. Yani "Daha kaç saat gelmeyebilirim?"
-                
-                // Kalan Hak = MaxAbsent - (Şu ana kadar gelmediği saatler).
-                // Şu ana kadar gelmediği = (GeçenHaftaSayısı * HaftalıkSaat) - Attended.
-                // Geçen hafta sayısını bulmak için basit bir sayaç kullanalım (Attendance kayıtlarındaki en son index + 1)
-                
-                // En son işlem yapılan haftayı bulalım
-                let lastActiveIndex = -1;
-                Object.values(activeCourseAttendance).forEach(rec => {
-                   Object.keys(rec).forEach(k => {
-                       const ki = parseInt(k);
-                       if(ki > lastActiveIndex) lastActiveIndex = ki;
-                   });
-                });
-                
-                // Eğer hiç veri yoksa, 0 hafta geçti.
-                const weeksProcessed = lastActiveIndex + 1; 
-                const processedHours = weeksProcessed * weeklyHours;
+                // Kalan Hak Mantığı:
                 const currentAbsent = processedHours - attendedHours; 
-                // (Not: Bu hesap öğrenciye özgü değil, sınıfın en son işlenen haftasına göre genel bir "geçen zaman" algısı)
-                
-                // Eğer öğrenci o hafta gelmediyse attendedHours artmadı ama processedHours arttı -> Devamsızlık arttı.
-                
-                // Kalan Hak Hesabı:
                 let remainingAllowance = maxAbsentHours - currentAbsent;
-                if(remainingAllowance < 0) remainingAllowance = 0; // Hakkı bitti.
+                if(remainingAllowance < 0) remainingAllowance = 0;
 
-                return { ...s, rate, attendedHours, remainingAllowance, maxAbsentHours };
+                return { ...s, rate, remainingAllowance, maxAbsentHours };
             });
 
             listData.sort((a, b) => a.rate - b.rate);
@@ -791,7 +770,7 @@
                         <div class="stat-box">
                             <div class="stat-rate ${statusColor}">%${s.rate}</div>
                             <div class="stat-sub">Kalan Hak: <strong>${s.remainingAllowance} Saat</strong></div>
-                            <div class="stat-sub" style="opacity:0.4;">(Toplam Hak: ${s.maxAbsentHours})</div>
+                            <div class="stat-sub" style="opacity:0.4;">(Max: ${s.maxAbsentHours})</div>
                         </div>
                     `;
                     ul.appendChild(li);
