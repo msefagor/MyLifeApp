@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Namaz Takibi - MSEFAGOR</title>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            /* Renkler */
+            --vakit-color: #00f2fe;
+            --kaza-color: #f7b733;
+            --missed-color: #ff4b1f;
+
+            --vakit-gradient: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            --kaza-gradient: linear-gradient(45deg, #fc4a1a 0%, #f7b733 100%);
+            
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --text-color: #ffffff;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Blobs */
+        .blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: move 10s infinite alternate;
+        }
+        .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
+        .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
+
+        @keyframes move {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(20px, 40px) rotate(20deg); }
+        }
+
+        /* Container */
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        h1 { font-size: 24px; margin: 0 0 5px 0; text-align: center; font-weight: 600; }
+        h3 { font-size: 18px; margin: 0 0 15px 0; font-weight: 600; }
+        p { margin: 0; opacity: 0.8; font-size: 14px; text-align: center;}
+
+        /* Date Picker */
+        .date-section { text-align: center; }
+        input[type="date"] {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: var(--font-family);
+            outline: none;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            -webkit-appearance: none;
+        }
+
+        /* Prayer List */
+        .prayer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .prayer-item {
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+        }
+
+        .prayer-item.status-vakit {
+            background: rgba(0, 242, 254, 0.15);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+        .prayer-item.status-kaza {
+            background: rgba(247, 183, 51, 0.15);
+            border: 1px solid rgba(247, 183, 51, 0.3);
+        }
+
+        .prayer-info { display: flex; flex-direction: column; }
+        .prayer-name { font-size: 18px; font-weight: 600; }
+        .prayer-rekat { font-size: 13px; opacity: 0.6; margin-top: 2px; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .toggle-wrapper { display: flex; align-items: center; gap: 10px; }
+        .toggle-label { font-size: 12px; opacity: 0.8; }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .prayer-item.status-vakit .toggle { background: var(--vakit-gradient); }
+        .prayer-item.status-vakit .toggle::after { left: 24px; }
+        .prayer-item.status-kaza .toggle { opacity: 0.5; }
+
+        .kaza-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.7);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .prayer-item.status-kaza .kaza-btn {
+            background: var(--kaza-gradient);
+            color: #fff;
+            border-color: transparent;
+            font-weight: bold;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--missed-color);
+            margin-top: 5px;
+        }
+        .stat-label { font-size: 12px; opacity: 0.7; }
+
+        /* Progress */
+        .progress-container { margin-top: 20px; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+        .progress-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--vakit-gradient); width: 0%; border-radius: 10px; transition: width 0.5s ease-in-out, background 0.3s; }
+
+        /* Missed List */
+        .missed-list-container {
+            max-height: 300px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.3) transparent;
+        }
+        .missed-item {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 14px;
+        }
+        .missed-item:last-child { border-bottom: none; }
+        .missed-date { font-weight: 700; color: var(--missed-color); margin-bottom: 4px; display: block; }
+        .missed-prayers { opacity: 0.8; font-size: 13px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="glass-card date-section">
+            <h1>Namaz Takibi - MSEFAGOR</h1>
+            <p>Bugünü değerlendir</p>
+            <input type="date" id="datePicker">
+        </div>
+
+        <div class="glass-card" id="prayerPanel">
+            <div class="prayer-list" id="prayerListContainer"></div>
+        </div>
+
+        <div class="glass-card">
+            <h3>Yıllık İstatistik</h3>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Eksik Namaz</div>
+                    <div class="stat-value" id="missedCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Eksik Rekat</div>
+                    <div class="stat-value" id="missedRakat">0</div>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span>Başarı Oranı</span>
+                    <span id="percentText">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3>Eksik Namaz Listesi</h3>
+            <div class="missed-list-container" id="missedListLog">
+                <div style="padding:10px; opacity:0.5; text-align:center;">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const prayers = [
+            { id: 'sabah', name: 'Sabah', rekat: 4 },
+            { id: 'ogle', name: 'Öğle', rekat: 10 },
+            { id: 'ikindi', name: 'İkindi', rekat: 8 },
+            { id: 'aksam', name: 'Akşam', rekat: 5 },
+            { id: 'yatsi', name: 'Yatsı', rekat: 13 }
+        ];
+
+        const datePicker = document.getElementById('datePicker');
+        const prayerListContainer = document.getElementById('prayerListContainer');
+        const missedCountEl = document.getElementById('missedCount');
+        const missedRakatEl = document.getElementById('missedRakat');
+        const progressBarEl = document.getElementById('progressBar');
+        const percentTextEl = document.getElementById('percentText');
+        const missedListLogEl = document.getElementById('missedListLog');
+
+        // YEREL SAAT AYARI (iPhone FIX)
+        // toISOString() UTC kullanır, bu da gece yarısından sonra tarihi yanlış gösterir.
+        // Aşağıdaki fonksiyon yerel saati baz alır.
+        function getLocalTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const today = getLocalTodayDate();
+        datePicker.value = today;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDay(today);
+            calculateStats();
+            renderMissedList();
+        });
+
+        datePicker.addEventListener('change', (e) => {
+            loadDay(e.target.value);
+        });
+
+        function getStoredData() {
+            const stored = localStorage.getItem('namazTakipData_v2');
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveData(data) {
+            localStorage.setItem('namazTakipData_v2', JSON.stringify(data));
+        }
+
+        function loadDay(date) {
+            prayerListContainer.innerHTML = '';
+            const data = getStoredData();
+            const dayData = data[date] || {}; 
+
+            prayers.forEach(prayer => {
+                let status = dayData[prayer.id];
+                if (status === true) status = 'vakit'; 
+                if (!status) status = null;
+
+                const item = document.createElement('div');
+                item.className = `prayer-item ${status ? 'status-' + status : ''}`;
+                
+                item.innerHTML = `
+                    <div class="prayer-info">
+                        <span class="prayer-name">${prayer.name}</span>
+                        <span class="prayer-rekat">${prayer.rekat} Rekat</span>
+                    </div>
+                    <div class="controls">
+                        <div class="toggle-wrapper" onclick="toggleStatus('${date}', '${prayer.id}', 'vakit')">
+                            <span class="toggle-label">Vaktinde</span>
+                            <div class="toggle"></div>
+                        </div>
+                        <button class="kaza-btn" onclick="toggleStatus('${date}', '${prayer.id}', 'kaza')">
+                            ${status === 'kaza' ? 'Kaza Yapıldı' : 'Kaza Olarak İşaretle'}
+                        </button>
+                    </div>
+                `;
+                prayerListContainer.appendChild(item);
+            });
+        }
+
+        function toggleStatus(date, prayerId, requestedType) {
+            const data = getStoredData();
+            if (!data[date]) data[date] = {};
+            
+            let currentStatus = data[date][prayerId];
+            if (currentStatus === true) currentStatus = 'vakit';
+
+            if (currentStatus === requestedType) {
+                delete data[date][prayerId];
+            } else {
+                data[date][prayerId] = requestedType;
+            }
+
+            saveData(data);
+            loadDay(date);
+            calculateStats();
+            renderMissedList(); // Dinamik liste güncellemesi burada tetiklenir
+        }
+
+        function calculateStats() {
+            const data = getStoredData();
+            const currentYear = new Date().getFullYear();
+            const startOfYear = new Date(currentYear, 0, 1);
+            
+            // Yerel saat farkını hesapla
+            const now = new Date();
+            // Saat/dakika farkını sıfırla, sadece gün farkı lazım
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            const oneDay = 24 * 60 * 60 * 1000;
+            const daysPassed = Math.round((todayStart - startOfYear) / oneDay) + 1;
+
+            let totalPrayersShouldBe = 0;
+            let totalCompleted = 0;
+            let totalMissedCount = 0;
+            let totalMissedRakat = 0;
+
+            for (let i = 0; i < daysPassed; i++) {
+                // Döngü tarihi oluştur
+                const loopDate = new Date(currentYear, 0, 1 + i);
+                const loopYear = loopDate.getFullYear();
+                const loopMonth = String(loopDate.getMonth() + 1).padStart(2, '0');
+                const loopDay = String(loopDate.getDate()).padStart(2, '0');
+                const dateString = `${loopYear}-${loopMonth}-${loopDay}`;
+                
+                const dayRecord = data[dateString] || {};
+
+                prayers.forEach(p => {
+                    totalPrayersShouldBe++;
+                    let status = dayRecord[p.id];
+                    if (status === true) status = 'vakit';
+
+                    if (status === 'vakit' || status === 'kaza') {
+                        totalCompleted++;
+                    } else {
+                        totalMissedCount++;
+                        totalMissedRakat += p.rekat;
+                    }
+                });
+            }
+
+            missedCountEl.textContent = totalMissedCount;
+            missedRakatEl.textContent = totalMissedRakat;
+
+            let percentage = 0;
+            if (totalPrayersShouldBe > 0) {
+                percentage = Math.round((totalCompleted / totalPrayersShouldBe) * 100);
+            }
+
+            percentTextEl.textContent = `%${percentage}`;
+            progressBarEl.style.width = `${percentage}%`;
+
+            if(percentage < 50) {
+                progressBarEl.style.background = 'linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%)';
+            } else {
+                progressBarEl.style.background = 'var(--vakit-gradient)';
+            }
+        }
+
+        function renderMissedList() {
+            const data = getStoredData();
+            const currentYear = new Date().getFullYear();
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            missedListLogEl.innerHTML = '';
+            let htmlContent = '';
+            let hasMissed = false;
+
+            const oneDay = 24 * 60 * 60 * 1000;
+            const startOfYear = new Date(currentYear, 0, 1);
+            const daysSinceYearStart = Math.floor((todayStart - startOfYear) / oneDay);
+
+            // Dünden geriye doğru tarama (Bugün ana ekranda olduğu için listeye koymuyoruz)
+            for (let i = 1; i <= daysSinceYearStart; i++) {
+                const loopDate = new Date(todayStart);
+                loopDate.setDate(todayStart.getDate() - i);
+                
+                if(loopDate.getFullYear() < currentYear) break;
+
+                const loopYear = loopDate.getFullYear();
+                const loopMonth = String(loopDate.getMonth() + 1).padStart(2, '0');
+                const loopDay = String(loopDate.getDate()).padStart(2, '0');
+                const dateString = `${loopYear}-${loopMonth}-${loopDay}`;
+
+                const dayRecord = data[dateString] || {};
+                
+                let missingPrayersArr = [];
+
+                prayers.forEach(p => {
+                    let status = dayRecord[p.id];
+                    if (status === true) status = 'vakit';
+                    if (!status) {
+                        missingPrayersArr.push(p.name);
+                    }
+                });
+
+                if (missingPrayersArr.length > 0) {
+                    hasMissed = true;
+                    const formattedDate = loopDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+                    
+                    htmlContent += `
+                        <div class="missed-item">
+                            <span class="missed-date">${formattedDate}</span>
+                            <span class="missed-prayers">${missingPrayersArr.join(', ')}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasMissed) {
+                missedListLogEl.innerHTML = '<div style="padding:15px; opacity:0.6; text-align:center;">Geçmişe dönük eksik namaz bulunamadı.</div>';
+            } else {
+                missedListLogEl.innerHTML = htmlContent;
+            }
+        }
+    </script>
+<script>
+    (function syncDateFromUrl() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const externalDate = urlParams.get('date');
+            
+            if (externalDate) {
+                // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
+                const dateInputs = [
+                    'datePicker',      // Notlar, Namaz, Kitap
+                    'date-picker',     // İngilizce
+                    'input-date'       // Bütçe (Yatırım)
+                ];
+
+                let targetInput = null;
+                for (let id of dateInputs) {
+                    targetInput = document.getElementById(id);
+                    if (targetInput) break;
+                }
+
+                if (targetInput) {
+                    targetInput.value = externalDate;
+                    
+                    // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
+                    targetInput.dispatchEvent(new Event('change'));
+                    targetInput.dispatchEvent(new Event('input'));
+                    
+                    // Notlar uygulaması için özel tetikleyici
+                    if(typeof openSelectedDate === 'function') {
+                        // Notlar uygulamasında tarih seçilince otomatik ekranı aç
+                         setTimeout(() => openSelectedDate(), 100);
+                    }
+                    // Bütçe uygulaması için özel kontrol
+                    if(typeof checkDateAllowed === 'function') {
+                        checkDateAllowed();
+                    }
+                }
+            }
+        } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+    })();
+</script>
+</body>
+</html>
