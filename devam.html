@@ -11,15 +11,15 @@
 
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.12);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
             --text-color: #ffffff;
             --accent-color: #0A84FF;
             --danger-color: #FF453A;
             --warning-color: #FFD60A;
             --success-color: #30D158;
-            --bg-grad-1: #1c1c1e;
-            --bg-grad-2: #000000;
+            --bg-grad-1: #000000;
+            --bg-grad-2: #1c1c1e;
         }
 
         body {
@@ -29,96 +29,123 @@
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
-            /* iPhone Safe Area */
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* --- UI COMPONENTS --- */
-        .full-screen-container {
-            min-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
+        /* --- LIQUID GLASS STYLES (ÖĞRENCİ EKRANLARI İÇİN) --- */
+        .liquid-bg {
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: fluidBackground 15s ease infinite;
+        }
+
+        @keyframes fluidBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
             padding: 30px 20px;
             margin-bottom: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
         }
 
-        .big-title { font-size: 32px; font-weight: 800; margin-bottom: 10px; text-align: center; letter-spacing: -0.5px; }
-        .sub-title { font-size: 16px; opacity: 0.6; text-align: center; margin-bottom: 30px; font-weight: 500; }
+        /* Öğrenci için daha "Sıvı/Liquid" Panel */
+        .liquid-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.5),
+                inset 0 0 20px rgba(255,255,255,0.05);
+            border-radius: 35px;
+        }
 
-        /* Büyük Giriş Butonları */
+        .full-screen-container {
+            min-height: 90vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 20px; box-sizing: border-box;
+        }
+
+        .big-title { font-size: 32px; font-weight: 800; margin-bottom: 10px; text-align: center; letter-spacing: -0.5px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .sub-title { font-size: 16px; opacity: 0.7; text-align: center; margin-bottom: 30px; font-weight: 500; }
+
+        /* BUTONLAR */
         .role-btn {
             display: flex; align-items: center; justify-content: center; gap: 15px;
             width: 100%; padding: 25px; margin-bottom: 15px;
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.08); color: white;
+            border-radius: 24px; border: 1px solid rgba(255,255,255,0.2);
             font-size: 20px; font-weight: 600; cursor: pointer; transition: 0.2s;
+            position: relative; overflow: hidden;
         }
-        .role-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
-        .role-btn i { font-size: 24px; }
-        .role-student { background: linear-gradient(90deg, rgba(10,132,255,0.2), rgba(10,132,255,0.05)); border-color: rgba(10,132,255,0.3); }
-        .role-admin { background: linear-gradient(90deg, rgba(255,69,58,0.2), rgba(255,69,58,0.05)); border-color: rgba(255,69,58,0.3); }
+        .role-btn:active { transform: scale(0.96); }
+        
+        .role-student { 
+            background: linear-gradient(135deg, rgba(10,132,255,0.4), rgba(10,132,255,0.1)); 
+            box-shadow: 0 10px 30px rgba(10, 132, 255, 0.3);
+            border-top: 1px solid rgba(255,255,255,0.4);
+        }
+        .role-admin { 
+            background: linear-gradient(135deg, rgba(255,69,58,0.4), rgba(255,69,58,0.1));
+            box-shadow: 0 10px 30px rgba(255, 69, 58, 0.3);
+            border-top: 1px solid rgba(255,255,255,0.4);
+        }
 
-        /* Form Elemanları */
+        /* SCAN FEEDBACK POPUP (SIVI BALONCUK) */
+        #scanFeedbackPopup {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(48, 209, 88, 0.85);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 30px; border-radius: 30px;
+            color: white; font-size: 22px; font-weight: bold; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.5);
+            opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; width: 70%;
+        }
+        #scanFeedbackPopup.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* INPUTLAR */
         input, select, button.action-btn {
             width: 100%; padding: 18px; margin-bottom: 15px;
-            border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 18px; border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.4); color: white; font-size: 18px;
             box-sizing: border-box; outline: none;
         }
-        button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; }
-        button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; box-shadow: 0 5px 15px rgba(10,132,255,0.4); }
         
-        /* Liste Tasarımı (iPhone Ekranı İçin) */
-        .full-list-view {
-            height: 80vh; /* Ekranı kapla */
-            display: flex; flex-direction: column;
-        }
-        .search-bar-lg {
-            padding: 20px; font-size: 20px; background: rgba(0,0,0,0.5); border-color: var(--accent-color);
-        }
-        .student-list-container {
-            flex: 1; overflow-y: auto;
-            margin-top: 10px;
-            border-radius: 16px;
-            background: rgba(0,0,0,0.2);
-        }
+        /* LİSTE */
+        .full-list-view { height: 80vh; display: flex; flex-direction: column; }
         .student-item {
             padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center;
         }
-        
-        /* Renkler */
         .text-ok { color: var(--success-color); }
         .text-low { color: var(--danger-color); }
 
-        /* Hafta Ayarları Grid */
+        /* HAFTA AYARLARI */
         .week-config-container { max-height: 60vh; overflow-y: auto; }
         .week-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px; margin-bottom: 8px; border-radius: 12px;
-            background: rgba(255,255,255,0.05); border: 1px solid transparent;
+            background: rgba(255,255,255,0.05);
         }
-        .week-info { display: flex; flex-direction: column; }
-        .week-date { font-size: 12px; opacity: 0.6; margin-top: 2px; }
-        
         .type-normal { border-left: 4px solid var(--success-color); }
         .type-midterm { border-left: 4px solid var(--warning-color); background: rgba(255, 214, 10, 0.1); }
         .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
-        .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); } /* Mor */
-        
-        /* Navigasyon */
+        .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); }
+
         .back-btn {
             position: fixed; top: 20px; left: 20px; z-index: 100;
             width: 44px; height: 44px; border-radius: 50%;
@@ -127,7 +154,6 @@
             font-size: 20px; cursor: pointer; color: white;
         }
 
-        /* Sekmeler */
         .tabs { display: flex; gap: 10px; margin: 10px 0 20px 0; overflow-x: auto; padding-bottom: 5px; }
         .tab-btn {
             flex: 1; min-width: 100px; padding: 12px; border-radius: 14px;
@@ -136,9 +162,8 @@
         }
         .tab-btn.active { background: var(--accent-color); color: white; }
 
-        /* QR */
         #qr-area { text-align: center; animation: popIn 0.5s; }
-        #qr-display { background: white; padding: 20px; border-radius: 20px; display: inline-block; margin: 20px 0; }
+        #qr-display { background: white; padding: 20px; border-radius: 25px; display: inline-block; margin: 20px 0; box-shadow: 0 10px 40px rgba(255,255,255,0.2); }
         
         .hidden { display: none !important; }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -148,10 +173,10 @@
 
     <div id="backBtn" class="back-btn hidden" onclick="goBack()"><i class="fas fa-arrow-left"></i></div>
 
-    <div id="screen-landing" class="full-screen-container">
-        <div class="glass-panel" style="padding: 40px 20px;">
+    <div id="screen-landing" class="full-screen-container liquid-bg">
+        <div class="glass-panel liquid-panel" style="padding: 50px 20px;">
             <div class="big-title">Yoklama Sistemi</div>
-            <div class="sub-title">Öğr. Gör. Muhammed Sefa GÖR</div>
+            <div class="sub-title">Tirebolu Mehmet Bayrak MYO</div>
             
             <button class="role-btn role-student" onclick="goToStudentLogin()">
                 <i class="fas fa-user-graduate"></i>
@@ -163,38 +188,38 @@
                 AKADEMİSYEN GİRİŞİ
             </button>
             
-            <div style="text-align:center; margin-top:20px;">
-                <button onclick="fetchData()" style="background:none; border:none; color:#aaa; font-size:12px;">
+            <div style="text-align:center; margin-top:30px;">
+                <button onclick="fetchData()" style="background:rgba(255,255,255,0.1); padding:8px 15px; border-radius:20px; border:none; color:#ddd; font-size:12px;">
                     <i class="fas fa-sync"></i> Verileri Güncelle
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="screen-student-id" class="full-screen-container hidden">
-        <div class="glass-panel">
+    <div id="screen-student-id" class="full-screen-container liquid-bg hidden">
+        <div class="glass-panel liquid-panel">
             <div class="big-title">Öğrenci Girişi</div>
             <p class="sub-title">Numaranızı girerek kayıtlı derslerinizi görün.</p>
             
-            <input type="number" id="stuIdInput" placeholder="Öğrenci Numarası" style="font-size:24px; text-align:center; letter-spacing:2px;">
-            <button class="action-btn" onclick="checkStudentCourses()">Dersleri Getir</button>
+            <input type="number" id="stuIdInput" placeholder="Öğrenci Numarası" style="font-size:24px; text-align:center; letter-spacing:2px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.3);">
+            <button class="action-btn" onclick="checkStudentCourses()" style="background:linear-gradient(90deg, #0A84FF, #0056b3); padding:20px;">Dersleri Getir</button>
         </div>
     </div>
 
-    <div id="screen-student-courses" class="full-screen-container hidden">
-        <div class="glass-panel">
-            <div class="big-title">Merhaba, <span id="stuNameDisplay" style="color:var(--accent-color)"></span></div>
+    <div id="screen-student-courses" class="full-screen-container liquid-bg hidden">
+        <div class="glass-panel liquid-panel">
+            <div class="big-title">Merhaba, <br><span id="stuNameDisplay" style="color:#64D2FF; font-size:24px;"></span></div>
             <p class="sub-title">Karekod oluşturmak için ders seçiniz:</p>
             <div id="myCourseList"></div>
         </div>
     </div>
 
-    <div id="screen-student-qr" class="full-screen-container hidden">
-        <div class="glass-panel" id="qr-area">
-            <h3 id="qrCourseName"></h3>
+    <div id="screen-student-qr" class="full-screen-container liquid-bg hidden">
+        <div class="glass-panel liquid-panel" id="qr-area">
+            <h3 id="qrCourseName" style="font-size:22px; margin-bottom:5px;"></h3>
             <div id="qr-display"></div>
-            <p style="opacity:0.6;">Bu kodu ders sorumlusuna okutunuz.</p>
-            <p id="qrStudentId" style="font-weight:bold; font-size:18px; margin-top:10px;"></p>
+            <p style="opacity:0.8; font-weight:500;">Bu kodu ders sorumlusuna okutunuz.</p>
+            <p id="qrStudentId" style="font-weight:bold; font-size:20px; margin-top:10px; color:#64D2FF;"></p>
         </div>
     </div>
 
@@ -216,7 +241,13 @@
         </div>
 
         <div id="tab-scan" class="tab-content">
-            <div class="glass-panel">
+            <div class="glass-panel" style="position:relative;">
+                
+                <div id="scanFeedbackPopup">
+                    <i class="fas fa-check-circle" style="font-size:40px; margin-bottom:10px; display:block;"></i>
+                    <span id="scanFeedbackText">Öğrenci Okundu</span>
+                </div>
+
                 <select id="weekSelect" onchange="updateWeekInfoDisplay()" style="font-weight:bold;">
                     </select>
                 <div id="weekDetailText" style="text-align:center; margin-bottom:15px; font-size:14px; opacity:0.8;"></div>
@@ -235,14 +266,12 @@
 
         <div id="tab-list" class="tab-content hidden">
             <div class="glass-panel full-list-view">
-                <input type="text" id="searchInput" class="search-bar-lg" placeholder="Öğrenci Ara..." onkeyup="renderStudentList()">
-                
-                <div class="student-list-container">
+                <input type="text" id="searchInput" placeholder="Öğrenci Ara..." onkeyup="renderStudentList()">
+                <div class="student-list-container" style="flex:1; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:16px;">
                     <ul id="fullStudentList" style="list-style:none; padding:0; margin:0;"></ul>
                 </div>
-                
                 <div style="text-align:center; padding-top:10px; font-size:12px; opacity:0.5;">
-                    Liste devamsızlığı en yüksek olandan en düşüğe göre sıralanmıştır.
+                    Sıralama: En Düşük Devam Oranı
                 </div>
             </div>
         </div>
@@ -250,21 +279,20 @@
         <div id="tab-settings" class="tab-content hidden">
             <div class="glass-panel">
                 <h3>Ders Takvimi Ayarları</h3>
-                
                 <label style="font-size:12px; opacity:0.7;">Ders Başlangıç Tarihi (1. Hafta)</label>
                 <input type="date" id="startDatePicker" onchange="calculateDates()">
                 
                 <div class="week-config-container" id="weekConfigList"></div>
                 
                 <div style="margin-top:20px; font-size:12px; color:#aaa;">
-                    <p><span style="color:var(--success-color)">■</span> Normal (Yoklama var)</p>
-                    <p><span style="color:var(--warning-color)">■</span> Vize (Yoklama yok)</p>
-                    <p><span style="color:#BF5AF2">■</span> Final/Büt (Yoklama yok)</p>
-                    <p><span style="color:var(--danger-color)">■</span> Tatil (Yoklama yok)</p>
+                    <p><span style="color:var(--success-color)">■</span> Normal</p>
+                    <p><span style="color:var(--warning-color)">■</span> Vize</p>
+                    <p><span style="color:#BF5AF2">■</span> Final</p>
+                    <p><span style="color:var(--danger-color)">■</span> Tatil</p>
                 </div>
 
                 <button class="action-btn" style="background:var(--danger-color); margin-top:20px;" onclick="resetAttendance()">
-                    BU DERSİN YOKLAMASINI SIFIRLA
+                    SIFIRLA
                 </button>
             </div>
         </div>
@@ -273,25 +301,23 @@
     <div id="loader" style="position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; display:flex; align-items:center; justify-content:center;">
         <div style="text-align:center;">
             <i class="fas fa-circle-notch fa-spin" style="font-size:40px; color:var(--accent-color);"></i>
-            <p style="margin-top:15px;">Veriler Yükleniyor...</p>
+            <p style="margin-top:15px;">Yükleniyor...</p>
         </div>
     </div>
 
     <script>
-        // *** KONFİGÜRASYON ***
-        // BURAYA GITHUB RAW LINKINI YAPIŞTIR:
-        const GITHUB_DB_URL = "https://raw.githubusercontent.com/msefagor/MyLifeApp/refs/heads/main/db.json";
+        // GITHUB LINKINI BURAYA YAPIŞTIR
+        const GITHUB_DB_URL = "https://raw.githubusercontent.com/KULLANICI_ADI/REPO_ADI/main/db.json";
         const ADMIN_PASS = "120622";
         const TOTAL_WEEKS = 18;
 
-        // *** GLOBAL DEĞİŞKENLER ***
         let db = { courses: [] };
         let activeCourse = null;
-        let activeCourseConfig = []; // Hafta tipleri ve tarihleri
-        let activeCourseAttendance = {}; // { studentId: [false, true, ...] }
+        let activeCourseConfig = [];
+        let activeCourseAttendance = {};
         let scanner = null;
+        let scanFeedbackTimeout = null;
 
-        // *** BAŞLANGIÇ ***
         document.addEventListener("DOMContentLoaded", () => {
             fetchData();
         });
@@ -299,25 +325,20 @@
         async function fetchData() {
             try {
                 const res = await fetch(GITHUB_DB_URL + "?t=" + Date.now());
-                if(!res.ok) throw new Error("Bağlantı Hatası");
+                if(!res.ok) throw new Error("Hata");
                 db = await res.json();
                 document.getElementById('loader').style.display = 'none';
             } catch (err) {
-                alert("Veri çekilemedi: " + err.message);
-                // Demo verisi ile devam edilebilir (opsiyonel)
+                alert("Veri hatası: " + err.message);
                 document.getElementById('loader').style.display = 'none';
             }
         }
 
-        // *** NAVİGASYON ***
         const historyStack = ['screen-landing'];
         function navigateTo(screenId) {
-            // Aktif ekranı gizle
             document.querySelectorAll('.full-screen-container, #screen-admin-panel').forEach(el => el.classList.add('hidden'));
-            // Yeni ekranı göster
             document.getElementById(screenId).classList.remove('hidden');
             
-            // Back butonu kontrolü
             if(screenId === 'screen-landing') {
                 document.getElementById('backBtn').classList.add('hidden');
                 historyStack.length = 0;
@@ -327,28 +348,24 @@
                 if(historyStack[historyStack.length-1] !== screenId) historyStack.push(screenId);
             }
 
-            // Kamera açıksa kapat
             if(screenId !== 'screen-admin-panel' && scanner) stopScanner();
         }
 
         function goBack() {
             if(historyStack.length > 1) {
                 historyStack.pop();
-                const prev = historyStack[historyStack.length-1];
-                navigateTo(prev);
-                // Stack'e tekrar eklemeyi önle (navigateTo ekliyor)
+                navigateTo(historyStack[historyStack.length-1]);
                 historyStack.pop(); 
             }
         }
 
-        // *** 1. ÖĞRENCİ AKIŞI ***
+        // ÖĞRENCİ
         function goToStudentLogin() { navigateTo('screen-student-id'); }
 
         function checkStudentCourses() {
             const id = document.getElementById('stuIdInput').value.trim();
-            if(!id) return alert("Lütfen numara giriniz.");
+            if(!id) return alert("Numara giriniz.");
 
-            // Öğrencinin olduğu dersleri bul
             const enrolledCourses = [];
             let studentName = "";
 
@@ -361,11 +378,10 @@
             });
 
             if(enrolledCourses.length === 0) {
-                alert("Bu numara ile kayıtlı ders bulunamadı.");
+                alert("Kayıtlı ders bulunamadı.");
                 return;
             }
 
-            // Dersleri Listele
             document.getElementById('stuNameDisplay').textContent = studentName;
             const list = document.getElementById('myCourseList');
             list.innerHTML = "";
@@ -375,6 +391,7 @@
                 btn.className = "role-btn";
                 btn.style.textAlign = "left";
                 btn.style.fontSize = "16px";
+                btn.style.background = "rgba(255,255,255,0.1)";
                 btn.innerHTML = `<i class="fas fa-book"></i> ${c.name}`;
                 btn.onclick = () => generateQR(c, id, studentName);
                 list.appendChild(btn);
@@ -391,8 +408,7 @@
                 display.innerHTML = "";
                 
                 new QRCode(display, {
-                    text: id, // Sadece ID yeterli
-                    width: 200, height: 200,
+                    text: id, width: 200, height: 200,
                     colorDark : "#000000", colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
@@ -401,11 +417,10 @@
             }
         }
 
-        // *** 2. AKADEMİSYEN AKIŞI ***
+        // ADMIN
         function goToAdminLogin() {
             const list = document.getElementById('adminCourseList');
             list.innerHTML = "";
-            
             db.courses.forEach(c => {
                 const btn = document.createElement('button');
                 btn.className = "role-btn role-admin";
@@ -414,7 +429,6 @@
                 btn.onclick = () => loginAdmin(c);
                 list.appendChild(btn);
             });
-            
             navigateTo('screen-admin-courses');
         }
 
@@ -425,44 +439,26 @@
                 loadCourseData(course.courseId);
                 initAdminPanel();
                 navigateTo('screen-admin-panel');
-            } else {
-                if(pass) alert("Hatalı Şifre!");
-            }
+            } else if(pass) alert("Hatalı Şifre!");
         }
 
-        // *** VERİ YÖNETİMİ (LOCALSTORAGE) ***
         function loadCourseData(cId) {
-            // 1. Yoklama Verisi
             const att = localStorage.getItem(`attendance_${cId}`);
             activeCourseAttendance = att ? JSON.parse(att) : {};
-
-            // 2. Hafta Konfigürasyonu
             const conf = localStorage.getItem(`config_${cId}`);
             if(conf) {
                 activeCourseConfig = JSON.parse(conf);
             } else {
-                // Varsayılan Oluştur (18 Hafta)
                 activeCourseConfig = [];
                 for(let i=0; i<TOTAL_WEEKS; i++) {
-                    // Varsayılan Tip Atamaları
                     let type = 'normal';
-                    if(i === 7) type = 'midterm'; // 8. Hafta Vize (index 7)
-                    if(i === 14 || i === 15) type = 'final'; // 15-16 Final
-                    if(i === 16) type = 'final'; // 17 Büt (Final kategorisinde sayalım)
-                    
-                    activeCourseConfig.push({
-                        id: i+1,
-                        type: type, 
-                        date: null 
-                    });
+                    if(i === 7) type = 'midterm';
+                    if(i === 14 || i === 15 || i === 16) type = 'final';
+                    activeCourseConfig.push({ id: i+1, type: type, date: null });
                 }
             }
-
-            // Başlangıç Tarihi
             const storedDate = localStorage.getItem(`startDate_${cId}`);
-            if(storedDate) {
-                document.getElementById('startDatePicker').value = storedDate;
-            }
+            if(storedDate) document.getElementById('startDatePicker').value = storedDate;
         }
 
         function saveData() {
@@ -470,11 +466,10 @@
             localStorage.setItem(`config_${activeCourse.courseId}`, JSON.stringify(activeCourseConfig));
         }
 
-        // *** ADMIN PANEL FONKSİYONLARI ***
         function initAdminPanel() {
             document.getElementById('panelTitle').textContent = activeCourse.name;
             switchTab('tab-scan');
-            calculateDates(); // Tarihleri güncelle
+            calculateDates();
             renderWeekSettings();
             updateWeekSelector();
         }
@@ -484,22 +479,19 @@
             document.getElementById(tabId).classList.remove('hidden');
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
-            
             if(tabId === 'tab-list') renderStudentList();
             if(tabId !== 'tab-scan' && scanner) stopScanner();
         }
 
-        // *** HAFTA VE TARİH AYARLARI ***
         function calculateDates() {
             const startStr = document.getElementById('startDatePicker').value;
             if(startStr) {
                 localStorage.setItem(`startDate_${activeCourse.courseId}`, startStr);
                 const startDate = new Date(startStr);
-                
                 activeCourseConfig.forEach((w, idx) => {
                     const d = new Date(startDate);
                     d.setDate(d.getDate() + (idx * 7));
-                    w.date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+                    w.date = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
                 });
                 saveData();
                 renderWeekSettings();
@@ -510,26 +502,12 @@
         function renderWeekSettings() {
             const container = document.getElementById('weekConfigList');
             container.innerHTML = "";
-            
-            const typeLabels = {
-                'normal': 'Normal Ders',
-                'midterm': 'Vize Haftası',
-                'final': 'Final/Büt',
-                'holiday': 'Tatil'
-            };
-
+            const labels = { 'normal': 'Normal', 'midterm': 'Vize', 'final': 'Final', 'holiday': 'Tatil' };
             activeCourseConfig.forEach((w, idx) => {
                 const row = document.createElement('div');
                 row.className = `week-row type-${w.type}`;
                 row.onclick = () => toggleWeekType(idx);
-                
-                row.innerHTML = `
-                    <div class="week-info">
-                        <span style="font-weight:bold;">${w.id}. Hafta - ${typeLabels[w.type]}</span>
-                        <span class="week-date">${w.date || 'Tarih Ayarlanmadı'}</span>
-                    </div>
-                    <i class="fas fa-chevron-right" style="opacity:0.3"></i>
-                `;
+                row.innerHTML = `<div class="week-info"><strong>${w.id}. Hafta - ${labels[w.type]}</strong><span style="font-size:12px;opacity:0.6;">${w.date || '-'}</span></div>`;
                 container.appendChild(row);
             });
         }
@@ -537,8 +515,7 @@
         function toggleWeekType(idx) {
             const types = ['normal', 'midterm', 'final', 'holiday'];
             const current = activeCourseConfig[idx].type;
-            const next = types[(types.indexOf(current) + 1) % types.length];
-            activeCourseConfig[idx].type = next;
+            activeCourseConfig[idx].type = types[(types.indexOf(current) + 1) % types.length];
             saveData();
             renderWeekSettings();
             updateWeekSelector();
@@ -546,17 +523,15 @@
 
         function updateWeekSelector() {
             const sel = document.getElementById('weekSelect');
-            const currentVal = sel.value; // Seçiliyi koru
+            const current = sel.value;
             sel.innerHTML = "";
-            
             activeCourseConfig.forEach((w, idx) => {
                 const opt = document.createElement('option');
                 opt.value = idx;
-                opt.textContent = `${w.id}. Hafta (${w.date ? w.date.split(' ')[0] + ' ' + w.date.split(' ')[1] : '...' })`;
+                opt.textContent = `${w.id}. Hafta (${w.date || '...'})`;
                 sel.appendChild(opt);
             });
-            
-            if(currentVal && currentVal < activeCourseConfig.length) sel.value = currentVal;
+            if(current && current < activeCourseConfig.length) sel.value = current;
             updateWeekInfoDisplay();
         }
 
@@ -564,131 +539,95 @@
             const idx = document.getElementById('weekSelect').value;
             const w = activeCourseConfig[idx];
             const info = document.getElementById('weekDetailText');
-            
             if(w.type === 'normal') {
-                info.textContent = `${w.date || ''} - Yoklama Alınabilir`;
+                info.textContent = "Yoklama Alınabilir";
                 info.style.color = "var(--success-color)";
             } else {
-                info.textContent = `Bu hafta ${w.type.toUpperCase()} haftasıdır. Devamsızlık işlenmez.`;
+                info.textContent = `${w.type.toUpperCase()} Haftası - Yoklama İşlenmez`;
                 info.style.color = "var(--danger-color)";
             }
         }
 
-        // *** TARAYICI (SCANNER) ***
         function startScanner() {
             const idx = document.getElementById('weekSelect').value;
-            const w = activeCourseConfig[idx];
-            
-            if(w.type !== 'normal') {
-                alert("Bu hafta yoklama alınamaz (Tatil veya Sınav Haftası).");
-                return;
-            }
-
+            if(activeCourseConfig[idx].type !== 'normal') return alert("Bu hafta yoklama alınamaz.");
             document.getElementById('btnStartScan').classList.add('hidden');
             document.getElementById('btnStopScan').classList.remove('hidden');
-
             scanner = new Html5Qrcode("reader");
-            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, 
-            (decodedText) => {
-                handleScan(decodedText, idx);
-            });
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (txt) => handleScan(txt, idx));
         }
 
         function stopScanner() {
-            if(scanner) {
-                scanner.stop().then(() => scanner.clear());
-                scanner = null;
-            }
+            if(scanner) scanner.stop().then(() => scanner.clear());
+            scanner = null;
             document.getElementById('btnStartScan').classList.remove('hidden');
             document.getElementById('btnStopScan').classList.add('hidden');
         }
 
         function handleScan(studentId, weekIdx) {
             const student = activeCourse.students.find(s => s.id === studentId);
-            
             if(student) {
                 if(!activeCourseAttendance[studentId]) activeCourseAttendance[studentId] = {};
-                
-                // *** KRİTİK: TEKRAR OKUMA ENGELİ ***
-                if(activeCourseAttendance[studentId][weekIdx]) {
-                    // Zaten okundu, sessizce geç veya UI'da belirt
-                    return; 
-                }
+                if(activeCourseAttendance[studentId][weekIdx]) return; 
 
-                // Yoklamayı Kaydet
                 activeCourseAttendance[studentId][weekIdx] = true;
                 saveData();
 
-                // UI Güncelle
+                // Geri Bildirim Göster (4 Saniye)
+                const popup = document.getElementById('scanFeedbackPopup');
+                const text = document.getElementById('scanFeedbackText');
+                text.textContent = `${student.name} ${student.surname}`;
+                popup.classList.add('visible');
+
+                if(scanFeedbackTimeout) clearTimeout(scanFeedbackTimeout);
+                scanFeedbackTimeout = setTimeout(() => {
+                    popup.classList.remove('visible');
+                }, 4000);
+
                 const ul = document.getElementById('scanLog');
                 const li = document.createElement('li');
                 li.innerHTML = `✓ ${student.name} ${student.surname}`;
                 ul.insertBefore(li, ul.firstChild);
-                
-                // Ses efekti eklenebilir
             }
         }
 
-        // *** LİSTE VE SIRALAMA ***
         function renderStudentList() {
             const ul = document.getElementById('fullStudentList');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const term = document.getElementById('searchInput').value.toLowerCase();
             ul.innerHTML = "";
 
-            // 1. Hesaplama ve Veri Hazırlama
             let listData = activeCourse.students.map(s => {
-                let attended = 0;
-                let activeWeeks = 0;
-                
+                let attended = 0, activeWeeks = 0;
                 activeCourseConfig.forEach((w, idx) => {
                     if(w.type === 'normal') {
                         activeWeeks++;
-                        if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) {
-                            attended++;
-                        }
+                        if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) attended++;
                     }
                 });
-
                 const rate = activeWeeks === 0 ? 100 : Math.round((attended / activeWeeks) * 100);
                 return { ...s, rate };
             });
 
-            // 2. Sıralama (Düşük oran en üstte - Devamsızlığı çok olan)
             listData.sort((a, b) => a.rate - b.rate);
 
-            // 3. Render
             listData.forEach(s => {
-                if(s.name.toLowerCase().includes(searchTerm) || s.surname.toLowerCase().includes(searchTerm)) {
+                if(s.name.toLowerCase().includes(term) || s.surname.toLowerCase().includes(term)) {
                     const li = document.createElement('li');
                     li.className = 'student-item';
-                    
                     const colorClass = s.rate < 70 ? 'text-low' : 'text-ok';
-                    
-                    li.innerHTML = `
-                        <div>
-                            <div style="font-size:20px; font-weight:600;">${s.name} ${s.surname}</div>
-                            <div style="font-size:14px; opacity:0.6;">${s.id}</div>
-                        </div>
-                        <div style="font-size:24px; font-weight:800;" class="${colorClass}">
-                            %${s.rate}
-                        </div>
-                    `;
+                    li.innerHTML = `<div><div style="font-size:20px; font-weight:600;">${s.name} ${s.surname}</div><div style="font-size:14px; opacity:0.6;">${s.id}</div></div><div style="font-size:24px; font-weight:800;" class="${colorClass}">%${s.rate}</div>`;
                     ul.appendChild(li);
                 }
             });
         }
 
         function resetAttendance() {
-            if(confirm("DİKKAT! Bu dersin tüm yoklama verileri silinecek. Emin misiniz?")) {
+            if(confirm("Tüm yoklamalar silinecek?")) {
                 activeCourseAttendance = {};
                 saveData();
-                alert("Veriler sıfırlandı.");
                 initAdminPanel();
             }
         }
-
     </script>
 </body>
 </html>
-
-
