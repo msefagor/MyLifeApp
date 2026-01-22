@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Liquid Library Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --glass-bg: rgba(20, 20, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-highlight: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent: #00d2ff;
+            --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --danger: #ff5f6d;
+            --success: #00b09b;
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Outfit', sans-serif; }
+
+        body {
+            background-color: #0f172a;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(90px + var(--safe-bottom));
+        }
+
+        /* Arkaplan Animasyonu */
+        .liquid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #0f0c29; overflow: hidden; }
+        .blob { position: absolute; filter: blur(90px); opacity: 0.5; animation: move 20s infinite alternate; }
+        .blob-1 { top: -10%; left: -10%; width: 60vw; height: 60vw; background: #3a1c71; border-radius: 40% 60% 70% 30%; animation-duration: 25s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 70vw; height: 70vw; background: #d76d77; border-radius: 60% 40% 30% 70%; animation-duration: 30s; }
+        .blob-3 { top: 40%; left: 30%; width: 50vw; height: 50vw; background: #23a6d5; border-radius: 30% 70% 70% 30%; animation-duration: 22s; }
+        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(30px, 50px) rotate(20deg); } }
+
+        /* Cam Paneller */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 0 20px; }
+
+        /* Başlık & Tarih */
+        header { padding: 20px 0; display: flex; justify-content: center; position: sticky; top: 0; z-index: 50; }
+        .date-badge {
+            padding: 10px 24px; border-radius: 30px; font-weight: 600; font-size: 15px;
+            background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px); display: flex; align-items: center; gap: 8px;
+            position: relative;
+        }
+
+        /* Kartlar & Listeler */
+        .card { padding: 20px; margin-bottom: 20px; }
+        .section-title { font-size: 18px; margin-bottom: 15px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;}
+        
+        /* Kitap Listesi Öğeleri */
+        .book-item {
+            display: flex; gap: 15px; padding: 15px; background: var(--glass-highlight);
+            border-radius: 16px; margin-bottom: 12px; align-items: center; border: 1px solid transparent;
+            transition: border-color 0.3s;
+            position: relative;
+        }
+        .book-item:active { border-color: var(--accent); }
+        
+        .book-cover-thumb {
+            width: 50px; height: 75px; border-radius: 8px; background: #222; object-fit: cover; flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .book-info { flex: 1; min-width: 0; }
+        .book-title { font-weight: 600; font-size: 16px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .book-author { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+        .book-meta { font-size: 11px; color: var(--accent); display: flex; gap: 10px; }
+        
+        /* Silme Butonu */
+        .btn-delete-entry {
+            width: 36px; height: 36px; border-radius: 10px; background: rgba(255, 95, 109, 0.2); 
+            color: var(--danger); border: 1px solid rgba(255, 95, 109, 0.3);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        /* Arama */
+        .search-box {
+            width: 100%; padding: 14px 20px; border-radius: 16px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2); color: white; margin-bottom: 20px; font-size: 16px;
+        }
+
+        /* İstatistik Halkaları */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .ring-container { 
+            width: 90px; height: 90px; position: relative; margin-bottom: 10px; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; position: absolute; inset: 0; }
+        .ring-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 6; }
+        .ring-val { fill: none; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1s ease; }
+        
+        .ring-percent-text {
+            position: relative; z-index: 10; font-weight: 700; font-size: 16px; color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        /* Form Elemanları */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
+        .glass-input, select {
+            width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+            border-radius: 14px; color: white; font-size: 16px; outline: none; appearance: none;
+        }
+        
+        /* Kamera / Resim Yükleme */
+        .cover-upload {
+            width: 120px; height: 180px; border: 2px dashed var(--glass-border); border-radius: 12px;
+            margin: 0 auto 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-size: cover; background-position: center; cursor: pointer; position: relative; overflow: hidden;
+        }
+        .cover-upload.has-img::after { content: ''; position: absolute; inset: 0; background: transparent; }
+        .cover-upload svg { margin-bottom: 10px; color: var(--text-secondary); }
+        .cover-upload span { font-size: 12px; color: var(--text-secondary); text-align: center; padding: 0 10px;}
+
+        /* Butonlar */
+        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: var(--accent-gradient); color: white; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+        .fab {
+            position: fixed; bottom: calc(90px + var(--safe-bottom)); right: 20px;
+            width: 60px; height: 60px; border-radius: 50%; background: var(--accent-gradient);
+            border: none; color: white; font-size: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center; z-index: 90;
+        }
+
+        /* Navigasyon */
+        nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: calc(80px + var(--safe-bottom));
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-around; padding-top: 15px; padding-bottom: var(--safe-bottom); z-index: 100;
+        }
+        .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10px; opacity: 0.6; transition: 0.3s; }
+        .nav-item.active { color: var(--accent); opacity: 1; transform: translateY(-5px); }
+        .nav-item svg { width: 24px; height: 24px; }
+
+        /* Modal */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200;
+            display: flex; align-items: flex-end; opacity: 0; visibility: hidden; transition: 0.3s;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            width: 100%; background: #1a1f35; border-radius: 30px 30px 0 0; padding: 25px;
+            max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-top: 1px solid var(--glass-border);
+        }
+        .modal.active .modal-content { transform: translateY(0); }
+
+        .hidden { display: none !important; }
+        .text-muted { color: var(--text-secondary); font-size: 12px; }
+        .missed-day-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--glass-border); color: var(--danger); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="liquid-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div id="view-daily">
+        <header>
+            <div class="date-badge" onclick="document.getElementById('datePicker').showPicker()">
+                📅 <span id="currentDateText">Bugün</span>
+                <input type="date" id="datePicker" style="position:absolute; inset:0; opacity:0;">
+            </div>
+        </header>
+
+        <div class="container">
+            <div id="state-question" class="glass-panel card" style="text-align:center; padding:40px 20px;">
+                <h2 style="font-size:22px; margin-bottom:30px;">Bugün kitap okudun mu?</h2>
+                <div style="display:flex; gap:15px;">
+                    <button class="btn btn-primary" onclick="openReadingModal()">Evet 📚</button>
+                    <button class="btn btn-secondary" onclick="markRestDay()">Hayır 💤</button>
+                </div>
+            </div>
+
+            <div id="state-summary" class="hidden">
+                <div id="dailyList"></div>
+                <div class="glass-panel card" style="text-align:center; margin-top:15px;">
+                    <span class="text-muted">Bugün Toplam</span>
+                    <div style="font-size:32px; font-weight:700; color:var(--accent); margin-top:5px;">
+                        <span id="dailyTotalPages">0</span> <span style="font-size:16px;">Sayfa</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-library" class="hidden">
+        <header><h2 style="font-size:20px;">Kitaplık</h2></header>
+        <div class="container">
+            <input type="text" id="searchBar" class="search-box" placeholder="Kitap veya yazar ara..." oninput="renderLibrary()">
+            <div id="libraryList" style="padding-bottom:100px;"></div>
+        </div>
+    </div>
+
+    <div id="view-stats" class="hidden">
+        <header>
+            <h2 style="font-size:20px;">Analiz</h2>
+            <button onclick="openSettings()" style="position:absolute; right:20px; background:none; border:none; color:white;">⚙️</button>
+        </header>
+        <div class="container" style="padding-bottom:100px;">
+            <div class="stats-grid">
+                <div class="glass-panel stat-card">
+                    <div class="ring-container">
+                        <svg class="ring-svg" viewBox="0 0 80 80">
+                            <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                            <circle id="ringDaily" class="ring-val" cx="40" cy="40" r="35" style="stroke:#00d2ff"></circle>
+                        </svg>
+                        <div id="textDailyPct" class="ring-percent-text">%0</div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary);">GÜNLÜK HEDEF</div>
+                    <div style="font-size:18px; font-weight:700;"><span id="statDailyVal">0</span> / <span id="statDailyGoal">50</span></div>
+                </div>
+                <div class="glass-panel stat-card">
+                    <div class="ring-container">
+                        <svg class="ring-svg" viewBox="0 0 80 80">
+                            <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                            <circle id="ringYearly" class="ring-val" cx="40" cy="40" r="35" style="stroke:#ff5f6d"></circle>
+                        </svg>
+                        <div id="textYearlyPct" class="ring-percent-text">%0</div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary);">YILLIK KİTAP</div>
+                    <div style="font-size:18px; font-weight:700;"><span id="statYearlyVal">0</span> / <span id="statYearlyGoal">60</span></div>
+                </div>
+            </div>
+
+            <div class="glass-panel card">
+                <div class="section-title">
+                    <span>⚠️ Okunmayan Günler</span>
+                    <span style="font-size:12px; opacity:0.6; font-weight:400;">(Bu Yıl)</span>
+                </div>
+                <div id="missedDaysList" style="max-height: 250px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="fab" onclick="openNewBookModal()">+</button>
+
+    <nav>
+        <button class="nav-item active" onclick="switchTab('daily', this)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Günlük
+        </button>
+        <button class="nav-item" onclick="switchTab('library', this)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Kitaplık
+        </button>
+        <button class="nav-item" onclick="switchTab('stats', this)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Analiz
+        </button>
+    </nav>
+
+    <div id="modal-new-book" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px;">Yeni Kitap Ekle</h3>
+            
+            <div class="cover-upload" id="coverDropZone" onclick="document.getElementById('coverInput').click()">
+                <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span>Kapak Çek/Yükle</span>
+                <input type="file" id="coverInput" accept="image/*" hidden onchange="handleImage(this)">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Kitap Adı</label>
+                <input type="text" id="newTitle" class="glass-input" onblur="this.value = formatTitle(this.value)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Yazar</label>
+                <input type="text" id="newAuthor" class="glass-input" onblur="this.value = formatTitle(this.value)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Toplam Sayfa</label>
+                <input type="number" id="newPages" class="glass-input">
+            </div>
+            <button class="btn btn-primary" onclick="saveNewBook()">Kaydet</button>
+            <button class="btn btn-secondary" onclick="closeModal('modal-new-book')">İptal</button>
+        </div>
+    </div>
+
+    <div id="modal-reading" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px;">Okuma Girişi</h3>
+            <div class="form-group">
+                <label class="form-label">Hangi Kitap?</label>
+                <select id="readingBookSelect" class="glass-input"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bugün Okunan Sayfa</label>
+                <input type="number" id="readingPages" class="glass-input">
+            </div>
+            <button class="btn btn-primary" onclick="saveReading()">Kaydet</button>
+            <button class="btn btn-secondary" onclick="closeModal('modal-reading')">İptal</button>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px;">Ayarlar</h3>
+            <div class="form-group">
+                <label class="form-label">Günlük Sayfa Hedefi</label>
+                <input type="number" id="setDailyGoal" class="glass-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Yıllık Kitap Hedefi</label>
+                <input type="number" id="setYearlyGoal" class="glass-input">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()">Ayarları Kaydet</button>
+            <button class="btn btn-secondary" onclick="closeModal('modal-settings')">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = 'liquid_lib_pro_v1';
+        let data = {
+            books: [],
+            history: [],
+            settings: { dailyGoal: 50, yearlyGoal: 60 }
+        };
+        
+        const getLocalDateStr = () => {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            return new Date(now - offset).toISOString().split('T')[0];
+        };
+
+        let currentDate = getLocalDateStr();
+        let tempCoverImg = null;
+
+        function init() {
+            const stored = localStorage.getItem(DB_KEY);
+            if(stored) {
+                data = JSON.parse(stored);
+                // Veri Yapısı Güncellemesi: Eski kayıtların ID'si yoksa ekle
+                data.history.forEach(h => {
+                    if(!h.id) h.id = Date.now() + Math.random();
+                });
+            }
+            
+            if(!data.settings) data.settings = { dailyGoal: 50, yearlyGoal: 60 };
+            
+            const datePicker = document.getElementById('datePicker');
+            datePicker.value = currentDate;
+            datePicker.addEventListener('change', (e) => {
+                currentDate = e.target.value;
+                updateUI();
+            });
+
+            updateUI();
+        }
+
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+            updateUI();
+        }
+
+        function formatTitle(str) {
+            if (!str) return '';
+            const lowers = ['ve', 'ile', 'veya', 'ki', 'de', 'da', 'ama', 'fakat', 'lakin', 'ancak', 'için', 'üzere'];
+            const words = str.split(/\s+/);
+            return words.map((word, index) => {
+                let lower = word.toLowerCase();
+                if (index > 0 && lowers.includes(lower)) return lower;
+                return lower.charAt(0).toUpperCase() + lower.slice(1);
+            }).join(' ');
+        }
+
+        function updateUI() {
+            renderDaily();
+            renderLibrary();
+            renderStats();
+            
+            const d = new Date(currentDate);
+            const today = getLocalDateStr();
+            document.getElementById('currentDateText').innerText = (currentDate === today) ? "Bugün" : d.toLocaleDateString('tr-TR', { day:'numeric', month:'long' });
+        }
+
+        function renderDaily() {
+            const entries = data.history.filter(h => h.date === currentDate);
+            const isRest = entries.some(h => h.bookId === -1);
+            
+            const qState = document.getElementById('state-question');
+            const sState = document.getElementById('state-summary');
+
+            if(entries.length === 0) {
+                qState.classList.remove('hidden');
+                sState.classList.add('hidden');
+            } else if (isRest) {
+                qState.classList.add('hidden');
+                sState.innerHTML = '<div class="glass-panel card" style="text-align:center; padding:40px;"><h3>💤 Dinlenme Günü</h3><button class="btn btn-secondary" onclick="undoRest()">Değiştir</button></div>';
+                sState.classList.remove('hidden');
+            } else {
+                qState.classList.add('hidden');
+                sState.classList.remove('hidden');
+                
+                let total = 0;
+                let html = '';
+                entries.forEach(e => {
+                    const book = data.books.find(b => b.id === e.bookId);
+                    if(book) {
+                        total += e.pages;
+                        html += `
+                        <div class="book-item">
+                            <img src="${book.cover || ''}" class="book-cover-thumb" style="background:#333">
+                            <div class="book-info">
+                                <div class="book-title">${book.title}</div>
+                                <div class="book-meta">+${e.pages} Sayfa</div>
+                            </div>
+                            <button class="btn-delete-entry" onclick="deleteEntry(${e.id})">🗑</button>
+                        </div>`;
+                    }
+                });
+                document.getElementById('dailyList').innerHTML = html;
+                document.getElementById('dailyTotalPages').innerText = total;
+                document.getElementById('dailyList').innerHTML += '<button class="btn btn-secondary" onclick="openReadingModal()">+ Ekle</button>';
+            }
+        }
+
+        function renderLibrary() {
+            const search = document.getElementById('searchBar').value.toLowerCase();
+            const list = document.getElementById('libraryList');
+            
+            const filtered = data.books.filter(b => 
+                b.title.toLowerCase().includes(search) || 
+                (b.author && b.author.toLowerCase().includes(search))
+            );
+
+            filtered.sort((a,b) => {
+                if(a.status === 'reading' && b.status !== 'reading') return -1;
+                return 0;
+            });
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); margin-top:30px;">Kitap bulunamadı.</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(b => {
+                const pct = Math.round((b.currentPage / b.totalPages) * 100);
+                let dateInfo = '';
+                if(b.status === 'completed' && b.startDate && b.endDate) {
+                    const d1 = new Date(b.startDate).toLocaleDateString('tr-TR');
+                    const d2 = new Date(b.endDate).toLocaleDateString('tr-TR');
+                    dateInfo = `<div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">📅 ${d1} - ${d2}</div>`;
+                }
+
+                return `
+                <div class="book-item">
+                    <img src="${b.cover || ''}" class="book-cover-thumb">
+                    <div class="book-info">
+                        <div class="book-title">${b.title}</div>
+                        <div class="book-author">${b.author || 'Yazar Yok'}</div>
+                        <div class="book-meta">
+                            <span>${b.status === 'completed' ? 'Tamamlandı ✅' : '%'+pct}</span>
+                            <span>${b.currentPage}/${b.totalPages}</span>
+                        </div>
+                        ${dateInfo}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderStats() {
+            const todayStr = getLocalDateStr();
+            const todayEntries = data.history.filter(h => h.date === todayStr && h.bookId !== -1);
+            const todayTotal = todayEntries.reduce((acc, curr) => acc + curr.pages, 0);
+            
+            updateRing('ringDaily', 'textDailyPct', todayTotal, data.settings.dailyGoal);
+            document.getElementById('statDailyVal').innerText = todayTotal;
+            document.getElementById('statDailyGoal').innerText = data.settings.dailyGoal;
+
+            const thisYear = new Date().getFullYear();
+            const finishedBooks = data.books.filter(b => b.status === 'completed' && b.endDate && b.endDate.startsWith(thisYear)).length;
+            
+            updateRing('ringYearly', 'textYearlyPct', finishedBooks, data.settings.yearlyGoal);
+            document.getElementById('statYearlyVal').innerText = finishedBooks;
+            document.getElementById('statYearlyGoal').innerText = data.settings.yearlyGoal;
+
+            const missedDiv = document.getElementById('missedDaysList');
+            let missedHtml = '';
+            
+            const startOfYear = new Date(thisYear, 0, 1);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (yesterday < startOfYear) {
+                 missedDiv.innerHTML = '<div style="padding:10px; text-align:center; color:var(--success)">Henüz yılın başındayız!</div>';
+                 return;
+            }
+
+            let loopDate = new Date(yesterday);
+            while(loopDate >= startOfYear) {
+                const dStr = new Date(loopDate.getTime() - (loopDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                const hasEntry = data.history.some(h => h.date === dStr);
+                
+                if(!hasEntry) {
+                    const formatted = loopDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long'});
+                    missedHtml += `<div class="missed-day-item"><span>${formatted}</span><span>Okunmadı</span></div>`;
+                }
+                loopDate.setDate(loopDate.getDate() - 1);
+            }
+
+            if(missedHtml === '') missedHtml = '<div style="padding:10px; text-align:center; color:var(--success)">Harika! Bu yıl hiç boş günün yok.</div>';
+            missedDiv.innerHTML = missedHtml;
+        }
+
+        function updateRing(ringId, textId, val, max) {
+            const circle = document.getElementById(ringId);
+            const textEl = document.getElementById(textId);
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            const pct = Math.min(100, Math.round((val / max) * 100));
+            const offset = circumference - (pct / 100) * circumference;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = offset;
+            textEl.innerText = `%${pct}`;
+        }
+
+        // --- ACTIONS ---
+
+        // SİLME İŞLEMİ
+        function deleteEntry(entryId) {
+            if(!confirm("Bu okuma kaydını silmek istediğinize emin misiniz?")) return;
+
+            // Silinecek kaydı bul
+            const entry = data.history.find(h => h.id === entryId);
+            if(!entry) return;
+
+            // Kitabı güncelle (Sayfa sayısını geri al)
+            const book = data.books.find(b => b.id === entry.bookId);
+            if(book) {
+                // Eğer kitap "Tamamlandı" ise ve sayfaları silince bitmemiş hale geliyorsa
+                if(book.status === 'completed' && (book.currentPage - entry.pages) < book.totalPages) {
+                    book.status = 'reading';
+                    book.endDate = null;
+                }
+                book.currentPage = Math.max(0, book.currentPage - entry.pages);
+            }
+
+            // Kaydı geçmişten sil
+            data.history = data.history.filter(h => h.id !== entryId);
+            saveData();
+        }
+
+        function handleImage(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const TARGET_W = 300;
+                    const TARGET_H = 450; 
+                    canvas.width = TARGET_W;
+                    canvas.height = TARGET_H;
+                    let sWidth = img.width, sHeight = img.height;
+                    let sx = 0, sy = 0;
+                    const aspect = sWidth / sHeight;
+                    const targetAspect = TARGET_W / TARGET_H;
+                    if (aspect > targetAspect) {
+                        const newWidth = sHeight * targetAspect;
+                        sx = (sWidth - newWidth) / 2;
+                        sWidth = newWidth;
+                    } else {
+                        const newHeight = sWidth / targetAspect;
+                        sy = (sHeight - newHeight) / 2;
+                        sHeight = newHeight;
+                    }
+                    ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, TARGET_W, TARGET_H);
+                    tempCoverImg = canvas.toDataURL('image/jpeg', 0.7);
+                    const drop = document.getElementById('coverDropZone');
+                    drop.style.backgroundImage = `url(${tempCoverImg})`;
+                    drop.classList.add('has-img');
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function openNewBookModal() {
+            document.getElementById('newTitle').value = '';
+            document.getElementById('newAuthor').value = '';
+            document.getElementById('newPages').value = '';
+            tempCoverImg = null;
+            const drop = document.getElementById('coverDropZone');
+            drop.style.backgroundImage = '';
+            drop.classList.remove('has-img');
+            openModal('modal-new-book');
+        }
+
+        function saveNewBook() {
+            const title = formatTitle(document.getElementById('newTitle').value);
+            const author = formatTitle(document.getElementById('newAuthor').value);
+            const pages = document.getElementById('newPages').value;
+
+            if(!title || !pages) { alert('Lütfen kitap adı ve sayfa sayısını girin.'); return; }
+
+            const newBook = {
+                id: Date.now(),
+                title: title,
+                author: author,
+                totalPages: parseInt(pages),
+                currentPage: 0,
+                status: 'reading',
+                cover: tempCoverImg,
+                startDate: getLocalDateStr(),
+                endDate: null
+            };
+            
+            data.books.push(newBook);
+            saveData();
+            closeModal('modal-new-book');
+        }
+
+        function openReadingModal() {
+            const select = document.getElementById('readingBookSelect');
+            select.innerHTML = '';
+            const activeBooks = data.books.filter(b => b.status === 'reading');
+            if(activeBooks.length === 0) {
+                if(confirm('Şu an okuduğun bir kitap yok. Yeni kitap eklemek ister misin?')) openNewBookModal();
+                return;
+            }
+            activeBooks.forEach(b => {
+                select.innerHTML += `<option value="${b.id}">${b.title}</option>`;
+            });
+            document.getElementById('readingPages').value = '';
+            openModal('modal-reading');
+        }
+
+        function saveReading() {
+            const bookId = parseInt(document.getElementById('readingBookSelect').value);
+            const pages = parseInt(document.getElementById('readingPages').value);
+            if(!bookId || !pages) return;
+
+            const book = data.books.find(b => b.id === bookId);
+            if(book) {
+                book.currentPage += pages;
+                if(book.currentPage >= book.totalPages) {
+                    book.currentPage = book.totalPages;
+                    book.status = 'completed';
+                    book.endDate = currentDate;
+                    alert('Tebrikler! Kitabı bitirdin. 🎉');
+                }
+            }
+            
+            // Kimlik (ID) eklenerek kaydediliyor
+            data.history.push({
+                id: Date.now(),
+                date: currentDate,
+                bookId: bookId,
+                pages: pages
+            });
+
+            saveData();
+            closeModal('modal-reading');
+        }
+
+        function markRestDay() {
+            data.history = data.history.filter(h => h.date !== currentDate);
+            data.history.push({ id: Date.now(), date: currentDate, bookId: -1, pages: 0 });
+            saveData();
+        }
+
+        function undoRest() {
+            data.history = data.history.filter(h => !(h.date === currentDate && h.bookId === -1));
+            saveData();
+        }
+
+        function openSettings() {
+            document.getElementById('setDailyGoal').value = data.settings.dailyGoal;
+            document.getElementById('setYearlyGoal').value = data.settings.yearlyGoal;
+            openModal('modal-settings');
+        }
+
+        function saveSettings() {
+            data.settings.dailyGoal = parseInt(document.getElementById('setDailyGoal').value);
+            data.settings.yearlyGoal = parseInt(document.getElementById('setYearlyGoal').value);
+            saveData();
+            closeModal('modal-settings');
+        }
+
+        function switchTab(id, btn) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('view-daily').classList.add('hidden');
+            document.getElementById('view-library').classList.add('hidden');
+            document.getElementById('view-stats').classList.add('hidden');
+            document.getElementById('view-'+id).classList.remove('hidden');
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        init();
+    </script>
+<script>
+    (function syncDateFromUrl() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const externalDate = urlParams.get('date');
+            
+            if (externalDate) {
+                // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
+                const dateInputs = [
+                    'datePicker',      // Notlar, Namaz, Kitap
+                    'date-picker',     // İngilizce
+                    'input-date'       // Bütçe (Yatırım)
+                ];
+
+                let targetInput = null;
+                for (let id of dateInputs) {
+                    targetInput = document.getElementById(id);
+                    if (targetInput) break;
+                }
+
+                if (targetInput) {
+                    targetInput.value = externalDate;
+                    
+                    // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
+                    targetInput.dispatchEvent(new Event('change'));
+                    targetInput.dispatchEvent(new Event('input'));
+                    
+                    // Notlar uygulaması için özel tetikleyici
+                    if(typeof openSelectedDate === 'function') {
+                        // Notlar uygulamasında tarih seçilince otomatik ekranı aç
+                         setTimeout(() => openSelectedDate(), 100);
+                    }
+                    // Bütçe uygulaması için özel kontrol
+                    if(typeof checkDateAllowed === 'function') {
+                        checkDateAllowed();
+                    }
+                }
+            }
+        } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+    })();
+</script>
+</body>
+</html>
