@@ -39,7 +39,6 @@
             flex-direction: column;
             overflow-x: hidden;
             padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
-            /* iOS'ta aşağı çekince sayfanın esnemesini engeller */
             overscroll-behavior-y: none; 
         }
 
@@ -286,9 +285,20 @@
             }, intervalTime);
         });
 
+        // --- SERVICE WORKER KAYDI (AUTO-UPDATE) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('SW Başarıyla Kaydedildi:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('SW Kaydı Başarısız:', err);
+                    });
+            });
+        }
+
         // --- iOS TARAYICI BARLARINI GİZLEME VE LİNKLERİ YÖNETME ---
-        // Bu kod, linklere tıklandığında Safari'nin yeni pencere açmasını engeller
-        // ve uygulamayı "standalone" modda tutmaya zorlar.
         document.addEventListener('click', function (event) {
             var target = event.target;
             while (target && target.tagName !== 'A') {
@@ -296,7 +306,6 @@
             }
             if (target && target.tagName === 'A' && target.getAttribute('href')) {
                 var href = target.getAttribute('href');
-                // Sadece iç linkleri yönet, dış linklere karışma
                 if (!href.startsWith('http') && !href.startsWith('#')) {
                     event.preventDefault();
                     window.location.href = href;
