@@ -7,6 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Namaz Takibi - MSEFAGOR</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
         :root {
@@ -28,14 +29,10 @@
             --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: var(--font-family);
             background: var(--bg-gradient);
             color: var(--text-color);
@@ -45,46 +42,25 @@
             align-items: flex-start;
             overflow-x: hidden;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Alt menü için boşluk */
+            padding-bottom: calc(90px + env(safe-area-inset-bottom));
         }
 
         /* Blobs */
-        .blobs {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden;
-        }
-        .blob {
-            position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate;
-        }
+        .blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate; }
         .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
         .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
-
-        @keyframes move {
-            from { transform: translate(0, 0) rotate(0deg); }
-            to { transform: translate(20px, 40px) rotate(20deg); }
-        }
+        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
 
         /* Container */
-        .container {
-            width: 100%;
-            max-width: 600px;
-            padding: 20px 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
+        .container { width: 100%; max-width: 600px; padding: 20px 25px; display: flex; flex-direction: column; gap: 25px; }
 
-        /* Sekme Sistemi (Tabs) */
-        .tab-content {
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-            animation: fadeIn 0.3s ease;
-        }
+        /* Tab Content */
+        .tab-content { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: flex; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Başlık Tasarımı */
+        /* Header */
         .app-header { text-align: center; margin-top: 10px; margin-bottom: 10px; }
         .liquid-brand {
             font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
@@ -101,27 +77,14 @@
 
         /* Glass Cards */
         .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px;
-            padding: 30px 25px; box-shadow: var(--glass-shadow);
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px 25px; box-shadow: var(--glass-shadow);
         }
 
         h3 { font-size: 20px; margin: 0 0 20px 0; font-weight: 700; letter-spacing: 0.5px; }
         
-        /* Date Picker */
-        .date-section { text-align: center; padding-top: 10px; }
-        .date-subtitle { opacity: 0.7; font-size: 15px; margin-bottom: 15px; display: block; }
-        input[type="date"] {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; padding: 16px; border-radius: 18px;
-            font-size: 20px; font-weight: 600; font-family: var(--font-family);
-            outline: none; width: 100%; text-align: center; -webkit-appearance: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
         /* Inputs & Buttons */
-        input[type="text"], textarea, input[type="url"] {
+        input[type="date"], input[type="text"], textarea, input[type="url"] {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
             color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
             outline: none; width: 100%; margin-bottom: 15px;
@@ -134,10 +97,11 @@
             cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); transition: 0.2s;
         }
         .btn-primary:active { transform: scale(0.98); }
-        .btn-secondary {
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); 
-            color: white; padding: 12px; border-radius: 14px; font-size: 14px; cursor: pointer;
-            margin-bottom: 15px; width: 100%;
+        
+        /* Batch Download Button */
+        .btn-batch {
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
+            margin-bottom: 20px;
         }
 
         /* Prayer List Styles */
@@ -278,6 +242,9 @@
             padding: 15px; border-radius: 15px; margin-bottom: 20px;
         }
         .url-label { font-size: 12px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 5px; }
+        
+        /* Batch Download Progress */
+        #batchProgress { margin-top: 10px; font-size: 13px; color: var(--text-color); display: none; }
 
     </style>
 </head>
@@ -343,6 +310,12 @@
         </div>
 
         <div id="tab-surahs" class="tab-content">
+            
+            <button class="btn-primary btn-batch" onclick="downloadAllSurahs()" id="btnBatchDownload">
+                <i class="fas fa-cloud-download-alt"></i> Tüm Sureleri İndir / Güncelle (82-114)
+            </button>
+            <div id="batchProgress"></div>
+
             <div id="surahListView">
                 <div class="surah-list" id="surahListContainer" style="display: flex; flex-direction: column; gap: 15px;"></div>
                 <div style="height: 80px;"></div>
@@ -367,8 +340,8 @@
             <div class="url-fetch-box">
                 <span class="url-label">Otomatik Çek (namazzamani.net Linki)</span>
                 <div style="display: flex; gap: 10px;">
-                    <input type="url" id="urlInput" placeholder="https://www.namazzamani.net/..." style="margin-bottom:0;">
-                    <button class="btn-primary" id="fetchBtn" style="width: auto; padding: 0 20px; font-size: 14px;" onclick="fetchSurahFromUrl()">Getir</button>
+                    <input type="url" id="urlInput" placeholder="Link yapıştır..." style="margin-bottom:0;">
+                    <button class="btn-primary" id="fetchBtn" style="width: auto; padding: 0 20px; font-size: 14px;" onclick="fetchSingleSurah()">Getir</button>
                 </div>
                 <div id="fetchStatus" style="font-size: 12px; color: var(--accent-green); margin-top: 5px; display: none;"></div>
             </div>
@@ -412,6 +385,43 @@
             { id: 'yatsi', name: 'Yatsı', rekat: 13 }
         ];
 
+        // --- TARGET SURAHS LIST (82-114) ---
+        const targetSurahs = [
+            { no: 82, name: "İnfitâr", slug: "infitar-suresi" },
+            { no: 83, name: "Mutaffifîn", slug: "mutaffifin-suresi" },
+            { no: 84, name: "İnşikak", slug: "insikak-suresi" },
+            { no: 85, name: "Büruc", slug: "buruc-suresi" },
+            { no: 86, name: "Târık", slug: "tarik-suresi" },
+            { no: 87, name: "A'lâ", slug: "ala-suresi" },
+            { no: 88, name: "Gâşiye", slug: "gasiye-suresi" },
+            { no: 89, name: "Fecr", slug: "fecr-suresi" },
+            { no: 90, name: "Beled", slug: "beled-suresi" },
+            { no: 91, name: "Şems", slug: "sems-suresi" },
+            { no: 92, name: "Leyl", slug: "leyl-suresi" },
+            { no: 93, name: "Duhâ", slug: "duha-suresi" },
+            { no: 94, name: "İnşirâh", slug: "insirah-suresi" },
+            { no: 95, name: "Tîn", slug: "tin-suresi" },
+            { no: 96, name: "Alak", slug: "alak-suresi" },
+            { no: 97, name: "Kadir", slug: "kadir-suresi" },
+            { no: 98, name: "Beyyine", slug: "beyyine-suresi" },
+            { no: 99, name: "Zilzâl", slug: "zilzal-suresi" },
+            { no: 100, name: "Adiyat", slug: "adiyat-suresi" },
+            { no: 101, name: "Kâria", slug: "karia-suresi" },
+            { no: 102, name: "Tekâsür", slug: "tekasur-suresi" },
+            { no: 103, name: "Asr", slug: "asr-suresi" },
+            { no: 104, name: "Hümeze", slug: "humeze-suresi" },
+            { no: 105, name: "Fîl", slug: "fil-suresi" },
+            { no: 106, name: "Kureyş", slug: "kureys-suresi" },
+            { no: 107, name: "Mâûn", slug: "maun-suresi" },
+            { no: 108, name: "Kevser", slug: "kevser-suresi" },
+            { no: 109, name: "Kâfirûn", slug: "kafirun-suresi" },
+            { no: 110, name: "Nasr", slug: "nasr-suresi" },
+            { no: 111, name: "Tebbet", slug: "tebbet-suresi" },
+            { no: 112, name: "İhlâs", slug: "ihlas-suresi" },
+            { no: 113, name: "Felak", slug: "felak-suresi" },
+            { no: 114, name: "Nâs", slug: "nas-suresi" }
+        ];
+
         // --- GLOBAL VARS ---
         const datePicker = document.getElementById('datePicker');
         let currentSurahs = [];
@@ -428,12 +438,9 @@
         datePicker.value = today;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Namaz Init
             loadDay(today);
             calculateStats();
             renderMissedList();
-            
-            // Sure Init
             loadSurahs();
         });
 
@@ -445,27 +452,65 @@
         function switchTab(tabId, btn) {
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             
-            // FAB Kontrolü
             const fab = document.getElementById('fabAddSurah');
             if(tabId === 'surahs') {
                 fab.classList.remove('hidden');
-                // Tab değişince liste görünümüne dön
                 closeSurahDetail();
             } else {
                 fab.classList.add('hidden');
             }
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ==========================================
-        //  URL FETCH LOGIC (CORS PROXY + PARSER)
+        //  URL FETCH LOGIC (SINGLE & BATCH)
         // ==========================================
-        async function fetchSurahFromUrl() {
+        
+        async function fetchContent(url) {
+            // CORS Proxy (AllOrigins)
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error("Bağlantı hatası");
+            const htmlText = await response.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+
+            let fullArabic = "";
+            let fullReading = "";
+            let fullMeaning = "";
+
+            const verses = doc.querySelectorAll('.kuran_ayet_box');
+            if (verses.length > 0) {
+                verses.forEach((v) => {
+                    const arabic = v.querySelector('.kuran_ayet_arapca, .arab')?.innerText.trim() || "";
+                    const reading = v.querySelector('.kuran_ayet_okunus, .trans')?.innerText.trim() || "";
+                    const meaning = v.querySelector('.kuran_ayet_meal, .meal')?.innerText.trim() || "";
+                    
+                    let no = "";
+                    const noEl = v.querySelector('.kuran_ayet_no');
+                    if(noEl) no = "(" + noEl.innerText.trim() + ") ";
+
+                    if(arabic) fullArabic += arabic + " " + "\u06DD" + " ";
+                    if(reading) fullReading += reading + " ";
+                    if(meaning) fullMeaning += no + meaning + " ";
+                });
+            } else {
+                throw new Error("Site yapısı okunamadı.");
+            }
+
+            return { 
+                arabic: fullArabic.trim(), 
+                reading: fullReading.trim(), 
+                meaning: fullMeaning.trim() 
+            };
+        }
+
+        // --- TEK LİNK İLE ÇEKME (MODAL İÇİ) ---
+        async function fetchSingleSurah() {
             const urlInput = document.getElementById('urlInput');
             const statusEl = document.getElementById('fetchStatus');
             const btn = document.getElementById('fetchBtn');
@@ -473,83 +518,80 @@
 
             if (!url) { alert("Lütfen bir link yapıştırın."); return; }
 
-            // UI Feedback
             btn.disabled = true;
             btn.innerText = "İşleniyor...";
             statusEl.style.display = 'block';
             statusEl.innerText = "Siteye bağlanılıyor...";
-            statusEl.style.color = "var(--accent-green)";
-
-            // CORS Proxy (AllOrigins)
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
 
             try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Bağlantı hatası");
-                
-                const htmlText = await response.text();
-                statusEl.innerText = "Veri işleniyor...";
-
-                // Parse HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlText, 'text/html');
-
-                // --- Parsing Logic for namazzamani.net ---
-                // Bu site genellikle <div class="ayet"> yapısını kullanır veya benzer bloklar.
-                // Biz en genel yapıyı hedefleyelim: Ayet numarası, Arapça, Okunuş, Meal
-                
-                let title = doc.querySelector('h1')?.innerText.trim() || "Yeni Sure";
-                
-                // Başlıktaki fazla kelimeleri temizle
-                title = title.replace("Suresi Türkçe Meali", "Suresi").trim();
-
-                // Ayetleri topla
-                let fullArabic = "";
-                let fullReading = "";
-                let fullMeaning = "";
-
-                // namazzamani.net spesifik yapısı (Genellikle .kuran_ayet_box içinde)
-                const verses = doc.querySelectorAll('.kuran_ayet_box');
-                
-                if (verses.length > 0) {
-                    verses.forEach((v) => {
-                        const arabic = v.querySelector('.kuran_ayet_arapca, .arab')?.innerText.trim() || "";
-                        const reading = v.querySelector('.kuran_ayet_okunus, .trans')?.innerText.trim() || "";
-                        const meaning = v.querySelector('.kuran_ayet_meal, .meal')?.innerText.trim() || "";
-                        
-                        // Ayet numarası bulmaya çalış
-                        let no = "";
-                        const noEl = v.querySelector('.kuran_ayet_no');
-                        if(noEl) no = "(" + noEl.innerText.trim() + ") ";
-
-                        if(arabic) fullArabic += arabic + " " + "\u06DD" + " "; // Ayet sonu işareti
-                        if(reading) fullReading += reading + " ";
-                        if(meaning) fullMeaning += no + meaning + " ";
-                    });
-                } else {
-                    // Yedek Plan: Eğer class'lar değişmişse daha genel div araması
-                    // Bu kısım riskli olabilir ama denemekte fayda var.
-                    // Şimdilik boş bırakıp kullanıcıya manuel doldurma şansı verelim.
-                    throw new Error("Ayet yapısı algılanamadı. Lütfen manuel giriniz.");
-                }
-
-                // Inputları doldur
-                document.getElementById('newSurahTitle').value = title;
-                document.getElementById('newSurahArabic').value = fullArabic.trim();
-                document.getElementById('newSurahReading').value = fullReading.trim();
-                document.getElementById('newSurahMeaning').value = fullMeaning.trim();
-
+                const data = await fetchContent(url);
+                // Başlığı URL'den tahmin etmeye çalış veya varsayılan bırak
+                document.getElementById('newSurahArabic').value = data.arabic;
+                document.getElementById('newSurahReading').value = data.reading;
+                document.getElementById('newSurahMeaning').value = data.meaning;
                 statusEl.innerText = "Başarıyla çekildi!";
-                
             } catch (error) {
                 console.error(error);
-                statusEl.innerText = "Hata: Veri çekilemedi. Linki kontrol edin.";
-                statusEl.style.color = "var(--missed-color)";
-                alert("Site yapısı değişmiş veya erişim engeli var. Lütfen manuel ekleyin.");
+                statusEl.innerText = "Hata: Veri çekilemedi.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Getir";
             }
+        }
+
+        // --- BATCH DOWNLOAD (82-114) ---
+        async function downloadAllSurahs() {
+            const btn = document.getElementById('btnBatchDownload');
+            const progress = document.getElementById('batchProgress');
+            const baseUrl = "https://www.namazzamani.net/kuranmeali/";
+            
+            if(!confirm("Bu işlem 33 surenin verisini internetten çekecektir. Devam edilsin mi?")) return;
+
+            btn.disabled = true;
+            progress.style.display = 'block';
+            
+            let successCount = 0;
+
+            for (let i = 0; i < targetSurahs.length; i++) {
+                const item = targetSurahs[i];
+                const fullUrl = baseUrl + item.slug + ".htm";
+                const title = `${item.no}-${item.name} Suresi`;
+
+                progress.innerText = `İndiriliyor: ${item.name} (${i+1}/${targetSurahs.length})...`;
+
+                // Zaten var mı kontrol et (varsa atla veya güncelle - burada güncelliyoruz)
+                try {
+                    const data = await fetchContent(fullUrl);
+                    
+                    // Var olanı sil
+                    currentSurahs = currentSurahs.filter(s => !s.title.startsWith(item.no + "-"));
+                    
+                    // Yeni ekle
+                    currentSurahs.push({
+                        id: Date.now() + i, // Unique ID
+                        title: title,
+                        arabic: data.arabic,
+                        reading: data.reading,
+                        meaning: data.meaning
+                    });
+                    
+                    successCount++;
+                } catch (e) {
+                    console.log(`Hata (${item.name}):`, e);
+                }
+                
+                // Biraz bekle (Rate limit önlemek için)
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            saveAllSurahs();
+            progress.innerText = `Tamamlandı! ${successCount} sure eklendi.`;
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-check"></i> Güncelleme Tamamlandı`;
+            setTimeout(() => { 
+                progress.style.display = 'none'; 
+                btn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> Tüm Sureleri İndir / Güncelle (82-114)`;
+            }, 3000);
         }
 
         // ==========================================
@@ -585,7 +627,7 @@
             container.innerHTML = '';
 
             if(currentSurahs.length === 0) {
-                container.innerHTML = '<div style="text-align:center; opacity:0.6; padding:20px;">Henüz sure eklenmemiş.<br>+ butonuna basarak ekleyin.</div>';
+                container.innerHTML = '<div style="text-align:center; opacity:0.6; padding:20px;">Henüz sure eklenmemiş.<br>Yukarıdaki butona basarak otomatik indirin.</div>';
                 return;
             }
 
@@ -603,14 +645,12 @@
         }
 
         function openAddModal() {
-            // Reset fields
             document.getElementById('urlInput').value = '';
             document.getElementById('fetchStatus').style.display = 'none';
             document.getElementById('newSurahTitle').value = '';
             document.getElementById('newSurahArabic').value = '';
             document.getElementById('newSurahReading').value = '';
             document.getElementById('newSurahMeaning').value = '';
-            
             document.getElementById('modalAddSurah').classList.add('open');
         }
 
@@ -658,6 +698,7 @@
             `;
 
             document.getElementById('surahListView').classList.add('hidden');
+            document.getElementById('btnBatchDownload').classList.add('hidden');
             document.getElementById('surahDetailView').classList.remove('hidden');
             window.scrollTo(0,0);
         }
@@ -665,11 +706,11 @@
         function closeSurahDetail() {
             document.getElementById('surahDetailView').classList.add('hidden');
             document.getElementById('surahListView').classList.remove('hidden');
+            document.getElementById('btnBatchDownload').classList.remove('hidden');
         }
 
-
         // ==========================================
-        //  NAMAZ TAKİP MANTIĞI (Önceki kodların aynısı)
+        //  NAMAZ TAKİP MANTIĞI (STANDART)
         // ==========================================
         function getStoredPrayerData() {
             const stored = localStorage.getItem(PRAYER_KEY);
@@ -716,7 +757,6 @@
         function toggleStatus(date, prayerId, requestedType) {
             const data = getStoredPrayerData();
             if (!data[date]) data[date] = {};
-            
             let currentStatus = data[date][prayerId];
             if (currentStatus === true) currentStatus = 'vakit';
 
@@ -725,7 +765,6 @@
             } else {
                 data[date][prayerId] = requestedType;
             }
-
             savePrayerData(data);
             loadDay(date);
             calculateStats();
