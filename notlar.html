@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Glass Planner Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --primary-text: #ffffff;
+            --accent-color: #00f2ff;
+            --modal-bg: rgba(30, 30, 40, 0.95);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: var(--primary-text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Arkaplan Efektleri */
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(90px); z-index: 0;
+            animation: float 10s infinite ease-in-out;
+        }
+        .blob-1 { top: -10%; left: -20%; width: 350px; height: 350px; background: #8E2DE2; }
+        .blob-2 { bottom: -10%; right: -20%; width: 400px; height: 400px; background: #4A00E0; animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+
+        /* Ana Konteyner */
+        .app-container {
+            position: relative; z-index: 10; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+        }
+
+        /* Glass Panel */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: var(--glass-shadow);
+            padding: 24px;
+            margin-top: 10px;
+            flex: 1;
+            display: flex; flex-direction: column; overflow: hidden;
+            position: relative;
+        }
+
+        /* Ekranlar Arası Geçiş */
+        .screen {
+            display: none; flex-direction: column; height: 100%;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1, h2 { margin: 0; font-weight: 700; }
+        .date-display { font-size: 28px; letter-spacing: -0.5px; }
+
+        /* Üst Bar */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Butonlar */
+        .btn-icon {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-icon:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
+
+        .btn-add {
+            background: var(--accent-color); color: #000;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+
+        .btn-main {
+            background: linear-gradient(92deg, #00c6ff, #0072ff);
+            border: none; border-radius: 16px; color: white;
+            padding: 18px; font-size: 18px; font-weight: 600;
+            width: 100%; margin-top: auto;
+            box-shadow: 0 4px 20px rgba(0, 114, 255, 0.3);
+        }
+
+        /* Liste Alanı */
+        .task-list {
+            flex: 1; overflow-y: auto; padding-right: 5px;
+        }
+        .task-item {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 12px; padding: 16px;
+            border-radius: 18px; display: flex; align-items: center;
+            transition: 0.3s;
+        }
+        .task-item.completed { opacity: 0.5; }
+        .task-item.completed .task-text { text-decoration: line-through; }
+
+        .checkbox {
+            width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--accent-color);
+            margin-right: 15px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .checkbox.checked { background: var(--accent-color); }
+        .checkbox.checked::after { content: '✓'; color: black; font-weight: bold; font-size: 14px; }
+
+        .task-content { flex: 1; }
+        .task-text { font-size: 16px; font-weight: 500; }
+        .task-meta { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 4px; display: flex; gap: 8px; align-items: center; }
+
+        /* Inputlar */
+        input[type="date"] {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 15px; border-radius: 14px; width: 100%;
+            font-size: 18px; margin: 20px 0; font-family: inherit;
+        }
+
+        /* MODAL (Not Ekleme) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            z-index: 100; display: none; justify-content: center; align-items: flex-end;
+        }
+        .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .modal-content {
+            background: #1e1e24; width: 100%; border-radius: 30px 30px 0 0;
+            padding: 25px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .modal-input {
+            width: 100%; background: #2a2a35; border: none; color: white;
+            padding: 16px; border-radius: 14px; font-size: 16px;
+        }
+        .time-input { flex: 0.4; background: #2a2a35; border: none; color: white; padding: 16px; border-radius: 14px; }
+
+        /* HANDWRITING CANVAS */
+        .canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 200; display: none; flex-direction: column;
+        }
+        .canvas-container.open { display: flex; }
+        canvas { background: white; width: 100%; flex: 1; touch-action: none; }
+        .canvas-tools {
+            padding: 12px 12px; background: #1a1a2e; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid #333; gap: 10px;
+        }
+
+        .tool-group { display: flex; gap: 10px; align-items: center; }
+        .tool-chip {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: white;
+            border-radius: 14px;
+            padding: 8px 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tool-chip input[type="range"] { width: 110px; }
+
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* OCR preview (opsiyonel debug) */
+        .ocr-preview {
+            width: 86px; height: 52px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.06);
+            object-fit: cover;
+            display: none; /* istersen true yap */
+        }
+    </style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="app-container">
+    <div class="glass-panel">
+
+        <div id="screen-welcome" class="screen active">
+            <div style="margin-top: 20px;">
+                <h1 style="font-size: 32px;">Hoş Geldin.</h1>
+                <p style="opacity: 0.7;">Planlamak istediğin günü seç.</p>
+            </div>
+
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                <input type="date" id="datePicker">
+            </div>
+
+            <button class="btn-main" onclick="openSelectedDate()">
+                Devam Et <i class="fas fa-chevron-right" style="margin-left: 10px;"></i>
+            </button>
+        </div>
+
+        <div id="screen-tasks" class="screen">
+            <div class="top-bar">
+                <button class="btn-icon" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <div style="text-align: center;">
+                    <span style="font-size: 12px; opacity: 0.7; display: block;">Seçili Tarih</span>
+                    <span id="displayDate" style="font-size: 18px; font-weight: 600;">--</span>
+                </div>
+                <button class="btn-icon btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <div id="taskList" class="task-list">
+                <div style="text-align: center; opacity: 0.5; margin-top: 50px;">
+                    <i class="fas fa-clipboard-list" style="font-size: 40px; margin-bottom: 10px;"></i>
+                    <p>Henüz not yok.<br>Sağ üstten ekleyebilirsin.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="addModal" class="modal-overlay" onclick="if(event.target === this) closeAddModal()">
+    <div class="modal-content">
+        <h3 style="margin: 0 0 15px 0;">Yeni Not Ekle</h3>
+
+        <div class="input-row">
+            <input type="text" id="modalTaskInput" class="modal-input" placeholder="Notunu yaz...">
+            <button class="btn-icon" onclick="openCanvas()" style="background: #2a2a35; min-width: 50px;">
+                <i class="fas fa-pen-nib"></i>
+            </button>
+            <button id="micBtn" class="btn-icon" onclick="toggleSpeech()" style="background: #2a2a35; min-width: 50px;">
+                <i class="fas fa-microphone"></i>
+            </button>
+        </div>
+
+        <div class="input-row">
+            <div style="flex: 1; display: flex; align-items: center; background: #2a2a35; padding: 0 15px; border-radius: 14px; color: #aaa; font-size: 14px;">
+                <i class="fas fa-bell" style="margin-right: 10px;"></i> Alarm:
+            </div>
+            <input type="time" id="modalTimeInput" class="time-input">
+        </div>
+
+        <button class="btn-main" onclick="saveTaskFromModal()" style="margin-top: 10px; border-radius: 14px; padding: 14px;">
+            Kaydet
+        </button>
+    </div>
+</div>
+
+<!-- Canvas + OCR -->
+<div id="canvasModal" class="canvas-container">
+    <div class="canvas-tools">
+        <button onclick="closeCanvas()" style="color: white; background: none; border: none; font-size: 16px;">İptal</button>
+
+        <div class="tool-group">
+            <button class="btn-icon" onclick="triggerBoardImage()" title="Tahta fotoğrafı yükle" style="background:#2a2a35; width:44px; height:44px;">
+                <i class="fas fa-camera"></i>
+            </button>
+            <button class="btn-icon" onclick="rotateBoard(-90)" title="Sola çevir" style="background:#2a2a35; width:44px; height:44px;">
+                <i class="fas fa-rotate-left"></i>
+            </button>
+            <button class="btn-icon" onclick="rotateBoard(90)" title="Sağa çevir" style="background:#2a2a35; width:44px; height:44px;">
+                <i class="fas fa-rotate-right"></i>
+            </button>
+
+            <div class="tool-chip" title="Kalem kalınlığı">
+                <i class="fas fa-pen"></i>
+                <span id="penLabel">6</span>
+                <input id="penSize" type="range" min="3" max="12" value="6" oninput="setPenSize(this.value)">
+            </div>
+
+            <img id="ocrPreview" class="ocr-preview" alt="OCR Preview">
+        </div>
+
+        <button onclick="clearCanvas()" style="color: #ff4757; background: none; border: none; font-size: 16px;">Temizle</button>
+    </div>
+
+    <canvas id="drawingCanvas"></canvas>
+
+    <div style="padding: 18px; background: #1a1a2e; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <span id="ocrHint" style="font-size: 12px; color: #888;">İpucu: Kalın ve ayrı harflerle yaz.</span>
+        <button onclick="convertHandwriting()" class="btn-main" style="width: auto; padding: 10px 20px; margin: 0; display: flex; align-items: center; gap: 10px; border-radius: 14px;">
+            <div id="ocrLoader" class="loader"></div>
+            <span id="ocrBtnText">Metne Çevir & Ekle</span>
+        </button>
+    </div>
+</div>
+
+<!-- Fotoğraf seçici (gizli) -->
+<input type="file" id="boardImageInput" accept="image/*" capture="environment" style="display:none">
+
+<audio id="alarmSound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"></audio>
+
+<script>
+    // --- Değişkenler ---
+    let tasks = [];
+    let selectedDate = '';
+    let recognition;
+    let isRecording = false;
+
+    // Canvas Değişkenleri
+    const canvas = document.getElementById('drawingCanvas');
+    let ctx = null;
+
+    // OCR / Board image
+    const boardImageInput = document.getElementById('boardImageInput');
+    let boardBaseCanvas = null;
+    let boardRotation = 0;
+    let penSize = 6;
+
+    // Drawing state
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // OCR Worker
+    let ocrWorker = null;
+    let ocrReady = false;
+    let ocrInitInFlight = false;
+
+    // --- Başlangıç ---
+    window.onload = () => {
+        // 1. Tarih Ayarı
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
+        document.getElementById('datePicker').value = localISOTime;
+
+        loadTasks();
+        setupSpeech();
+        setupCanvas();
+        requestNotificationPermission();
+
+        // Alarm döngüsü
+        setInterval(checkAlarms, 10000);
+
+        // OCR Hazırlığı
+        initOCR().catch(e => console.log("OCR ön yükleme uyarısı:", e));
+    };
+
+    // --- Navigasyon ---
+    function openSelectedDate() {
+        const dateInput = document.getElementById('datePicker').value;
+        if(!dateInput) return;
+        selectedDate = dateInput;
+
+        const d = new Date(selectedDate);
+        const options = { day: 'numeric', month: 'long', weekday: 'long' };
+        document.getElementById('displayDate').innerText = d.toLocaleDateString('tr-TR', options);
+
+        document.getElementById('screen-welcome').classList.remove('active');
+        document.getElementById('screen-tasks').classList.add('active');
+        renderTasks();
+    }
+
+    function goBack() {
+        document.getElementById('screen-tasks').classList.remove('active');
+        document.getElementById('screen-welcome').classList.add('active');
+    }
+
+    // --- Modal Yönetimi ---
+    function openAddModal() {
+        document.getElementById('modalTaskInput').value = '';
+        document.getElementById('modalTimeInput').value = '';
+        document.getElementById('addModal').classList.add('open');
+        document.getElementById('modalTaskInput').focus();
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.remove('open');
+    }
+
+    // --- Görev İşlemleri ---
+    function saveTaskFromModal() {
+        const text = document.getElementById('modalTaskInput').value.trim();
+        const time = document.getElementById('modalTimeInput').value;
+
+        if(!text) { alert('Lütfen not yazın.'); return; }
+
+        const newTask = {
+            id: Date.now(),
+            date: selectedDate,
+            text: text,
+            time: time,
+            completed: false,
+            alarmTriggered: false
+        };
+
+        tasks.push(newTask);
+        saveTasks();
+        renderTasks();
+        closeAddModal();
+    }
+
+    function toggleComplete(id) {
+        const task = tasks.find(t => t.id === id);
+        if(task) {
+            task.completed = !task.completed;
+            saveTasks();
+            renderTasks();
+        }
+    }
+
+    function deleteTask(e, id) {
+        e.stopPropagation();
+        if(confirm('Silmek istediğine emin misin?')) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        const filteredTasks = tasks.filter(t => t.date === selectedDate);
+
+        if(filteredTasks.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; opacity: 0.5; margin-top: 50px;">
+                    <i class="fas fa-clipboard-list" style="font-size: 40px; margin-bottom: 10px;"></i>
+                    <p>Henüz not yok.<br>Sağ üstten ekleyebilirsin.</p>
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        filteredTasks.forEach(task => {
+            const div = document.createElement('div');
+            div.className = `task-item ${task.completed ? 'completed' : ''}`;
+            div.onclick = () => toggleComplete(task.id);
+
+            const timeHtml = task.time ? `<span style="color:var(--accent-color)"><i class="far fa-clock"></i> ${task.time}</span>` : '';
+
+            div.innerHTML = `
+                <div class="checkbox ${task.completed ? 'checked' : ''}"></div>
+                <div class="task-content">
+                    <div class="task-text">${task.text}</div>
+                    <div class="task-meta">${timeHtml}</div>
+                </div>
+                <button class="btn-icon" style="width:30px; height:30px; background:none; color:#ff4757;" onclick="deleteTask(event, ${task.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    // --- Veri Saklama ---
+    function saveTasks() { localStorage.setItem('glassProTasks', JSON.stringify(tasks)); }
+    function loadTasks() {
+        const data = localStorage.getItem('glassProTasks');
+        if(data) tasks = JSON.parse(data);
+    }
+
+    // =========================================================
+    //  GELİŞMİŞ AKILLI TAHTA (CANVAS + OCR)
+    // =========================================================
+
+    function setupCanvas() {
+        try {
+            ctx = canvas.getContext('2d', { willReadFrequently: true });
+        } catch (e) {
+            ctx = canvas.getContext('2d');
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        canvas.addEventListener('pointerdown', startDrawing, { passive: false });
+        canvas.addEventListener('pointermove', draw, { passive: false });
+        window.addEventListener('pointerup', stopDrawing, { passive: true });
+        canvas.addEventListener('pointercancel', stopDrawing, { passive: true });
+
+        boardImageInput.addEventListener('change', handleBoardImage);
+        setPenSize(penSize);
+    }
+
+    function resizeCanvas() {
+        const prev = document.createElement('canvas');
+        prev.width = canvas.width || 1;
+        prev.height = canvas.height || 1;
+        const pctx = prev.getContext('2d');
+        pctx.drawImage(canvas, 0, 0);
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 150;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        redrawBoardBase();
+
+        try {
+            ctx.drawImage(prev, 0, 0, prev.width, prev.height, 0, 0, canvas.width, canvas.height);
+        } catch (e) {}
+    }
+
+    function setPenSize(v) {
+        penSize = Number(v) || 6;
+        const lbl = document.getElementById('penLabel');
+        if (lbl) lbl.textContent = String(penSize);
+    }
+
+    function getCanvasPoint(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        return { x, y };
+    }
+
+    function startDrawing(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const p = getCanvasPoint(e);
+        lastX = p.x; lastY = p.y;
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const p = getCanvasPoint(e);
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = penSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        lastX = p.x; lastY = p.y;
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    function clearCanvas() {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        redrawBoardBase();
+    }
+
+    function openCanvas() {
+        document.getElementById('canvasModal').classList.add('open');
+        if (!boardBaseCanvas) clearCanvas();
+    }
+
+    function closeCanvas() {
+        document.getElementById('canvasModal').classList.remove('open');
+    }
+
+    function triggerBoardImage() {
+        boardImageInput.value = '';
+        boardImageInput.click();
+    }
+
+    async function handleBoardImage(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const img = new Image();
+        img.onload = () => {
+            const maxDim = 2048;
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+
+            boardBaseCanvas = document.createElement('canvas');
+            boardBaseCanvas.width = w;
+            boardBaseCanvas.height = h;
+            const bctx = boardBaseCanvas.getContext('2d');
+            bctx.fillStyle = '#fff';
+            bctx.fillRect(0,0,w,h);
+            bctx.drawImage(img, 0, 0, w, h);
+
+            boardRotation = 0;
+            clearCanvas();
+        };
+        img.onerror = () => alert("Fotoğraf yüklenemedi.");
+        img.src = URL.createObjectURL(file);
+    }
+
+    function rotateBoard(deg) {
+        if (!boardBaseCanvas) return;
+        boardRotation = (boardRotation + deg) % 360;
+        clearCanvas();
+    }
+
+    function redrawBoardBase() {
+        if (!boardBaseCanvas) return;
+
+        const w = canvas.width, h = canvas.height;
+        ctx.save();
+        ctx.translate(w/2, h/2);
+        ctx.rotate((boardRotation * Math.PI)/180);
+
+        const bw = boardBaseCanvas.width;
+        const bh = boardBaseCanvas.height;
+        const s = Math.min(w / bw, h / bh);
+        const dw = bw * s;
+        const dh = bh * s;
+
+        ctx.drawImage(boardBaseCanvas, -dw/2, -dh/2, dw, dh);
+        ctx.restore();
+    }
+
+    // =========================================================
+    //  OCR: Tesseract v5 FIX
+    // =========================================================
+
+    async function initOCR() {
+        if (ocrReady) return;
+        if (ocrInitInFlight) return;
+        ocrInitInFlight = true;
+
+        try {
+            // Tesseract v5 Sözdizimi: createWorker('diller', oem, seçenekler)
+            // 'tur+eng' dillerini doğrudan buraya veriyoruz.
+            // Eski 'loadLanguage' ve 'initialize' adımları v5'te createWorker içinde yapılır.
+            ocrWorker = await Tesseract.createWorker('tur+eng', 1, {
+                logger: (m) => {
+                    const btnText = document.getElementById('ocrBtnText');
+                    if (btnText && m && m.status && typeof m.progress === 'number') {
+                        const pct = Math.round(m.progress * 100);
+                        if(m.status === 'recognizing text') {
+                            btnText.innerText = `Okunuyor... (${pct}%)`;
+                        } else {
+                            btnText.innerText = `Hazırlanıyor...`;
+                        }
+                    }
+                }
+            });
+
+            // Parametreleri worker oluştuktan sonra ayarla
+            await ocrWorker.setParameters({
+                user_defined_dpi: '300',
+                preserve_interword_spaces: '1'
+            });
+
+            ocrReady = true;
+            console.log("OCR Motoru Hazır!");
+        } catch (error) {
+            console.error("OCR Başlatma Hatası:", error);
+            // Hata fırlatma, convertHandwriting içinde yakalanacak
+            throw error;
+        } finally {
+            ocrInitInFlight = false;
+        }
+    }
+
+    function getBestConfidence(data) {
+        if (!data) return 0;
+        if (Array.isArray(data.words) && data.words.length) {
+            const good = data.words.filter(w => w && w.text && w.text.trim().length > 0 && w.confidence >= 0);
+            if (!good.length) return data.confidence || 0;
+            return good.reduce((s, w) => s + w.confidence, 0) / good.length;
+        }
+        return data.confidence || 0;
+    }
+
+    function postProcessText(txt) {
+        if (!txt) return '';
+        let t = txt.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim();
+        return t.replace(/ﬁ/g, 'fi').replace(/’/g, "'");
+    }
+
+    function createCanvas(w, h) {
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, w);
+        c.height = Math.max(1, h);
+        return c;
+    }
+
+    function cropToContent(srcCanvas, pad = 18) {
+        const w = srcCanvas.width, h = srcCanvas.height;
+        const sctx = srcCanvas.getContext('2d', { willReadFrequently: true }) || srcCanvas.getContext('2d');
+        const img = sctx.getImageData(0, 0, w, h);
+        const d = img.data;
+        let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+
+        for (let y = 0; y < h; y += 2) {
+            for (let x = 0; x < w; x += 2) {
+                const i = (y * w + x) * 4;
+                if (d[i] < 245 || d[i+1] < 245 || d[i+2] < 245) {
+                    found = true;
+                    if (x < minX) minX = x; if (y < minY) minY = y;
+                    if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (!found) return srcCanvas;
+        minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+        maxX = Math.min(w - 1, maxX + pad); maxY = Math.min(h - 1, maxY + pad);
+        const cw = maxX - minX + 1, ch = maxY - minY + 1;
+        const out = createCanvas(cw, ch);
+        out.getContext('2d').drawImage(srcCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
+        return out;
+    }
+
+    function scaleUp(srcCanvas, maxDim = 2200, preferScale = 3) {
+        const w = srcCanvas.width, h = srcCanvas.height;
+        const s = Math.min(preferScale, maxDim / Math.max(w, h));
+        const nw = Math.round(w * s), nh = Math.round(h * s);
+        if (nw === w && nh === h) return srcCanvas;
+        const out = createCanvas(nw, nh);
+        const octx = out.getContext('2d');
+        octx.imageSmoothingEnabled = true;
+        octx.fillStyle = '#fff';
+        octx.fillRect(0,0,nw,nh);
+        octx.drawImage(srcCanvas, 0, 0, w, h, 0, 0, nw, nh);
+        return out;
+    }
+
+    function toGrayscaleAndContrast(srcCanvas, contrast = 1.8) {
+        const out = createCanvas(srcCanvas.width, srcCanvas.height);
+        const octx = out.getContext('2d');
+        octx.fillStyle = '#fff';
+        octx.fillRect(0,0,out.width,out.height);
+        octx.filter = `grayscale(1) contrast(${contrast})`;
+        octx.drawImage(srcCanvas, 0, 0);
+        octx.filter = 'none';
+        return out;
+    }
+
+    function binarizeOtsu(srcCanvas) {
+         // (Otsu implementations are largely generic, shortened for brevity but logic kept)
+        const out = createCanvas(srcCanvas.width, srcCanvas.height);
+        const octx = out.getContext('2d');
+        octx.drawImage(srcCanvas, 0, 0);
+        const img = octx.getImageData(0,0,out.width,out.height);
+        const d = img.data;
+        const gray = new Uint8ClampedArray(out.width*out.height);
+        const hist = new Array(256).fill(0);
+        
+        for(let i=0,p=0; i<d.length; i+=4,p++) {
+            const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114)|0;
+            gray[p] = g;
+            hist[g]++;
+        }
+        
+        // Threshold calc
+        let sum=0; for(let t=0;t<256;t++) sum += t*hist[t];
+        let sumB=0, wB=0, wF=0, maxVar=0, th=128, total=gray.length;
+        for(let t=0; t<256; t++) {
+            wB += hist[t]; if(wB===0) continue;
+            wF = total - wB; if(wF===0) break;
+            sumB += t*hist[t];
+            const mB=sumB/wB, mF=(sum-sumB)/wF;
+            const v = wB*wF*(mB-mF)*(mB-mF);
+            if(v > maxVar) { maxVar=v; th=t; }
+        }
+
+        for(let i=0,p=0; i<d.length; i+=4,p++) {
+            const val = gray[p] < th ? 0 : 255;
+            d[i]=d[i+1]=d[i+2]=val; d[i+3]=255;
+        }
+        octx.putImageData(img,0,0);
+        return out;
+    }
+
+    function dilateBlack(srcCanvas, iterations = 1) {
+        const w = srcCanvas.width, h = srcCanvas.height;
+        const out = createCanvas(w, h);
+        const sctx = srcCanvas.getContext('2d');
+        const octx = out.getContext('2d');
+        let img = sctx.getImageData(0,0,w,h);
+        
+        for(let it=0; it<iterations; it++) {
+            const src = img.data;
+            const next = new ImageData(w,h);
+            const dst = next.data;
+            dst.fill(255); // Default white
+            
+            for(let y=1; y<h-1; y++){
+                for(let x=1; x<w-1; x++){
+                     // If any neighbor is black, make this black
+                     let black = false;
+                     // 3x3 kernel check for black pixel (0)
+                     if(src[((y)*w+x)*4] < 128) black = true; 
+                     else if (src[((y)*w+x-1)*4] < 128) black = true;
+                     else if (src[((y)*w+x+1)*4] < 128) black = true;
+                     else if (src[((y-1)*w+x)*4] < 128) black = true;
+                     else if (src[((y+1)*w+x)*4] < 128) black = true;
+
+                     if(black) {
+                         const i = (y*w+x)*4;
+                         dst[i]=dst[i+1]=dst[i+2]=0; dst[i+3]=255;
+                     }
+                }
+            }
+            img = next;
+        }
+        octx.putImageData(img,0,0);
+        return out;
+    }
+
+    async function runMultiPassOCR(preppedCanvas) {
+        const paramSets = [
+            { tessedit_pageseg_mode: 6, preserve_interword_spaces: '1' },
+            { tessedit_pageseg_mode: 4, preserve_interword_spaces: '1' },
+            { 
+              tessedit_pageseg_mode: 6, preserve_interword_spaces: '1',
+              tessedit_char_whitelist: "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZabcçdefgğhıijklmnoöprsştuüvyz0123456789.,:;!?-() " 
+            }
+        ];
+        let best = { text: '', conf: -1 };
+        
+        for (const params of paramSets) {
+            await ocrWorker.setParameters(params);
+            const res = await ocrWorker.recognize(preppedCanvas);
+            const txt = postProcessText(res?.data?.text || '');
+            const conf = getBestConfidence(res?.data);
+            if (txt && txt.length > 0 && conf > best.conf) {
+                best = { text: txt, conf };
+            }
+        }
+        return best;
+    }
+
+    function updateOcrUI(isBusy, msg) {
+        const btnText = document.getElementById('ocrBtnText');
+        const loader = document.getElementById('ocrLoader');
+        if (isBusy) {
+            loader.style.display = 'block';
+            btnText.innerText = msg || 'Okunuyor...';
+        } else {
+            loader.style.display = 'none';
+            btnText.innerText = 'Metne Çevir & Ekle';
+        }
+    }
+
+    async function convertHandwriting() {
+        try {
+            updateOcrUI(true, 'Başlatılıyor...');
+            await initOCR();
+
+            updateOcrUI(true, 'Görüntü İşleniyor...');
+            // Pre-processing
+            const cropped = cropToContent(canvas, 22);
+            const scaled = scaleUp(cropped, 2200, 3);
+            
+            const v0 = toGrayscaleAndContrast(scaled, 2.0);
+            const v1 = binarizeOtsu(v0);
+            const v1b = dilateBlack(v1, 1);
+
+            updateOcrUI(true, 'Yapay Zeka Okuyor...');
+            const c1 = await runMultiPassOCR(v1b);
+            const c2 = await runMultiPassOCR(v1);
+
+            const best = (c1.conf > c2.conf) ? c1 : c2;
+            const cleanText = (best.text || '').trim();
+
+            if (cleanText) {
+                const input = document.getElementById('modalTaskInput');
+                input.value += (input.value ? ' ' : '') + cleanText;
+                closeCanvas();
+                clearCanvas();
+            } else {
+                alert("Yazı okunamadı. Lütfen daha net yazın.");
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Hata oluştu: " + (error.message || error));
+        } finally {
+            updateOcrUI(false);
+        }
+    }
+
+    // --- Sesli Komut ---
+    function setupSpeech() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = false;
+            recognition.onresult = (e) => {
+                document.getElementById('modalTaskInput').value = e.results[0][0].transcript;
+                document.getElementById('micBtn').style.color = 'white';
+                isRecording = false;
+            };
+            recognition.onend = () => { isRecording = false; document.getElementById('micBtn').style.color = 'white'; };
+        }
+    }
+
+    function toggleSpeech() {
+        if(!recognition) return alert('Tarayıcı desteklemiyor');
+        if(isRecording) { recognition.stop(); }
+        else { recognition.start(); isRecording = true; document.getElementById('micBtn').style.color = '#ff4757'; }
+    }
+
+    // --- Alarm ---
+    function requestNotificationPermission() {
+        if ("Notification" in window) Notification.requestPermission();
+    }
+
+    function checkAlarms() {
+        const now = new Date();
+        const currentTime = now.toTimeString().substring(0, 5);
+        const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+        tasks.forEach(task => {
+            if (task.date === todayStr && task.time === currentTime && !task.alarmTriggered && !task.completed) {
+                playAlarm(task.text);
+                task.alarmTriggered = true;
+                saveTasks();
+            }
+        });
+    }
+
+    function playAlarm(text) {
+        document.getElementById('alarmSound').play().catch(e => console.log("Ses oynatılamadı."));
+        if (Notification.permission === "granted") new Notification("⏰ Hatırlatıcı", { body: text });
+        else alert("ALARM: " + text);
+    }
+</script>
+<script>
+    (function syncDateFromUrl() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const externalDate = urlParams.get('date');
+            
+            if (externalDate) {
+                // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
+                const dateInputs = [
+                    'datePicker',      // Notlar, Namaz, Kitap
+                    'date-picker',     // İngilizce
+                    'input-date'       // Bütçe (Yatırım)
+                ];
+
+                let targetInput = null;
+                for (let id of dateInputs) {
+                    targetInput = document.getElementById(id);
+                    if (targetInput) break;
+                }
+
+                if (targetInput) {
+                    targetInput.value = externalDate;
+                    
+                    // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
+                    targetInput.dispatchEvent(new Event('change'));
+                    targetInput.dispatchEvent(new Event('input'));
+                    
+                    // Notlar uygulaması için özel tetikleyici
+                    if(typeof openSelectedDate === 'function') {
+                        // Notlar uygulamasında tarih seçilince otomatik ekranı aç
+                         setTimeout(() => openSelectedDate(), 100);
+                    }
+                    // Bütçe uygulaması için özel kontrol
+                    if(typeof checkDateAllowed === 'function') {
+                        checkDateAllowed();
+                    }
+                }
+            }
+        } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+    })();
+</script>
+</body>
+</html>
