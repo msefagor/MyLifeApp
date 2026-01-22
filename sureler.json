@@ -2,8 +2,92 @@
   {
     "id": 1,
     "title": "1-Fatiha Suresi",
-    "arabic": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ۝ ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ ۝ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ۝ مَٰلِكِ يَوْمِ ٱلدِّينِ ۝ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ۝ ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ ۝ صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ",
-    "reading": "Bismillâhir rahmânir rahîm. El hamdu lillâhi rabbil âlemîn. Er rahmânir rahîm. Mâliki yevmid dîn. İyyâke na’budu ve iyyâke nestaîn. İhdinas sırâtel mustakîm. Sırâtallezîne en’amte aleyhim gayril magdûbi aleyhim ve lâd dâllîn.",
-    "meaning": "Rahmân ve Rahîm olan Allah'ın adıyla. Hamd, Âlemlerin Rabbi, Rahmân, Rahîm, hesap ve ceza gününün (ahiret gününün) mâliki Allah’a mahsustur. (Allahım!) Yalnız sana ibadet ederiz ve yalnız senden yardım dileriz. Bizi doğru yola, kendilerine nimet verdiklerinin yoluna ilet; gazaba uğrayanlarınkine ve sapıklarınkine değil."
+    "verses": [
+      { "no": 1, "arabic": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "reading": "Bismillâhir rahmânir rahîm.", "meaning": "Rahmân ve Rahîm olan Allah'ın adıyla." },
+      { "no": 2, "arabic": "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ", "reading": "El hamdu lillâhi rabbil âlemîn(âlemîne).", "meaning": "Hamd, Âlemlerin Rabbi, Rahmân, Rahîm, hesap ve ceza gününün (ahiret gününün) mâliki Allah’a mahsustur." },
+      { "no": 3, "arabic": "ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", "reading": "Er rahmânir rahîm(rahîmi).", "meaning": "O, Rahmân ve Rahîm'dir." },
+      { "no": 4, "arabic": "مَٰلِكِ يَوْمِ ٱلدِّينِ", "reading": "Mâliki yevmid dîn(dîne).", "meaning": "Hesap ve ceza gününün (ahiret gününün) mâlikidir." },
+      { "no": 5, "arabic": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", "reading": "İyyâke na’budu ve iyyâke nestaîn(nestaînu).", "meaning": "(Allahım!) Yalnız sana ibadet ederiz ve yalnız senden yardım dileriz." },
+      { "no": 6, "arabic": "ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ", "reading": "İhdinas sırâtel mustakîm(mustakîme).", "meaning": "Bizi doğru yola, kendilerine nimet verdiklerinin yoluna ilet." },
+      { "no": 7, "arabic": "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ", "reading": "Sırâtallezîne en’amte aleyhim gayril magdûbi aleyhim ve lâd dâllîn(dâllîne).", "meaning": "Gazaba uğrayanlarınkine ve sapıklarınkine değil." }
+    ]
+  },
+  {
+    "id": 82,
+    "title": "82-İnfitâr Suresi",
+    "verses": [
+      { "no": 1, "arabic": "إِذَا ٱلسَّمَآءُ ٱنفَطَرَتْ", "reading": "İzes semâunfetaret.", "meaning": "Gök yarıldığı zaman," },
+      { "no": 2, "arabic": "وَإِذَا ٱلْكَوَاكِبُ ٱنتَثَرَتْ", "reading": "Ve izel kevâkibunteseret.", "meaning": "Yıldızlar saçıldığı zaman," },
+      { "no": 3, "arabic": "وَإِذَا ٱلْبِحَارُ فُجِّرَتْ", "reading": "Ve izel bihâru fucciret.", "meaning": "Denizler kaynayıp fışkırtıldığı zaman," },
+      { "no": 4, "arabic": "وَإِذَا ٱلْقُبُورُ بُعْثِرَتْ", "reading": "Ve izel kubûru bu’siret.", "meaning": "Kabirlerin içindekiler dışarı çıkarıldığı zaman," },
+      { "no": 5, "arabic": "عَلِمَتْ نَفْسٌ مَّا قَدَّمَتْ وَأَخَّرَتْ", "reading": "Alimet nefsun mâ kaddemet ve ahharet.", "meaning": "Herkes yaptığı ve yapmadığı şeyleri bilecek." },
+      { "no": 6, "arabic": "يَٰٓأَيُّهَا ٱلْإِنسَٰنُ مَا غَرَّكَ بِرَبِّكَ ٱلْكَرِيمِ", "reading": "Yâ eyyuhel insânu mâ garreke bi rabbikel kerîm(kerîmi).", "meaning": "(6-8) Ey insan! Seni yaratan, şekillendirip ölçülü yapan, dilediği bir biçimde seni oluşturan cömert Rabbine karşı seni ne aldattı?" },
+      { "no": 7, "arabic": "ٱلَّذِى خَلَقَكَ فَسَوَّىٰكَ فَعَدَلَكَ", "reading": "Ellezî halakake fe sevvâke fe adelek(adeleke).", "meaning": "Seni yaratan, şekillendirip ölçülü yapan O'dur." },
+      { "no": 8, "arabic": "فِىٓ أَىِّ صُورَةٍ مَّا شَآءَ رَكَّبَكَ", "reading": "Fî eyyi sûretin mâ şâe rekkebek(rekkebeke).", "meaning": "Dilediği bir biçimde seni oluşturdu." },
+      { "no": 9, "arabic": "كَلَّا بَلْ تُكَذِّبُونَ بِٱلدِّينِ", "reading": "Kellâ bel tukezzibûne bid dîn(dîni).", "meaning": "Hayır, hayır! Siz hesap ve cezayı yalanlıyorsunuz." },
+      { "no": 10, "arabic": "وَإِنَّ عَلَيْكُمْ لَحَٰفِظِينَ", "reading": "Ve inne aleykum le hâfızîn(hâfızîne).", "meaning": "(10-11) Hâlbuki üzerinizde muhakkak bekçiler, değerli yazıcılar vardır." },
+      { "no": 11, "arabic": "كِرَامًا كَٰتِبِينَ", "reading": "Kirâmen kâtibîn(kâtibîne).", "meaning": "Değerli yazıcılar." },
+      { "no": 12, "arabic": "يَعْلَمُونَ مَا تَفْعَلُونَ", "reading": "Ya’lemûne mâ tef’alûn(tef’alûne).", "meaning": "Onlar yapmakta olduklarınızı bilirler." },
+      { "no": 13, "arabic": "إِنَّ ٱلْأَبْرَارَ لَفِى نَعِيمٍ", "reading": "İnnel ebrâre lefî naîm(naîmin).", "meaning": "Şüphesiz, iyiler Naîm cennetindedirler." },
+      { "no": 14, "arabic": "وَإِنَّ ٱلْفُجَّارَ لَفِى جَحِيمٍ", "reading": "Ve innel fuccâre lefî cahîm(cahîmın).", "meaning": "Şüphesiz, günahkârlar da cehennemdedirler." },
+      { "no": 15, "arabic": "يَصْلَوْنَهَا يَوْمَ ٱلدِّينِ", "reading": "Yaslevnehâ yevmed dîn(dîni).", "meaning": "Hesap ve ceza günü oraya gireceklerdir." },
+      { "no": 16, "arabic": "وَمَا هُمْ عَنْهَا بِغَآئِبِينَ", "reading": "Ve mâ hum anhâ bi gâibîn(gâibîne).", "meaning": "Onlar oradan kaybolup kurtulacak da değillerdir." },
+      { "no": 17, "arabic": "وَمَآ أَدْرَىٰكَ مَا يَوْمُ ٱلدِّينِ", "reading": "Ve mâ edrâke mâ yevmud dîn(dîni).", "meaning": "Hesap ve ceza gününün ne olduğunu sen ne bileceksin?" },
+      { "no": 18, "arabic": "ثُمَّ مَآ أَدْرَىٰكَ مَا يَوْمُ ٱلدِّينِ", "reading": "Summe mâ edrâke mâ yevmud dîn(dîni).", "meaning": "Evet, hesap ve ceza gününün ne olduğunu sen ne bileceksin?" },
+      { "no": 19, "arabic": "يَوْمَ لَا تَمْلِكُ نَفْسٌ لِّنَفْسٍ شَيْـًٔا ۖ وَٱلْأَمْرُ يَوْمَئِذٍ لِّلَّهِ", "reading": "Yevme lâ temliku nefsun li nefsin şey’â(şey’en), vel emru yevmeizin lillâh(lillâhi).", "meaning": "O gün kimse kimseye hiçbir fayda sağlayamayacaktır. O gün buyruk, yalnız Allah’ındır." }
+    ]
+  },
+  {
+    "id": 94,
+    "title": "94-İnşirâh Suresi",
+    "verses": [
+      { "no": 1, "arabic": "أَلَمْ نَشْرَحْ لَكَ صَدْرَكَ", "reading": "E lem neşrah leke sadrek(sadreke).", "meaning": "(Ey Muhammed!) Senin göğsünü açıp genişletmedik mi?" },
+      { "no": 2, "arabic": "وَوَضَعْنَا عَنكَ وِزْرَكَ", "reading": "Ve vedagnâ anke vizrek(vizreke).", "meaning": "(2-3) Belini büken yükünü üzerinden kaldırmadık mı?" },
+      { "no": 3, "arabic": "ٱلَّذِىٓ أَنقَضَ ظَهْرَكَ", "reading": "Ellezî enkada zahrek(zahreke).", "meaning": "Belini büken yükünü." },
+      { "no": 4, "arabic": "وَرَفَعْنَا لَكَ ذِكْرَكَ", "reading": "Ve refa’nâ leke zikrek(zikreke).", "meaning": "Senin şânını yükseltmedik mi?" },
+      { "no": 5, "arabic": "فَإِنَّ مَعَ ٱلْعُسْرِ يُسْرًا", "reading": "Fe inne maal usri yusra(yusren).", "meaning": "Şüphesiz güçlükle beraber bir kolaylık vardır." },
+      { "no": 6, "arabic": "إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا", "reading": "İnne maal usri yusrâ(yusren).", "meaning": "Gerçekten, güçlükle beraber bir kolaylık vardır." },
+      { "no": 7, "arabic": "فَإِذَا فَرَغْتَ فَٱنصَبْ", "reading": "Fe izâ feragte fensab.", "meaning": "Öyleyse, bir işi bitirince diğerine koyul." },
+      { "no": 8, "arabic": "وَإِلَىٰ رَبِّكَ فَٱرْغَب", "reading": "Ve ilâ rabbike fergab.", "meaning": "Ancak Rabbine yönel ve yalvar." }
+    ]
+  },
+  {
+    "id": 95,
+    "title": "95-Tîn Suresi",
+    "verses": [
+      { "no": 1, "arabic": "وَٱلتِّينِ وَٱلزَّيْتُونِ", "reading": "Vet tîni vez zeytûn(zeytûni).", "meaning": "Tîn’e ve zeytûn’a andolsun." },
+      { "no": 2, "arabic": "وَطُورِ سِينِينَ", "reading": "Ve tûri sînîn(sînîne).", "meaning": "Sinâ dağına andolsun," },
+      { "no": 3, "arabic": "وَهَٰذَا ٱلْبَلَدِ ٱلْأَمِينِ", "reading": "Ve hâzel beledil emîn(emîni).", "meaning": "Bu güvenli şehre (Mekke’ye) andolsun ki," },
+      { "no": 4, "arabic": "لَقَدْ خَلَقْنَا ٱلْإِنسَٰنَ فِىٓ أَحْسَنِ تَقْوِيمٍ", "reading": "Lekad halaknel insâne fî ahseni takvîm(takvîmin).", "meaning": "Biz, gerçekten insanı en güzel bir biçimde yarattık." },
+      { "no": 5, "arabic": "ثُمَّ رَدَدْنَٰهُ أَسْفَلَ سَٰفِلِينَ", "reading": "Summe redednâhu esfele sâfilîn(sâfilîne).", "meaning": "Sonra onu, aşağıların aşağısına indirdik." },
+      { "no": 6, "arabic": "إِلَّا ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّٰلِحَٰتِ فَلَهُمْ أَجْرٌ غَيْرُ مَمْنُونٍ", "reading": "İllellezîne âmenû ve amilûs sâlihâti fe lehum ecrun gayru memnûn(memnûnin).", "meaning": "Ancak, iman edip salih ameller işleyenler başka. Onlar için devamlı bir mükâfat vardır." },
+      { "no": 7, "arabic": "فَمَا يُكَذِّبُكَ بَعْدُ بِٱلدِّينِ", "reading": "Fe mâ yukezzibuke ba’du bid dîn(dîni).", "meaning": "(Ey insan!) Böyle iken, hangi şey sana hesap ve cezayı yalanlatıyor?" },
+      { "no": 8, "arabic": "أَلَيْسَ ٱللَّهُ بِأَحْكَمِ ٱلْحَٰكِمِينَ", "reading": "E leysallâhu bi ahkemil hâkimîn(hâkimîne).", "meaning": "Allah, hükmedenlerin en iyi hükmedeni değil midir?" }
+    ]
+  },
+  {
+    "id": 96,
+    "title": "96-Alak Suresi",
+    "verses": [
+      { "no": 1, "arabic": "ٱقْرَأْ بِٱسْمِ رَبِّكَ ٱلَّذِى خَلَقَ", "reading": "Ikra’bismi rabbikellezî halak(halaka).", "meaning": "(1-2) Yaratan Rabbinin adıyla oku! O, insanı “alak”dan yarattı." },
+      { "no": 2, "arabic": "خَلَقَ ٱلْإِنسَٰنَ مِنْ عَلَقٍ", "reading": "Halakal insâne min alak(alakın).", "meaning": "O, insanı “alak”dan yarattı." },
+      { "no": 3, "arabic": "ٱقْرَأْ وَرَبُّكَ ٱلْأَكْرَمُ", "reading": "Ikra’ ve rabbukel ekrem(ekremu).", "meaning": "Oku! Senin Rabbin en cömert olandır." },
+      { "no": 4, "arabic": "ٱلَّذِى عَلَّمَ بِٱلْقَلَمِ", "reading": "Ellezî alleme bil kalem(kalemi).", "meaning": "(4-5) O, kalemle yazmayı öğretendir, insana bilmediğini öğretendir." },
+      { "no": 5, "arabic": "عَلَّمَ ٱلْإِنسَٰنَ مَا لَمْ يَعْلَمْ", "reading": "Allemel insâne mâ lem ya’lem.", "meaning": "İnsana bilmediğini öğretendir." },
+      { "no": 6, "arabic": "كَلَّآ إِنَّ ٱلْإِنسَٰنَ لَيَطْغَىٰٓ", "reading": "Kellâ innel insâne le yatgâ.", "meaning": "(6-7) Hayır, insan kendini yeterli gördüğü için mutlaka azgınlık eder." },
+      { "no": 7, "arabic": "أَن رَّءَاهُ ٱسْتَغْنَىٰٓ", "reading": "En reâhustagnâ.", "meaning": "Kendini yeterli gördüğü için." },
+      { "no": 8, "arabic": "إِنَّ إِلَىٰ رَبِّكَ ٱلرُّجْعَىٰٓ", "reading": "İnne ilâ rabbiker ruc’â.", "meaning": "Şüphesiz dönüş ancak Rabbinedir." },
+      { "no": 9, "arabic": "أَرَءَيْتَ ٱلَّذِى يَنْهَىٰ", "reading": "E reeytellezî yenhâ.", "meaning": "(9-10) Sen, namaz kıldığında kulu (bundan) engelleyeni gördün mü?" },
+      { "no": 10, "arabic": "عَبْدًا إِذَا صَلَّىٰٓ", "reading": "Abden izâ sallâ.", "meaning": "Namaz kıldığında kulu." },
+      { "no": 11, "arabic": "أَرَءَيْتَ إِن كَانَ عَلَى ٱلْهُدَىٰٓ", "reading": "E reeyte in kâne alel hudâ.", "meaning": "(11-12) Ne dersin, ya o (engellenen kul) hidâyet üzere ise; ya da takvayı (Allah’a karşı gelmekten sakınmayı) emrediyorsa?" },
+      { "no": 12, "arabic": "أَوْ أَمَرَ بِٱلتَّقْوَىٰٓ", "reading": "Ev emera bit takvâ.", "meaning": "Ya da takvayı emrediyorsa?" },
+      { "no": 13, "arabic": "أَرَءَيْتَ إِن كَذَّبَ وَتَوَلَّىٰٓ", "reading": "E reeyte in kezzebe ve tevellâ.", "meaning": "Ne dersin engelleyen, Peygamberi yalanlamış ve yüz çevirmişse!?" },
+      { "no": 14, "arabic": "أَلَمْ يَعْلَم بِأَنَّ ٱللَّهَ يَرَىٰ", "reading": "E lem ya’lem bi ennellâhe yerâ.", "meaning": "O Allah’ın, her şeyi gördüğünü bilmiyor mu?" },
+      { "no": 15, "arabic": "كَلَّا لَئِن لَّمْ يَنتَهِ لَنَسْفَعًۢا بِٱلنَّاصِيَةِ", "reading": "Kellâ le in lem yentehi le nesfean bin nâsıyeh(nâsıyeti).", "meaning": "(15-16) Hayır! Andolsun, eğer vazgeçmezse, muhakkak onu perçeminden; o yalancı, günahkâr perçeminden yakalarız." },
+      { "no": 16, "arabic": "نَاصِيَةٍ كَٰذِبَةٍ خَاطِئَةٍ", "reading": "Nâsiyetin kâzibetin hâtıeh(hâtıetin).", "meaning": "O yalancı, günahkâr perçeminden." },
+      { "no": 17, "arabic": "فَلْيَدْعُ نَادِيَهُۥ", "reading": "Felyed’u nâdiyeh(nâdiyehu).", "meaning": "Haydi, taraftarlarını çağırsın." },
+      { "no": 18, "arabic": "سَنَدْعُ ٱلزَّبَانِيَةَ", "reading": "Sened’uz zebâniyeh(zebâniyete).", "meaning": "Biz de zebânileri çağıracağız." },
+      { "no": 19, "arabic": "كَلَّا لَا تُطِعْهُ وَٱسْجُدْ وَٱقْتَرِب ۩", "reading": "Kellâ, lâ tutı’hu vescud vakterib. (SECDE ÂYETİ)", "meaning": "Hayır! Sakın sen ona uyma; secde et ve Rabbine yaklaş." }
+    ]
   }
 ]
