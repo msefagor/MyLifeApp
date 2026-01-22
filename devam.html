@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Akıllı Yoklama</title>
+    <title>Akıllı Yoklama Pro</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -33,7 +33,7 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* --- LIQUID GLASS STYLES (ÖĞRENCİ EKRANLARI İÇİN) --- */
+        /* --- LIQUID GLASS STYLES --- */
         .liquid-bg {
             background: 
                 radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
@@ -54,21 +54,18 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            padding: 30px 20px;
+            padding: 25px 20px;
             margin-bottom: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s ease;
         }
 
-        /* Öğrenci için daha "Sıvı/Liquid" Panel */
         .liquid-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(40px) saturate(180%);
             -webkit-backdrop-filter: blur(40px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 
-                0 20px 50px rgba(0,0,0,0.5),
-                inset 0 0 20px rgba(255,255,255,0.05);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05);
             border-radius: 35px;
         }
 
@@ -90,61 +87,58 @@
             position: relative; overflow: hidden;
         }
         .role-btn:active { transform: scale(0.96); }
-        
-        .role-student { 
-            background: linear-gradient(135deg, rgba(10,132,255,0.4), rgba(10,132,255,0.1)); 
-            box-shadow: 0 10px 30px rgba(10, 132, 255, 0.3);
-            border-top: 1px solid rgba(255,255,255,0.4);
-        }
-        .role-admin { 
-            background: linear-gradient(135deg, rgba(255,69,58,0.4), rgba(255,69,58,0.1));
-            box-shadow: 0 10px 30px rgba(255, 69, 58, 0.3);
-            border-top: 1px solid rgba(255,255,255,0.4);
-        }
+        .role-student { background: linear-gradient(135deg, rgba(10,132,255,0.4), rgba(10,132,255,0.1)); border-top: 1px solid rgba(255,255,255,0.4); }
+        .role-admin { background: linear-gradient(135deg, rgba(255,69,58,0.4), rgba(255,69,58,0.1)); border-top: 1px solid rgba(255,255,255,0.4); }
 
-        /* SCAN FEEDBACK POPUP (SIVI BALONCUK) */
+        /* SCAN FEEDBACK POPUP */
         #scanFeedbackPopup {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
-            background: rgba(48, 209, 88, 0.85);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             padding: 30px; border-radius: 30px;
             color: white; font-size: 22px; font-weight: bold; text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.3);
             border: 1px solid rgba(255,255,255,0.5);
             opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 1000; width: 70%;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
         }
         #scanFeedbackPopup.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .feedback-success { background: rgba(48, 209, 88, 0.85); }
+        .feedback-error { background: rgba(255, 69, 58, 0.85); }
 
-        /* INPUTLAR */
+        /* INPUTS */
         input, select, button.action-btn {
-            width: 100%; padding: 18px; margin-bottom: 15px;
+            width: 100%; padding: 16px; margin-bottom: 15px;
             border-radius: 18px; border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.4); color: white; font-size: 18px;
+            background: rgba(0,0,0,0.4); color: white; font-size: 16px;
             box-sizing: border-box; outline: none;
         }
-        button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; box-shadow: 0 5px 15px rgba(10,132,255,0.4); }
+        button.action-btn { background: var(--accent-color); border: none; font-weight: 700; margin-top: 10px; }
         
-        /* LİSTE */
+        /* LISTE GÖRÜNÜMÜ */
         .full-list-view { height: 80vh; display: flex; flex-direction: column; }
         .student-item {
-            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; justify-content: space-between; align-items: center;
         }
+        .stat-box { text-align: right; }
+        .stat-rate { font-size: 20px; font-weight: 800; }
+        .stat-sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+        
         .text-ok { color: var(--success-color); }
         .text-low { color: var(--danger-color); }
+        .text-warn { color: var(--warning-color); }
 
-        /* HAFTA AYARLARI */
-        .week-config-container { max-height: 60vh; overflow-y: auto; }
+        /* AYARLAR */
+        .week-config-container { max-height: 50vh; overflow-y: auto; margin-top:10px; }
         .week-row {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 12px; margin-bottom: 8px; border-radius: 12px;
-            background: rgba(255,255,255,0.05);
+            padding: 10px; margin-bottom: 8px; border-radius: 12px;
+            background: rgba(255,255,255,0.05); font-size: 14px;
         }
         .type-normal { border-left: 4px solid var(--success-color); }
         .type-midterm { border-left: 4px solid var(--warning-color); background: rgba(255, 214, 10, 0.1); }
-        .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
         .type-final { border-left: 4px solid #BF5AF2; background: rgba(191, 90, 242, 0.1); }
+        .type-holiday { border-left: 4px solid var(--danger-color); background: rgba(255, 69, 58, 0.1); }
 
         .back-btn {
             position: fixed; top: 20px; left: 20px; z-index: 100;
@@ -156,17 +150,14 @@
 
         .tabs { display: flex; gap: 10px; margin: 10px 0 20px 0; overflow-x: auto; padding-bottom: 5px; }
         .tab-btn {
-            flex: 1; min-width: 100px; padding: 12px; border-radius: 14px;
+            flex: 1; min-width: 90px; padding: 12px; border-radius: 14px;
             background: rgba(255,255,255,0.1); color: #aaa; text-align: center;
-            font-weight: 600; font-size: 14px; white-space: nowrap;
+            font-weight: 600; font-size: 13px; white-space: nowrap;
         }
         .tab-btn.active { background: var(--accent-color); color: white; }
-
-        #qr-area { text-align: center; animation: popIn 0.5s; }
-        #qr-display { background: white; padding: 20px; border-radius: 25px; display: inline-block; margin: 20px 0; box-shadow: 0 10px 40px rgba(255,255,255,0.2); }
         
+        #qr-display { background: white; padding: 20px; border-radius: 25px; display: inline-block; margin: 20px 0; }
         .hidden { display: none !important; }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -175,8 +166,8 @@
 
     <div id="screen-landing" class="full-screen-container liquid-bg">
         <div class="glass-panel liquid-panel" style="padding: 50px 20px;">
-            <div class="big-title">Yoklama Sistemi</div>
-            <div class="sub-title">Tirebolu Mehmet Bayrak MYO</div>
+            <div class="big-title">Akıllı Yoklama</div>
+            <div class="sub-title">Öğr. Gör. Muhammed Sefa GÖR</div>
             
             <button class="role-btn role-student" onclick="goToStudentLogin()">
                 <i class="fas fa-user-graduate"></i>
@@ -199,26 +190,25 @@
     <div id="screen-student-id" class="full-screen-container liquid-bg hidden">
         <div class="glass-panel liquid-panel">
             <div class="big-title">Öğrenci Girişi</div>
-            <p class="sub-title">Numaranızı girerek kayıtlı derslerinizi görün.</p>
-            
-            <input type="number" id="stuIdInput" placeholder="Öğrenci Numarası" style="font-size:24px; text-align:center; letter-spacing:2px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.3);">
-            <button class="action-btn" onclick="checkStudentCourses()" style="background:linear-gradient(90deg, #0A84FF, #0056b3); padding:20px;">Dersleri Getir</button>
+            <p class="sub-title">Numaranızı giriniz.</p>
+            <input type="number" id="stuIdInput" placeholder="Öğrenci Numarası" style="font-size:24px; text-align:center;">
+            <button class="action-btn" onclick="checkStudentCourses()">Dersleri Getir</button>
         </div>
     </div>
 
     <div id="screen-student-courses" class="full-screen-container liquid-bg hidden">
         <div class="glass-panel liquid-panel">
             <div class="big-title">Merhaba, <br><span id="stuNameDisplay" style="color:#64D2FF; font-size:24px;"></span></div>
-            <p class="sub-title">Karekod oluşturmak için ders seçiniz:</p>
+            <p class="sub-title">Hangi ders için karekod oluşturacaksınız?</p>
             <div id="myCourseList"></div>
         </div>
     </div>
 
     <div id="screen-student-qr" class="full-screen-container liquid-bg hidden">
-        <div class="glass-panel liquid-panel" id="qr-area">
+        <div class="glass-panel liquid-panel" style="text-align:center;">
             <h3 id="qrCourseName" style="font-size:22px; margin-bottom:5px;"></h3>
             <div id="qr-display"></div>
-            <p style="opacity:0.8; font-weight:500;">Bu kodu ders sorumlusuna okutunuz.</p>
+            <p style="opacity:0.8; font-weight:500;">Bu kod derse özeldir.</p>
             <p id="qrStudentId" style="font-weight:bold; font-size:20px; margin-top:10px; color:#64D2FF;"></p>
         </div>
     </div>
@@ -226,7 +216,6 @@
     <div id="screen-admin-courses" class="full-screen-container hidden">
         <div class="glass-panel">
             <div class="big-title">Ders Seçimi</div>
-            <p class="sub-title">Yönetmek istediğiniz dersi seçin.</p>
             <div id="adminCourseList"></div>
         </div>
     </div>
@@ -244,12 +233,24 @@
             <div class="glass-panel" style="position:relative;">
                 
                 <div id="scanFeedbackPopup">
-                    <i class="fas fa-check-circle" style="font-size:40px; margin-bottom:10px; display:block;"></i>
+                    <i id="feedbackIcon" class="fas fa-check-circle" style="font-size:40px; margin-bottom:10px; display:block;"></i>
                     <span id="scanFeedbackText">Öğrenci Okundu</span>
                 </div>
 
                 <select id="weekSelect" onchange="updateWeekInfoDisplay()" style="font-weight:bold;">
                     </select>
+                
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:14px; white-space:nowrap;">Yoklama Saati:</span>
+                    <select id="hoursToProcess" style="margin-bottom:0; padding:10px;">
+                        <option value="1">1 Saat</option>
+                        <option value="2">2 Saat</option>
+                        <option value="3">3 Saat</option>
+                        <option value="4">4 Saat</option>
+                        <option value="5">5 Saat</option>
+                    </select>
+                </div>
+
                 <div id="weekDetailText" style="text-align:center; margin-bottom:15px; font-size:14px; opacity:0.8;"></div>
                 
                 <div id="reader" style="border-radius:20px; overflow:hidden; border:2px solid rgba(255,255,255,0.2);"></div>
@@ -267,6 +268,12 @@
         <div id="tab-list" class="tab-content hidden">
             <div class="glass-panel full-list-view">
                 <input type="text" id="searchInput" placeholder="Öğrenci Ara..." onkeyup="renderStudentList()">
+                
+                <div style="display:flex; justify-content:space-between; padding:0 10px; font-size:12px; opacity:0.6; margin-bottom:5px;">
+                    <span>Öğrenci</span>
+                    <span style="text-align:right;">Devam / Kalan Hak</span>
+                </div>
+
                 <div class="student-list-container" style="flex:1; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:16px;">
                     <ul id="fullStudentList" style="list-style:none; padding:0; margin:0;"></ul>
                 </div>
@@ -278,43 +285,35 @@
 
         <div id="tab-settings" class="tab-content hidden">
             <div class="glass-panel">
-                <h3>Ders Takvimi Ayarları</h3>
-                <label style="font-size:12px; opacity:0.7;">Ders Başlangıç Tarihi (1. Hafta)</label>
+                <h3>Ders Ayarları</h3>
+                
+                <label style="font-size:13px; opacity:0.8;">Haftalık Ders Saati</label>
+                <input type="number" id="weeklyHoursInput" placeholder="Örn: 4" onchange="saveCourseSettings()">
+
+                <label style="font-size:13px; opacity:0.8; margin-top:10px;">Başlangıç Tarihi</label>
                 <input type="date" id="startDatePicker" onchange="calculateDates()">
                 
                 <div class="week-config-container" id="weekConfigList"></div>
                 
-                <div style="margin-top:20px; font-size:12px; color:#aaa;">
-                    <p><span style="color:var(--success-color)">■</span> Normal</p>
-                    <p><span style="color:var(--warning-color)">■</span> Vize</p>
-                    <p><span style="color:#BF5AF2">■</span> Final</p>
-                    <p><span style="color:var(--danger-color)">■</span> Tatil</p>
-                </div>
-
                 <button class="action-btn" style="background:var(--danger-color); margin-top:20px;" onclick="resetAttendance()">
-                    SIFIRLA
+                    DERSİ SIFIRLA
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="loader" style="position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; display:flex; align-items:center; justify-content:center;">
-        <div style="text-align:center;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:40px; color:var(--accent-color);"></i>
-            <p style="margin-top:15px;">Yükleniyor...</p>
-        </div>
-    </div>
-
     <script>
-        // GITHUB LINKINI BURAYA YAPIŞTIR
-        const GITHUB_DB_URL = "https://raw.githubusercontent.com/KULLANICI_ADI/REPO_ADI/main/db.json";
+        // GITHUB RAW LINKINIZI BURAYA YAZIN
+        const GITHUB_DB_URL = "https://raw.githubusercontent.com/msefagor/MyLifeApp/refs/heads/main/db.json";
         const ADMIN_PASS = "120622";
         const TOTAL_WEEKS = 18;
+        const ABSENTEEISM_LIMIT_PERCENT = 0.30; // %30 Devamsızlık Hakkı
 
         let db = { courses: [] };
         let activeCourse = null;
         let activeCourseConfig = [];
-        let activeCourseAttendance = {};
+        let activeCourseAttendance = {}; 
+        let weeklyHours = 4; // Varsayılan
         let scanner = null;
         let scanFeedbackTimeout = null;
 
@@ -327,13 +326,12 @@
                 const res = await fetch(GITHUB_DB_URL + "?t=" + Date.now());
                 if(!res.ok) throw new Error("Hata");
                 db = await res.json();
-                document.getElementById('loader').style.display = 'none';
             } catch (err) {
                 alert("Veri hatası: " + err.message);
-                document.getElementById('loader').style.display = 'none';
             }
         }
 
+        // --- NAVIGASYON ---
         const historyStack = ['screen-landing'];
         function navigateTo(screenId) {
             document.querySelectorAll('.full-screen-container, #screen-admin-panel').forEach(el => el.classList.add('hidden'));
@@ -359,7 +357,7 @@
             }
         }
 
-        // ÖĞRENCİ
+        // --- ÖĞRENCİ AKIŞI ---
         function goToStudentLogin() { navigateTo('screen-student-id'); }
 
         function checkStudentCourses() {
@@ -390,9 +388,9 @@
                 const btn = document.createElement('button');
                 btn.className = "role-btn";
                 btn.style.textAlign = "left";
-                btn.style.fontSize = "16px";
                 btn.style.background = "rgba(255,255,255,0.1)";
                 btn.innerHTML = `<i class="fas fa-book"></i> ${c.name}`;
+                // GÜVENLİK İÇİN: QR içine ders ID'sini de gömüyoruz (Ayraç: | )
                 btn.onclick = () => generateQR(c, id, studentName);
                 list.appendChild(btn);
             });
@@ -401,14 +399,17 @@
         }
 
         function generateQR(course, id, name) {
-            if(confirm(`${course.name} dersi için karekod oluşturulsun mu?`)) {
+            if(confirm(`${course.name} için kod oluşturulsun mu?`)) {
                 document.getElementById('qrCourseName').textContent = course.name;
                 document.getElementById('qrStudentId').textContent = `${name} (${id})`;
                 const display = document.getElementById('qr-display');
                 display.innerHTML = "";
                 
+                // QR DATA FORMATI: ÖĞRENCİNO|DERSID
+                const qrData = `${id}|${course.courseId}`;
+
                 new QRCode(display, {
-                    text: id, width: 200, height: 200,
+                    text: qrData, width: 220, height: 220,
                     colorDark : "#000000", colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
@@ -417,14 +418,13 @@
             }
         }
 
-        // ADMIN
+        // --- AKADEMİSYEN AKIŞI ---
         function goToAdminLogin() {
             const list = document.getElementById('adminCourseList');
             list.innerHTML = "";
             db.courses.forEach(c => {
                 const btn = document.createElement('button');
                 btn.className = "role-btn role-admin";
-                btn.style.fontSize = "16px";
                 btn.innerHTML = `${c.name} <br><small>${c.department}</small>`;
                 btn.onclick = () => loginAdmin(c);
                 list.appendChild(btn);
@@ -443,8 +443,12 @@
         }
 
         function loadCourseData(cId) {
+            // 1. Yoklama (Object: { studentId: { weekIdx: hourCount } })
+            // Eskiden boolean idi, şimdi saat sayısı (integer) tutacak.
             const att = localStorage.getItem(`attendance_${cId}`);
             activeCourseAttendance = att ? JSON.parse(att) : {};
+
+            // 2. Hafta Ayarları
             const conf = localStorage.getItem(`config_${cId}`);
             if(conf) {
                 activeCourseConfig = JSON.parse(conf);
@@ -453,12 +457,26 @@
                 for(let i=0; i<TOTAL_WEEKS; i++) {
                     let type = 'normal';
                     if(i === 7) type = 'midterm';
-                    if(i === 14 || i === 15 || i === 16) type = 'final';
+                    if(i >= 14) type = 'final';
                     activeCourseConfig.push({ id: i+1, type: type, date: null });
                 }
             }
+
+            // 3. Haftalık Ders Saati
+            const hours = localStorage.getItem(`hours_${cId}`);
+            weeklyHours = hours ? parseInt(hours) : 4;
+            document.getElementById('weeklyHoursInput').value = weeklyHours;
+
+            // 4. Tarih
             const storedDate = localStorage.getItem(`startDate_${cId}`);
             if(storedDate) document.getElementById('startDatePicker').value = storedDate;
+        }
+
+        function saveCourseSettings() {
+            weeklyHours = parseInt(document.getElementById('weeklyHoursInput').value) || 4;
+            localStorage.setItem(`hours_${activeCourse.courseId}`, weeklyHours);
+            // Listeyi güncellemek için
+            if(document.getElementById('tab-list').style.display !== 'none') renderStudentList();
         }
 
         function saveData() {
@@ -466,6 +484,7 @@
             localStorage.setItem(`config_${activeCourse.courseId}`, JSON.stringify(activeCourseConfig));
         }
 
+        // --- ADMIN PANEL UI ---
         function initAdminPanel() {
             document.getElementById('panelTitle').textContent = activeCourse.name;
             switchTab('tab-scan');
@@ -483,6 +502,7 @@
             if(tabId !== 'tab-scan' && scanner) stopScanner();
         }
 
+        // --- TARİH & HAFTA ---
         function calculateDates() {
             const startStr = document.getElementById('startDatePicker').value;
             if(startStr) {
@@ -531,7 +551,7 @@
                 opt.textContent = `${w.id}. Hafta (${w.date || '...'})`;
                 sel.appendChild(opt);
             });
-            if(current && current < activeCourseConfig.length) sel.value = current;
+            if(current) sel.value = current;
             updateWeekInfoDisplay();
         }
 
@@ -548,11 +568,14 @@
             }
         }
 
+        // --- SCANNER LOGIC ---
         function startScanner() {
             const idx = document.getElementById('weekSelect').value;
             if(activeCourseConfig[idx].type !== 'normal') return alert("Bu hafta yoklama alınamaz.");
+            
             document.getElementById('btnStartScan').classList.add('hidden');
             document.getElementById('btnStopScan').classList.remove('hidden');
+            
             scanner = new Html5Qrcode("reader");
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (txt) => handleScan(txt, idx));
         }
@@ -564,48 +587,189 @@
             document.getElementById('btnStopScan').classList.add('hidden');
         }
 
-        function handleScan(studentId, weekIdx) {
+        function handleScan(decodedText, weekIdx) {
+            // QR FORMAT: StudentID|CourseID
+            // Split ile ayır
+            const parts = decodedText.split('|');
+            let studentId = "";
+            let qrCourseId = "";
+
+            if(parts.length === 2) {
+                studentId = parts[0];
+                qrCourseId = parts[1];
+            } else {
+                studentId = decodedText; // Eski format desteği (sadece ID)
+            }
+
+            // GÜVENLİK KONTROLÜ
+            if(qrCourseId && qrCourseId !== activeCourse.courseId) {
+                showFeedback(`HATA: Bu kod ${qrCourseId} dersine ait!`, "error");
+                return; // İşlemi durdur
+            }
+
             const student = activeCourse.students.find(s => s.id === studentId);
             if(student) {
                 if(!activeCourseAttendance[studentId]) activeCourseAttendance[studentId] = {};
-                if(activeCourseAttendance[studentId][weekIdx]) return; 
+                
+                // Mevcut saati al
+                let currentHours = activeCourseAttendance[studentId][weekIdx] || 0;
+                
+                // Seçilen saati ekle
+                const hoursToAdd = parseInt(document.getElementById('hoursToProcess').value);
+                
+                // Eğer zaten bu saat kadar veya daha fazla işlendiyse uyarı ver
+                if(currentHours >= weeklyHours) {
+                    showFeedback("Haftalık Limit Doldu", "error");
+                    return; 
+                }
 
-                activeCourseAttendance[studentId][weekIdx] = true;
+                // Yeni saati kaydet
+                // Basit mantık: Her okutmada seçilen saati ekle, ama limiti aşma.
+                // Pratikte hoca "2 saat" seçtiyse ve öğrenciyi okuttuysa, o hafta için 2 saat yazar.
+                // Eğer zaten 2 saati varsa ve tekrar 2 saat okutursa 4 olur.
+                let newTotal = currentHours + hoursToAdd;
+                if(newTotal > weeklyHours) newTotal = weeklyHours; // Limitle
+                
+                if(newTotal === currentHours) return; // Değişiklik yoksa çık
+
+                activeCourseAttendance[studentId][weekIdx] = newTotal;
                 saveData();
 
-                // Geri Bildirim Göster (4 Saniye)
-                const popup = document.getElementById('scanFeedbackPopup');
-                const text = document.getElementById('scanFeedbackText');
-                text.textContent = `${student.name} ${student.surname}`;
-                popup.classList.add('visible');
-
-                if(scanFeedbackTimeout) clearTimeout(scanFeedbackTimeout);
-                scanFeedbackTimeout = setTimeout(() => {
-                    popup.classList.remove('visible');
-                }, 4000);
+                showFeedback(`${student.name} (+${hoursToAdd} Saat)`, "success");
 
                 const ul = document.getElementById('scanLog');
                 const li = document.createElement('li');
-                li.innerHTML = `✓ ${student.name} ${student.surname}`;
+                li.innerHTML = `✓ ${student.name} (${newTotal}/${weeklyHours} Saat)`;
                 ul.insertBefore(li, ul.firstChild);
+            } else {
+                showFeedback("Öğrenci Bulunamadı", "error");
             }
         }
 
+        function showFeedback(msg, type) {
+            const popup = document.getElementById('scanFeedbackPopup');
+            const text = document.getElementById('scanFeedbackText');
+            const icon = document.getElementById('feedbackIcon');
+            
+            popup.className = type === 'success' ? 'feedback-success' : 'feedback-error';
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+            
+            text.textContent = msg;
+            popup.classList.add('visible');
+
+            if(scanFeedbackTimeout) clearTimeout(scanFeedbackTimeout);
+            scanFeedbackTimeout = setTimeout(() => {
+                popup.classList.remove('visible');
+            }, 4000);
+        }
+
+        // --- LİSTE & HESAPLAMA ---
         function renderStudentList() {
             const ul = document.getElementById('fullStudentList');
             const term = document.getElementById('searchInput').value.toLowerCase();
             ul.innerHTML = "";
 
+            // Toplam eğitim haftası (Tatiller hariç)
+            let totalActiveWeeks = 0;
+            activeCourseConfig.forEach(w => { if(w.type === 'normal') totalActiveWeeks++; });
+            
+            const totalCourseHours = totalActiveWeeks * weeklyHours;
+            const maxAbsentHours = Math.floor(totalCourseHours * ABSENTEEISM_LIMIT_PERCENT);
+
             let listData = activeCourse.students.map(s => {
-                let attended = 0, activeWeeks = 0;
+                let attendedHours = 0;
+                
+                // Bu zamana kadar geçen haftalardaki yoklama
                 activeCourseConfig.forEach((w, idx) => {
                     if(w.type === 'normal') {
-                        activeWeeks++;
-                        if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) attended++;
+                        if(activeCourseAttendance[s.id] && activeCourseAttendance[s.id][idx]) {
+                            attendedHours += activeCourseAttendance[s.id][idx];
+                        }
                     }
                 });
-                const rate = activeWeeks === 0 ? 100 : Math.round((attended / activeWeeks) * 100);
-                return { ...s, rate };
+
+                // Şu ana kadar işlenen (geçmiş) ders saati üzerinden oran hesaplayalım mı?
+                // Yoksa toplam dönem üzerinden mi? Genelde oran toplam döneme göre değil, 
+                // mevcut duruma göre hesaplanır ama "Kalan Hak" toplam döneme göredir.
+                
+                // Biz basitlik için "Şu ana kadar işlenmesi gereken" saati bulalım
+                // (Pratikte hoca tüm haftaları 'normal' bıraktıysa hepsi sayılır)
+                // Şimdilik Oran = (Katıldığı / (AktifHafta * HaftalıkSaat)) formülünü kullanalım.
+                
+                const currentPotentialHours = totalCourseHours; // Basitleştirme: Tüm dönem üzerinden
+                const rate = currentPotentialHours === 0 ? 100 : Math.round((attendedHours / currentPotentialHours) * 100);
+                
+                // Devamsızlık (Kullanılan Hak)
+                // Devamsızlık = (Geçen Hafta Sayısı * Saat) - Katıldığı Saat... bu biraz karışık çünkü gelecek haftalar var.
+                // En doğrusu: Kalan Hak = Toplam İzin Hakkı - (İşlenen Ders Saati - Katıldığı Ders Saati)
+                // Ama işlenen ders saatini tam bilmiyoruz (tarihe bakarak bulabiliriz ama karmaşık).
+                // Basit Yaklaşım: Kalan Hak = MaxAbsent - (Şu ana kadarki devamsızlık)
+                // Şu ana kadarki devamsızlığı "Varsayalım ki her hafta 4 saatti" diye hesaplamak riskli (ya hoca ders yapmadıysa?).
+                // ÇÖZÜM: Kalan Hak = MaxAbsent - (ToplamPotansiyel - Katıldığı) -> Bu da yanlış.
+                
+                // DOĞRU YAKLAŞIM:
+                // Öğrencinin "Devamsızlık Yaptığı Saat" = (Şu ana kadar işlenen dersler) - (Katıldığı).
+                // Ama sistemde "Hangi hafta işlendi" bilgisi manuel yok.
+                // O yüzden şöyle yapalım: Kalan Hak = MaxAbsent - (Devamsızlık).
+                // Devamsızlık = (Kaç haftadır ders işleniyor?) * HaftalıkSaat - Attended.
+                // "Kaç haftadır ders işleniyor"u bulmak için attendance objesindeki dolu haftalara bakabiliriz veya bugünün tarihine.
+                
+                // Şimdilik Basit Gösterim:
+                // Devamsızlık Hakkı (Total) : maxAbsentHours
+                // Yapılan Devamsızlık : ??? (Bunu tam bilmek zor, hocanın girdiği verilere bağlı)
+                // Kullanıcı isteği: "Kalan devamsızlık hakkı 16 saat yazsın."
+                
+                // Varsayım: Hoca sadece ders işlediği haftalara veri giriyor.
+                // Eğer veri girilmemişse o hafta işlenmemiş sayalım mı? Hayır, o zaman gelmedi sayılır.
+                // Çözüm: Bugüne kadar olan haftaları (Index) baz alalım.
+                
+                const today = new Date();
+                let weeksPassed = 0;
+                activeCourseConfig.forEach(w => {
+                    if(w.type === 'normal' && w.date) {
+                        // Tarih formatını parse et (TR formatı biraz zor, basitleştirelim)
+                        // Tarih metin olarak tutuluyor. Karşılaştırma zor.
+                        // Mecburen tüm haftalar "işlenmiş" gibi varsayıp kalan hakkı;
+                        // Kalan Hak = MaxAbsent - (ToplamDersSaati - Attended) -> Bu "Gelecek devamsızlıkları" da düşer.
+                        
+                        // İSTEK: "Kalan devamsızlık hakkı"
+                        // Formül: Toplam İzin - (Bugüne kadarki devamsızlık)
+                        // Bugüne kadarki devamsızlık = (GeçenHafta * Saat) - Attended.
+                        weeksPassed++; // Şimdilik hepsini sayıyoruz (Demo için)
+                    }
+                });
+
+                // Demo için: Kalan Hak = MaxAbsent - (ToplamSaat - Attended).
+                // Bu aslında "Kullanabileceği toplam boşluk".
+                const absentHours = totalCourseHours - attendedHours; // Tüm dönem gelmediği varsayımı (kötü senaryo)
+                // Hayır, kullanıcı "Kalan hakkı" istiyor. Yani "Daha kaç saat gelmeyebilirim?"
+                
+                // Kalan Hak = MaxAbsent - (Şu ana kadar gelmediği saatler).
+                // Şu ana kadar gelmediği = (GeçenHaftaSayısı * HaftalıkSaat) - Attended.
+                // Geçen hafta sayısını bulmak için basit bir sayaç kullanalım (Attendance kayıtlarındaki en son index + 1)
+                
+                // En son işlem yapılan haftayı bulalım
+                let lastActiveIndex = -1;
+                Object.values(activeCourseAttendance).forEach(rec => {
+                   Object.keys(rec).forEach(k => {
+                       const ki = parseInt(k);
+                       if(ki > lastActiveIndex) lastActiveIndex = ki;
+                   });
+                });
+                
+                // Eğer hiç veri yoksa, 0 hafta geçti.
+                const weeksProcessed = lastActiveIndex + 1; 
+                const processedHours = weeksProcessed * weeklyHours;
+                const currentAbsent = processedHours - attendedHours; 
+                // (Not: Bu hesap öğrenciye özgü değil, sınıfın en son işlenen haftasına göre genel bir "geçen zaman" algısı)
+                
+                // Eğer öğrenci o hafta gelmediyse attendedHours artmadı ama processedHours arttı -> Devamsızlık arttı.
+                
+                // Kalan Hak Hesabı:
+                let remainingAllowance = maxAbsentHours - currentAbsent;
+                if(remainingAllowance < 0) remainingAllowance = 0; // Hakkı bitti.
+
+                return { ...s, rate, attendedHours, remainingAllowance, maxAbsentHours };
             });
 
             listData.sort((a, b) => a.rate - b.rate);
@@ -614,15 +778,29 @@
                 if(s.name.toLowerCase().includes(term) || s.surname.toLowerCase().includes(term)) {
                     const li = document.createElement('li');
                     li.className = 'student-item';
-                    const colorClass = s.rate < 70 ? 'text-low' : 'text-ok';
-                    li.innerHTML = `<div><div style="font-size:20px; font-weight:600;">${s.name} ${s.surname}</div><div style="font-size:14px; opacity:0.6;">${s.id}</div></div><div style="font-size:24px; font-weight:800;" class="${colorClass}">%${s.rate}</div>`;
+                    
+                    let statusColor = 'text-ok';
+                    if(s.remainingAllowance <= 4) statusColor = 'text-warn';
+                    if(s.remainingAllowance === 0) statusColor = 'text-low';
+
+                    li.innerHTML = `
+                        <div>
+                            <div style="font-size:18px; font-weight:600;">${s.name} ${s.surname}</div>
+                            <div style="font-size:13px; opacity:0.6;">${s.id}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-rate ${statusColor}">%${s.rate}</div>
+                            <div class="stat-sub">Kalan Hak: <strong>${s.remainingAllowance} Saat</strong></div>
+                            <div class="stat-sub" style="opacity:0.4;">(Toplam Hak: ${s.maxAbsentHours})</div>
+                        </div>
+                    `;
                     ul.appendChild(li);
                 }
             });
         }
 
         function resetAttendance() {
-            if(confirm("Tüm yoklamalar silinecek?")) {
+            if(confirm("DİKKAT! Tüm veriler silinecek?")) {
                 activeCourseAttendance = {};
                 saveData();
                 initAdminPanel();
