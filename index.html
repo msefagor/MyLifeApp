@@ -12,7 +12,6 @@
         :root {
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.15);
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --text-color: #ffffff;
         }
 
@@ -22,10 +21,10 @@
             margin: 0; padding: 0;
             background: #000;
             color: var(--text-color);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-x: hidden;
             padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
         }
 
@@ -40,7 +39,7 @@
         /* Üst Bar */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 0; margin-bottom: 20px;
+            padding: 20px 0; margin-bottom: 10px;
         }
         .header h1 { font-size: 28px; margin: 0; font-weight: 800; letter-spacing: -0.5px; }
         
@@ -48,8 +47,9 @@
             background: rgba(255,255,255,0.15); border: 1px solid var(--glass-border);
             color: white; width: 44px; height: 44px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px); transition: 0.2s;
         }
+        .backup-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
 
         /* Tarih Seçici */
         .date-container {
@@ -65,28 +65,31 @@
             outline: none; text-align: center; width: 100%;
         }
 
-        /* Menü Grid */
-        .grid-menu {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
-            overflow-y: auto; padding-bottom: 20px;
+        /* Liste Menü (Kartlar) */
+        .menu-list {
+            display: flex; flex-direction: column; gap: 15px;
+            flex: 1; /* Footer'ı aşağı itmek için */
         }
 
         .menu-item {
             background: var(--glass-bg); backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border); border-radius: 24px;
-            padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 15px; aspect-ratio: 1; text-decoration: none; color: white;
+            border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 20px; display: flex; align-items: center; justify-content: flex-start;
+            gap: 20px; text-decoration: none; color: white;
             transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .menu-item:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+        .menu-item:active { transform: scale(0.98); background: rgba(255,255,255,0.15); }
         
         .icon-box {
-            width: 50px; height: 50px; border-radius: 15px;
+            width: 50px; height: 50px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; background: rgba(255,255,255,0.1);
+            font-size: 22px; flex-shrink: 0;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        .item-title { font-size: 16px; font-weight: 600; }
+        .item-info { display: flex; flex-direction: column; }
+        .item-title { font-size: 18px; font-weight: 600; }
+        .item-desc { font-size: 13px; opacity: 0.6; margin-top: 3px; }
 
         /* Renk Temaları */
         .theme-namaz .icon-box { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #000; }
@@ -95,24 +98,35 @@
         .theme-book .icon-box { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #000; }
         .theme-money .icon-box { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
 
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 10px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
         /* Modal (Yedekleme) */
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
             z-index: 100; display: none; align-items: center; justify-content: center;
         }
         .modal.open { display: flex; }
         .modal-content {
             background: #1c1c1e; width: 85%; max-width: 400px;
             border-radius: 24px; padding: 25px; border: 1px solid var(--glass-border);
-            text-align: center;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
         .modal-btn {
-            width: 100%; padding: 15px; margin-top: 10px; border-radius: 14px;
+            width: 100%; padding: 16px; margin-top: 12px; border-radius: 14px;
             border: none; font-size: 16px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-download { background: #0a84ff; color: white; }
         .btn-upload { background: #30d158; color: white; }
-        .btn-close { background: rgba(255,255,255,0.1); color: white; margin-top: 20px; }
+        .btn-close { background: rgba(255,255,255,0.1); color: white; margin-top: 25px; }
 
     </style>
 </head>
@@ -124,7 +138,7 @@
 
     <div class="header">
         <h1>Günlük Akış</h1>
-        <div class="backup-btn" onclick="openBackupModal()">
+        <div class="backup-btn" onclick="checkPasswordAndOpen()">
             <i class="fas fa-cloud-arrow-down"></i>
         </div>
     </div>
@@ -134,31 +148,55 @@
         <input type="date" id="mainDatePicker">
     </div>
 
-    <div class="grid-menu">
+    <div class="menu-list">
         <a href="#" onclick="navigateTo('namaz.html')" class="menu-item theme-namaz">
             <div class="icon-box"><i class="fas fa-mosque"></i></div>
-            <span class="item-title">Namaz</span>
+            <div class="item-info">
+                <span class="item-title">Namaz Takibi</span>
+                <span class="item-desc">Vakitleri ve kazaları yönet</span>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i>
         </a>
         
         <a href="#" onclick="navigateTo('notlar.html')" class="menu-item theme-not">
             <div class="icon-box"><i class="fas fa-sticky-note"></i></div>
-            <span class="item-title">Notlar</span>
+            <div class="item-info">
+                <span class="item-title">Notlar</span>
+                <span class="item-desc">Günlük planlar ve hatırlatmalar</span>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i>
         </a>
 
         <a href="#" onclick="navigateTo('ingilizce.html')" class="menu-item theme-eng">
             <div class="icon-box"><i class="fas fa-language"></i></div>
-            <span class="item-title">İngilizce</span>
+            <div class="item-info">
+                <span class="item-title">İngilizce</span>
+                <span class="item-desc">Kelime, okuma ve diyalog çalışması</span>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i>
         </a>
 
         <a href="#" onclick="navigateTo('kitap1.html')" class="menu-item theme-book">
             <div class="icon-box"><i class="fas fa-book"></i></div>
-            <span class="item-title">Kitap</span>
+            <div class="item-info">
+                <span class="item-title">Kitap</span>
+                <span class="item-desc">Okuma takibi ve kitaplık</span>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i>
         </a>
 
         <a href="#" onclick="navigateTo('yatirim1.html')" class="menu-item theme-money">
             <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-            <span class="item-title">Bütçe</span>
+            <div class="item-info">
+                <span class="item-title">Bütçe</span>
+                <span class="item-desc">Gelir, gider ve hedef takibi</span>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left:auto; opacity:0.3;"></i>
         </a>
+    </div>
+
+    <div class="footer">
+        Bu program Muhammed Sefa GÖR tarafından şahsi kullanım için oluşturulmuştur.
     </div>
 
     <div id="backupModal" class="modal">
@@ -181,10 +219,12 @@
     </div>
 
     <script>
+        // Şifre Tanımlama
+        const APP_PASS = "120622";
+
         // 1. iPhone Uyumlu Tarih Ayarı
         function setToday() {
             const now = new Date();
-            // Yerel saat farkını düzelt
             const offset = now.getTimezoneOffset() * 60000;
             const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
             
@@ -195,12 +235,19 @@
         // 2. Sayfa Yönlendirme (Tarih verisini taşıyarak)
         function navigateTo(page) {
             const date = document.getElementById('mainDatePicker').value;
-            // Tarihi URL parametresi olarak ekle
             window.location.href = `${page}?date=${date}`;
         }
 
-        // 3. Yedekleme Fonksiyonları
-        function openBackupModal() { document.getElementById('backupModal').classList.add('open'); }
+        // 3. Şifre Kontrolü ve Yedekleme Menüsü
+        function checkPasswordAndOpen() {
+            const userPass = prompt("Veri yönetimi için şifre giriniz:");
+            if (userPass === APP_PASS) {
+                document.getElementById('backupModal').classList.add('open');
+            } else {
+                if(userPass !== null) alert("Hatalı şifre!");
+            }
+        }
+
         function closeBackupModal() { document.getElementById('backupModal').classList.remove('open'); }
 
         function exportData() {
@@ -226,7 +273,6 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    // Mevcut veriyi temizle ve yenisini yükle (Çakışmayı önlemek için)
                     localStorage.clear();
                     
                     Object.keys(data).forEach(key => {
