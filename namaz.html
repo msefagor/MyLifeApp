@@ -15,17 +15,12 @@
             --glass-border: rgba(255, 255, 255, 0.2);
             --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             
-            /* Renkler */
-            --vakit-color: #00f2fe;
-            --kaza-color: #f7b733;
-            --missed-color: #ff4b1f;
-            --accent-green: #32d74b;
-
             --vakit-gradient: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
             --kaza-gradient: linear-gradient(45deg, #fc4a1a 0%, #f7b733 100%);
             
             --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             --text-color: #ffffff;
+            --accent-green: #32d74b;
             --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -40,22 +35,18 @@
             padding-bottom: calc(90px + env(safe-area-inset-bottom));
         }
 
-        /* Blobs */
         .blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
         .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate; }
         .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
         .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
         @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
 
-        /* Container */
         .container { width: 100%; max-width: 600px; padding: 20px 25px; display: flex; flex-direction: column; gap: 25px; }
 
-        /* Tabs */
         .tab-content { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Header */
         .app-header { text-align: center; margin-top: 10px; margin-bottom: 10px; }
         .liquid-brand {
             font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
@@ -70,7 +61,6 @@
             filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.5)); margin: 0;
         }
 
-        /* Glass Cards */
         .glass-card {
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px 25px; box-shadow: var(--glass-shadow);
@@ -78,21 +68,12 @@
 
         h3 { font-size: 20px; margin: 0 0 20px 0; font-weight: 700; letter-spacing: 0.5px; }
         
-        /* Inputs & Buttons */
         input[type="date"] {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
-            outline: none; width: 100%; margin-bottom: 15px;
+            color: white; padding: 16px; border-radius: 18px; font-size: 20px; font-weight: 600;
+            outline: none; width: 100%; text-align: center; -webkit-appearance: none;
         }
-        
-        .btn-primary {
-            width: 100%; padding: 16px; border-radius: 18px; border: none;
-            background: var(--vakit-gradient); color: white; font-size: 16px; font-weight: 700;
-            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); transition: 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary:active { transform: scale(0.98); }
-        
+
         /* Prayer List */
         .prayer-list { display: flex; flex-direction: column; gap: 15px; }
         .prayer-item {
@@ -104,8 +85,6 @@
         .prayer-name { font-size: 20px; font-weight: 700; }
         .prayer-rekat { font-size: 14px; opacity: 0.7; margin-top: 4px; }
 
-        /* Controls */
-        .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         .toggle-wrapper { display: flex; align-items: center; gap: 12px; }
         .toggle-label { font-size: 13px; opacity: 0.9; font-weight: 500; }
         .toggle {
@@ -123,11 +102,11 @@
             padding: 6px 12px; border-radius: 10px; font-size: 12px; cursor: pointer;
         }
         .prayer-item.status-kaza .kaza-btn { background: var(--kaza-gradient); color: #fff; border-color: transparent; font-weight: bold; }
+        .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 
-        /* Stats & Progress */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
         .stat-box { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .stat-value { font-size: 28px; font-weight: 800; color: var(--missed-color); margin-top: 8px; }
+        .stat-value { font-size: 28px; font-weight: 800; color: #ff4b1f; margin-top: 8px; }
         .stat-label { font-size: 13px; opacity: 0.8; font-weight: 500; }
         .progress-container { margin-top: 25px; }
         .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; font-weight: 600; }
@@ -135,9 +114,9 @@
         .progress-bar-fill { height: 100%; background: var(--vakit-gradient); width: 0%; border-radius: 12px; transition: width 0.5s ease-in-out; }
         .missed-list-container { max-height: 350px; overflow-y: auto; }
         .missed-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
-        .missed-date { font-weight: 700; color: var(--missed-color); display: block; margin-bottom: 5px; }
+        .missed-date { font-weight: 700; color: #ff4b1f; display: block; margin-bottom: 5px; }
 
-        /* Sure List Item */
+        /* --- SURE LİSTESİ --- */
         .surah-list-item {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.2s;
@@ -145,35 +124,56 @@
         }
         .surah-list-item:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .surah-list-title { font-size: 18px; font-weight: 700; color: #fff; }
-        
-        /* Detail Card */
-        .surah-detail-card {
+
+        /* --- AYET KARTI (FLASH CARD) --- */
+        .verse-card {
             background: linear-gradient(180deg, rgba(30,30,40,0.9) 0%, rgba(20,20,30,0.95) 100%);
             backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 30px; padding: 30px 25px; display: flex; flex-direction: column; gap: 20px;
-            animation: slideUp 0.3s ease; min-height: 400px; justify-content: center;
+            border-radius: 30px; padding: 30px 25px; 
+            display: flex; flex-direction: column; gap: 20px;
+            min-height: 450px; justify-content: center; position: relative;
+            animation: fadeIn 0.4s ease;
         }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .detail-header {
-            font-size: 20px; font-weight: 800; color: var(--accent-green);
-            text-align: center; text-transform: uppercase; letter-spacing: 1px;
-            padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+        .verse-no {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; color: var(--accent-green);
         }
-        .detail-arabic {
+        .verse-arabic {
             font-family: 'Amiri', serif; font-size: 32px; line-height: 2;
             text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2);
+            padding: 10px;
         }
-        .detail-reading { font-size: 18px; font-weight: 600; color: #e0e0e0; line-height: 1.6; text-align: center; font-style: italic; }
-        .detail-meaning { font-size: 16px; color: rgba(255,255,255,0.7); line-height: 1.6; text-align: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; }
-        
+        .verse-reading {
+            font-size: 18px; font-weight: 600; color: #e0e0e0; 
+            line-height: 1.6; text-align: center; font-style: italic;
+            border-left: 3px solid var(--vakit-color); padding-left: 15px;
+        }
+        .verse-meaning {
+            font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.6; 
+            text-align: center; background: rgba(255,255,255,0.05); 
+            padding: 15px; border-radius: 15px;
+        }
+
+        /* Navigasyon Butonları */
+        .verse-nav {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 20px;
+        }
+        .nav-arrow-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 50px; height: 50px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; transition: 0.2s;
+        }
+        .nav-arrow-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+        .nav-arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
         .back-btn {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: white; padding: 12px 20px; border-radius: 15px; font-weight: 600;
             display: flex; align-items: center; gap: 10px; width: fit-content; margin-bottom: 15px; cursor: pointer;
         }
 
-        /* Nav Bar */
         .nav-bar {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 380px; height: 70px;
@@ -211,10 +211,7 @@
     </div>
 
     <a href="index.html" style="position: fixed; top: max(env(safe-area-inset-top), 20px); left: 20px; z-index: 10000; width: 44px; height: 44px; background: rgba(40, 40, 40, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-size: 18px; transition: transform 0.2s;" onclick="this.style.transform='scale(0.9)'">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     </a>
 
     <div class="container">
@@ -265,15 +262,10 @@
         </div>
 
         <div id="tab-surahs" class="tab-content">
-            
-            <button class="btn-primary" onclick="forceReloadSurahs()" style="margin-bottom: 20px; background:linear-gradient(45deg, #FF512F 0%, #DD2476 100%);">
-                <i class="fas fa-sync-alt"></i> Veritabanını Güncelle
-            </button>
-
             <div id="surahListView">
                 <div class="surah-list" id="surahListContainer" style="display: flex; flex-direction: column; gap: 15px;">
                     <div style="text-align:center; padding:20px;">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Sureler Yükleniyor...
+                        <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Yükleniyor...
                     </div>
                 </div>
                 <div style="height: 80px;"></div>
@@ -284,7 +276,21 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     Listeye Dön
                 </button>
-                <div id="surahDetailContent"></div>
+                
+                <div id="surahTitle" style="text-align:center; font-size:22px; font-weight:800; margin-bottom:20px; color:white;"></div>
+
+                <div id="verseCardContainer">
+                    </div>
+
+                <div class="verse-nav">
+                    <button class="nav-arrow-btn" id="prevVerseBtn" onclick="changeVerse(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div style="font-size:14px; opacity:0.6;" id="verseCounter">1 / 5</div>
+                    <button class="nav-arrow-btn" id="nextVerseBtn" onclick="changeVerse(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -307,9 +313,6 @@
     <script>
         // --- DATA KEYS ---
         const PRAYER_KEY = 'namazTakipData_v2';
-        // NOT: Artık local storage yerine sureler.json kullanıyoruz.
-
-        // --- NAMAZ CONSTANTS ---
         const prayers = [
             { id: 'sabah', name: 'Sabah', rekat: 4 },
             { id: 'ogle', name: 'Öğle', rekat: 10 },
@@ -321,6 +324,8 @@
         // --- GLOBAL VARS ---
         const datePicker = document.getElementById('datePicker');
         let currentSurahs = [];
+        let activeSurah = null;
+        let activeVerseIndex = 0;
 
         function getLocalTodayDate() {
             const now = new Date();
@@ -337,7 +342,7 @@
             loadDay(today);
             calculateStats();
             renderMissedList();
-            loadSurahsFromDB(); // Başlangıçta veritabanını çek
+            loadSurahsFromDB(); 
         });
 
         datePicker.addEventListener('change', (e) => {
@@ -356,29 +361,21 @@
         }
 
         // ==========================================
-        //  DATABASE YÖNETİMİ (JSON FETCH)
+        //  DATABASE YÖNETİMİ & SURE LİSTESİ
         // ==========================================
 
         async function loadSurahsFromDB() {
             try {
-                // sureler.json dosyasını çekiyoruz.
-                // Not: Timestamp ekleyerek cache sorununu önlüyoruz.
                 const response = await fetch('sureler.json?v=' + new Date().getTime());
                 if(!response.ok) throw new Error("Veritabanı bulunamadı");
-                
                 const data = await response.json();
                 currentSurahs = data;
                 renderSurahList();
             } catch (error) {
                 console.error(error);
                 document.getElementById('surahListContainer').innerHTML = 
-                    '<div style="text-align:center; padding:20px; color:#ff4b1f;">Veritabanı (sureler.json) yüklenemedi.<br>Lütfen dosyaların aynı klasörde olduğundan emin olun.</div>';
+                    '<div style="text-align:center; padding:20px; color:#ff4b1f;">Veritabanı (sureler.json) yüklenemedi.</div>';
             }
-        }
-
-        function forceReloadSurahs() {
-            loadSurahsFromDB();
-            alert("Veritabanı yenilendi.");
         }
 
         function sortSurahs() {
@@ -410,45 +407,64 @@
             });
         }
 
+        // ==========================================
+        //  FLASH CARD (AYET KARTI) MANTIĞI
+        // ==========================================
+
         function openSurahDetail(id) {
-            const surah = currentSurahs.find(s => s.id === id);
-            if(!surah) return;
+            activeSurah = currentSurahs.find(s => s.id === id);
+            if(!activeSurah) return;
 
-            const contentDiv = document.getElementById('surahDetailContent');
+            activeVerseIndex = 0; // İlk ayetten başla
             
-            // Formatlı Gösterim
-            contentDiv.innerHTML = `
-                <div class="surah-detail-card">
-                    <div class="detail-header">${surah.title}</div>
-                    
-                    <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; margin-bottom:10px;">
-                        <div class="detail-arabic">${surah.arabic}</div>
-                    </div>
-
-                    <div style="border-left: 3px solid var(--vakit-color); padding-left:15px; margin-bottom:10px;">
-                        <div style="font-size:12px; opacity:0.6; margin-bottom:5px;">OKUNUŞU</div>
-                        <div class="detail-reading">${surah.reading}</div>
-                    </div>
-
-                    <div style="border-left: 3px solid var(--kaza-color); padding-left:15px;">
-                        <div style="font-size:12px; opacity:0.6; margin-bottom:5px;">MEALİ</div>
-                        <div class="detail-meaning">${surah.meaning}</div>
-                    </div>
-                </div>
-            `;
+            document.getElementById('surahTitle').innerText = activeSurah.title;
+            renderVerseCard();
 
             document.getElementById('surahListView').classList.add('hidden');
             document.getElementById('surahDetailView').classList.remove('hidden');
             window.scrollTo(0,0);
         }
 
+        function renderVerseCard() {
+            if(!activeSurah || !activeSurah.verses) return;
+            
+            const verse = activeSurah.verses[activeVerseIndex];
+            const container = document.getElementById('verseCardContainer');
+            
+            // Kart HTML'i
+            container.innerHTML = `
+                <div class="verse-card">
+                    <div class="verse-no">${verse.no}. Ayet</div>
+                    <div class="verse-arabic">${verse.arabic}</div>
+                    <div class="verse-reading">${verse.reading}</div>
+                    <div class="verse-meaning">${verse.meaning}</div>
+                </div>
+            `;
+
+            // Buton Durumları
+            document.getElementById('prevVerseBtn').disabled = (activeVerseIndex === 0);
+            document.getElementById('nextVerseBtn').disabled = (activeVerseIndex === activeSurah.verses.length - 1);
+            
+            // Sayaç
+            document.getElementById('verseCounter').innerText = `${activeVerseIndex + 1} / ${activeSurah.verses.length}`;
+        }
+
+        function changeVerse(dir) {
+            const newIndex = activeVerseIndex + dir;
+            if(newIndex >= 0 && newIndex < activeSurah.verses.length) {
+                activeVerseIndex = newIndex;
+                renderVerseCard();
+            }
+        }
+
         function closeSurahDetail() {
             document.getElementById('surahDetailView').classList.add('hidden');
             document.getElementById('surahListView').classList.remove('hidden');
+            activeSurah = null;
         }
 
         // ==========================================
-        //  NAMAZ TAKİP MANTIĞI (MEVCUT KODLAR)
+        //  NAMAZ TAKİP MANTIĞI (STANDART)
         // ==========================================
         function getStoredPrayerData() {
             const stored = localStorage.getItem(PRAYER_KEY);
