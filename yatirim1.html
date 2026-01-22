@@ -77,6 +77,39 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
+        /* --- Header Tasarımı (Liquid Style) --- */
+        .app-header {
+            margin-top: 20px; /* Geri butonu için üst boşluk */
+            margin-bottom: 25px;
+            text-align: right; /* Yazıları sağa yasla (Geri butonu solda) */
+            padding-right: 5px;
+        }
+
+        .liquid-brand {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            /* Metalik yazı efekti */
+            background: linear-gradient(90deg, #94a3b8, #e2e8f0); 
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .liquid-title {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            /* Liquid Glass Gradyan */
+            background: linear-gradient(135deg, #ffffff 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Parlama efekti */
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.3));
+        }
+
         /* --- Buttons & Inputs --- */
         .btn {
             background: rgba(255, 255, 255, 0.1);
@@ -112,7 +145,6 @@
         }
         input:focus { border-color: var(--accent); }
         
-        /* Tarih inputu için özel ayar (iPhone fix) */
         input[type="date"] {
             -webkit-appearance: none;
             display: block;
@@ -132,16 +164,16 @@
         .page.active { display: flex; flex-direction: column; gap: 20px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- Flash Card --- */
+        /* --- Flash Card (Compact) --- */
         .flash-card {
-            flex: 1;
+            /* Kaldırıldı: flex: 1 ve min-height */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 20px;
-            min-height: 300px;
+            padding: 25px 20px; /* Daha kompakt padding */
+            margin-bottom: 5px;
         }
         
         .balance-container {
@@ -151,18 +183,18 @@
             gap: 10px;
         }
         .balance-icon {
-            width: 36px; height: 36px;
+            width: 32px; height: 32px;
             fill: var(--accent);
             filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
         }
         .big-balance { 
-            font-size: 42px; 
+            font-size: 36px; /* Biraz küçültüldü */
             font-weight: 800; 
             background: linear-gradient(to right, #fff, #cbd5e1); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
         }
-        .big-tl { font-size: 20px; color: var(--text-muted); font-weight: 500; }
+        .big-tl { font-size: 18px; color: var(--text-muted); font-weight: 500; }
 
         /* --- Projection Card --- */
         .projection-card {
@@ -175,7 +207,6 @@
             display: flex; flex-direction: column; gap: 4px; 
             flex: 1; text-align: center;
         }
-        /* Kalan işlem kısmı tıklanabilir */
         .proj-item.clickable { cursor: pointer; position: relative; }
         .proj-item.clickable:active { transform: scale(0.95); opacity: 0.8; }
         
@@ -253,11 +284,9 @@
     <div class="app-container">
         
         <div id="page-home" class="page active">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-size:14px; color:var(--text-muted);">MSEFAGOR Bütçe Planı</div>
-                    <div style="font-size:20px; font-weight:700;">Bugünün Durumu</div>
-                </div>
+            <div class="app-header">
+                <div class="liquid-brand">MSEFAGOR Bütçe Planı</div>
+                <div class="liquid-title">Bugünün Durumu</div>
             </div>
 
             <div class="glass-panel flash-card">
@@ -340,7 +369,10 @@
         </div>
 
         <div id="page-stats" class="page">
-            <h2 class="mb-4">Performans Analizi</h2>
+            <div class="app-header">
+                <div class="liquid-brand">İstatistikler</div>
+                <div class="liquid-title">Performans Analizi</div>
+            </div>
             
             <div class="glass-panel mb-4" style="padding:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -785,69 +817,62 @@
 
     </script>
     <script>
-    (function syncDateFromUrl() {
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const externalDate = urlParams.get('date');
-            
-            if (externalDate) {
-                // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
-                const dateInputs = [
-                    'datePicker',      // Notlar, Namaz, Kitap
-                    'date-picker',     // İngilizce
-                    'input-date'       // Bütçe (Yatırım)
-                ];
+        (function syncDateFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const externalDate = urlParams.get('date');
+                
+                if (externalDate) {
+                    const dateInputs = [
+                        'datePicker',      
+                        'date-picker',     
+                        'input-date'       
+                    ];
 
-                let targetInput = null;
-                for (let id of dateInputs) {
-                    targetInput = document.getElementById(id);
-                    if (targetInput) break;
-                }
-
-                if (targetInput) {
-                    targetInput.value = externalDate;
-                    
-                    // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
-                    targetInput.dispatchEvent(new Event('change'));
-                    targetInput.dispatchEvent(new Event('input'));
-                    
-                    // Notlar uygulaması için özel tetikleyici
-                    if(typeof openSelectedDate === 'function') {
-                        // Notlar uygulamasında tarih seçilince otomatik ekranı aç
-                         setTimeout(() => openSelectedDate(), 100);
+                    let targetInput = null;
+                    for (let id of dateInputs) {
+                        targetInput = document.getElementById(id);
+                        if (targetInput) break;
                     }
-                    // Bütçe uygulaması için özel kontrol
-                    if(typeof checkDateAllowed === 'function') {
-                        checkDateAllowed();
+
+                    if (targetInput) {
+                        targetInput.value = externalDate;
+                        targetInput.dispatchEvent(new Event('change'));
+                        targetInput.dispatchEvent(new Event('input'));
+                        
+                        if(typeof openSelectedDate === 'function') {
+                             setTimeout(() => openSelectedDate(), 100);
+                        }
+                        if(typeof checkDateAllowed === 'function') {
+                            checkDateAllowed();
+                        }
                     }
                 }
-            }
-        } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
-    })();
-</script>
-<a href="index.html" style="
-    position: fixed;
-    top: max(env(safe-area-inset-top), 20px);
-    left: 20px;
-    z-index: 10000;
-    width: 44px;
-    height: 44px;
-    background: rgba(40, 40, 40, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    font-size: 18px;
-    transition: transform 0.2s;
-" onclick="this.style.transform='scale(0.9)'">
-    <i class="fas fa-arrow-left"></i>
-</a>
+            } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+        })();
+    </script>
+    <a href="index.html" style="
+        position: fixed;
+        top: max(env(safe-area-inset-top), 20px);
+        left: 20px;
+        z-index: 10000;
+        width: 44px;
+        height: 44px;
+        background: rgba(40, 40, 40, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        font-size: 18px;
+        transition: transform 0.2s;
+    " onclick="this.style.transform='scale(0.9)'">
+        <i class="fas fa-arrow-left"></i>
+    </a>
 </body>
-
 </html>
