@@ -825,5 +825,29 @@
         } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
     })();
 </script>
+<a href="index.html" style="
+    position: fixed;
+    top: max(env(safe-area-inset-top), 20px);
+    left: 20px;
+    z-index: 10000;
+    width: 44px;
+    height: 44px;
+    background: rgba(40, 40, 40, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    font-size: 18px;
+    transition: transform 0.2s;
+" onclick="this.style.transform='scale(0.9)'">
+    <i class="fas fa-arrow-left"></i>
+</a>
 </body>
+
 </html>
