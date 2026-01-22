@@ -45,14 +45,23 @@
         .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
         @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
 
-        .container { width: 100%; max-width: 600px; padding: 20px 25px; display: flex; flex-direction: column; gap: 25px; }
+        .container { 
+            width: 100%; max-width: 600px; padding: 20px 25px; 
+            display: flex; flex-direction: column; gap: 25px;
+            position: relative; /* Badge için relative */
+        }
 
         .tab-content { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Header */
-        .app-header { text-align: center; margin-top: 10px; margin-bottom: 10px; }
+        /* Header & Date Badge */
+        .header-wrapper {
+            display: flex; justify-content: center; align-items: center;
+            position: relative; margin-top: 10px; margin-bottom: 20px;
+        }
+
+        .app-header { text-align: center; }
         .liquid-brand {
             font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
             background: linear-gradient(90deg, #a1c4fd, #c2e9fb); 
@@ -66,6 +75,22 @@
             filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.5)); margin: 0;
         }
 
+        /* TARIH ROZETİ (SAĞ ÜST) */
+        .date-badge {
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            width: 55px; height: 55px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: #fff; line-height: 1.1;
+        }
+        .date-day { font-size: 18px; font-weight: 700; color: var(--vakit-color); }
+        .date-month { font-size: 12px; font-weight: 500; opacity: 0.8; }
+
+        /* Glass Cards */
         .glass-card {
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: 30px; padding: 30px 25px; box-shadow: var(--glass-shadow);
@@ -73,12 +98,24 @@
 
         h3 { font-size: 20px; margin: 0 0 20px 0; font-weight: 700; letter-spacing: 0.5px; }
         
-        input[type="date"] {
+        /* Inputs & Buttons */
+        input[type="text"], textarea, input[type="url"] {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; padding: 16px; border-radius: 18px; font-size: 20px; font-weight: 600;
-            outline: none; width: 100%; text-align: center; -webkit-appearance: none;
+            color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
+            outline: none; width: 100%; margin-bottom: 15px;
         }
+        textarea { height: 100px; resize: none; }
         
+        .btn-primary {
+            width: 100%; padding: 16px; border-radius: 18px; border: none;
+            background: var(--vakit-gradient); color: white; font-size: 16px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-batch { background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%); margin-bottom: 20px; }
+
+        /* Prayer List */
         .prayer-list { display: flex; flex-direction: column; gap: 15px; }
         .prayer-item {
             padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px;
@@ -89,6 +126,8 @@
         .prayer-name { font-size: 20px; font-weight: 700; }
         .prayer-rekat { font-size: 14px; opacity: 0.7; margin-top: 4px; }
 
+        /* Controls */
+        .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         .toggle-wrapper { display: flex; align-items: center; gap: 12px; }
         .toggle-label { font-size: 13px; opacity: 0.9; font-weight: 500; }
         .toggle {
@@ -106,8 +145,8 @@
             padding: 6px 12px; border-radius: 10px; font-size: 12px; cursor: pointer;
         }
         .prayer-item.status-kaza .kaza-btn { background: var(--kaza-gradient); color: #fff; border-color: transparent; font-weight: bold; }
-        .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 
+        /* Stats & Progress */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; }
         .stat-box { background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
         .stat-value { font-size: 28px; font-weight: 800; color: var(--missed-color); margin-top: 8px; }
@@ -120,21 +159,25 @@
         .missed-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
         .missed-date { font-weight: 700; color: var(--missed-color); display: block; margin-bottom: 5px; }
 
-        /* --- SURE LİSTESİ --- */
+        /* Sure List Item */
         .surah-list-item {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.2s;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .surah-list-item:active { background: rgba(255,255,255,0.15); transform: scale(0.98); border-color: var(--vakit-color); }
-        .surah-list-title { font-size: 18px; font-weight: 700; color: #fff; flex: 1; }
+        .surah-list-item:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .surah-list-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .surah-delete-btn {
+            background: rgba(255, 75, 31, 0.2); border: 1px solid var(--missed-color); color: var(--missed-color);
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        }
 
-        /* --- AYET KARTI (FLASH CARD) - YENİ TASARIM --- */
-        .verse-card {
+        /* Detail Card */
+        .surah-detail-card {
             background: linear-gradient(180deg, rgba(30,30,40,0.9) 0%, rgba(20,20,30,0.95) 100%);
             backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.15);
             border-radius: 30px; padding: 30px 25px; 
-            display: flex; flex-direction: column; gap: 25px; /* Boşluk artırıldı */
+            display: flex; flex-direction: column; gap: 25px;
             min-height: 450px; justify-content: center; position: relative;
             animation: fadeIn 0.4s ease;
         }
@@ -148,33 +191,20 @@
             text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2);
             padding: 10px;
         }
-        /* YENİ OKUNUŞ TASARIMI */
         .verse-reading {
-            font-size: 24px; /* Büyütüldü */
-            font-weight: 700; 
-            color: #ffffff; 
-            line-height: 1.6; 
-            text-align: center; 
-            background: rgba(0, 242, 254, 0.1); /* Hafif mavi arka plan */
-            padding: 20px;
-            border-radius: 20px;
-            border-left: 5px solid var(--vakit-color); /* Sol kenarlık */
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 24px; font-weight: 700; color: #ffffff; line-height: 1.6; text-align: center; 
+            background: rgba(0, 242, 254, 0.1); padding: 20px; border-radius: 20px;
+            border-left: 5px solid var(--vakit-color); box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         .verse-meaning {
-            font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.6; 
-            text-align: center; background: rgba(255,255,255,0.05); 
-            padding: 15px; border-radius: 15px;
+            font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.6; text-align: center; 
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;
         }
 
-        /* Navigasyon Butonları */
-        .verse-nav {
-            display: flex; justify-content: space-between; align-items: center; margin-top: 20px;
-        }
+        .verse-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
         .nav-arrow-btn {
-            background: rgba(255,255,255,0.1); border: none; color: white;
-            width: 50px; height: 50px; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1); border: none; color: white; width: 50px; height: 50px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 18px; cursor: pointer; transition: 0.2s;
         }
         .nav-arrow-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
@@ -186,6 +216,24 @@
             display: flex; align-items: center; gap: 10px; width: fit-content; margin-bottom: 15px; cursor: pointer;
         }
 
+        /* FAB & Modal */
+        .fab {
+            position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); right: 20px;
+            width: 60px; height: 60px; border-radius: 50%; background: var(--vakit-gradient);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 242, 254, 0.4); color: #fff; font-size: 30px; border: none; cursor: pointer;
+            z-index: 90;
+        }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: flex-end; }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: #151520; width: 100%; border-radius: 30px 30px 0 0; padding: 30px 25px 50px 25px;
+            border-top: 1px solid var(--glass-border); animation: slideUpModal 0.3s ease;
+            max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Nav Bar */
         .nav-bar {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 380px; height: 70px;
@@ -235,17 +283,18 @@
     </a>
 
     <div class="container">
-        <div class="app-header">
-            <div class="liquid-brand">MSEFAGOR</div>
-            <h1 class="liquid-title">Namaz Takibi</h1>
+        <div class="header-wrapper">
+            <div class="app-header">
+                <div class="liquid-brand">MSEFAGOR</div>
+                <h1 class="liquid-title">Namaz Takibi</h1>
+            </div>
+            <div id="displayDateBadge" class="date-badge">
+                <div id="badgeDay" class="date-day">--</div>
+                <div id="badgeMonth" class="date-month">--</div>
+            </div>
         </div>
 
         <div id="tab-tracking" class="tab-content active">
-            <div class="glass-card date-section">
-                <span class="date-subtitle">Bugünü Değerlendir</span>
-                <input type="date" id="datePicker">
-            </div>
-
             <div class="glass-card" id="prayerPanel">
                 <div class="prayer-list" id="prayerListContainer"></div>
             </div>
@@ -347,7 +396,7 @@
         ];
 
         // --- GLOBAL VARS ---
-        const datePicker = document.getElementById('datePicker');
+        let currentActiveDate = ""; // Artık input yerine string tutuyoruz
         let currentSurahs = [];
         let activeSurah = null;
         let activeVerseIndex = 0;
@@ -360,19 +409,35 @@
             return `${year}-${month}-${day}`;
         }
 
-        const today = getLocalTodayDate();
-        datePicker.value = today;
+        // Başlangıç tarihi bugün olsun (URL parametresi yoksa)
+        currentActiveDate = getLocalTodayDate();
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadDay(today);
+            // Başlangıçta loadDay çağrısı URL parametresi scripti tarafından yapılacak
+            // O yüzden burada direkt çağırmaya gerek yok, ama garanti olsun diye:
+            // updateDateBadge(currentActiveDate);
+            // loadDay(currentActiveDate);
+            
             calculateStats();
             renderMissedList();
             loadSurahsFromDB(); 
         });
 
-        datePicker.addEventListener('change', (e) => {
-            loadDay(e.target.value);
-        });
+        // --- TARİH VE GÖSTERİM FONKSİYONLARI ---
+        function updateDateBadge(dateString) {
+            const dateParts = dateString.split('-'); // YYYY-MM-DD
+            if (dateParts.length === 3) {
+                const day = dateParts[2];
+                const month = dateParts[1];
+                document.getElementById('badgeDay').innerText = day;
+                document.getElementById('badgeMonth').innerText = getMonthName(month);
+            }
+        }
+
+        function getMonthName(monthNum) {
+            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            return months[parseInt(monthNum) - 1] || "";
+        }
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -446,7 +511,6 @@
         // ==========================================
 
         function openSurahDetail(id) {
-            // loose equality (==) kullandık çünkü ID bazen string bazen int gelebilir
             activeSurah = currentSurahs.find(s => s.id == id);
             
             if(!activeSurah) {
@@ -652,12 +716,13 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const externalDate = urlParams.get('date');
                 if (externalDate) {
-                    const picker = document.getElementById('datePicker');
-                    if (picker) {
-                        picker.value = externalDate;
-                        picker.dispatchEvent(new Event('change'));
-                        if(typeof loadDay === 'function') loadDay(externalDate);
-                    }
+                    currentActiveDate = externalDate; // Global değişkene ata
+                    updateDateBadge(currentActiveDate);
+                    if(typeof loadDay === 'function') loadDay(currentActiveDate);
+                } else {
+                    // Parametre yoksa bugünü göster
+                    updateDateBadge(currentActiveDate);
+                    if(typeof loadDay === 'function') loadDay(currentActiveDate);
                 }
             } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
         })();
