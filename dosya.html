@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dosya Takip Pro</title>
+    <title>Hukuk Dosya Takip</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
             --primary: #6366f1;
             --accent: #10b981;
             --bg: #0f172a;
@@ -39,31 +39,31 @@
             padding: 24px;
             margin-bottom: 24px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
 
         .percentage {
-            font-size: 3.2rem;
+            font-size: 3.5rem;
             font-weight: 800;
-            text-align: center;
             background: linear-gradient(135deg, #818cf8, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
+            font-variant-numeric: tabular-nums;
         }
 
         .stats-text {
-            text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #94a3b8;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
         }
 
         .progress-bar-bg {
-            height: 10px;
+            height: 8px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 20px;
-            margin-top: 15px;
+            margin-top: 20px;
             overflow: hidden;
         }
 
@@ -72,89 +72,65 @@
             background: linear-gradient(90deg, #4f46e5, #9333ea);
             width: 0%;
             transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
         }
 
-        /* Excel Upload Section */
-        .upload-section {
+        /* Excel Upload */
+        .upload-zone {
             background: var(--glass);
             border: 2px dashed var(--glass-border);
             border-radius: 20px;
             padding: 20px;
             text-align: center;
             margin-bottom: 20px;
-            cursor: pointer;
+            transition: 0.3s;
         }
+        .upload-zone:active { background: rgba(255,255,255,0.1); }
 
-        .upload-section:hover { border-color: var(--primary); }
-
-        #excelInput { display: none; }
-
-        /* Action Area */
-        .action-area {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 22px;
-            padding: 20px;
-            margin-bottom: 25px;
+        /* Action Buttons */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn {
+            border: none; border-radius: 14px; padding: 14px; color: white;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 0.9rem;
         }
+        .btn-primary { background: var(--primary); }
+        .btn-outline { background: var(--glass); border: 1px solid var(--glass-border); }
 
-        .input-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 12px; }
-
-        input[type="text"], input[type="date"] {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            padding: 14px;
-            border-radius: 14px;
-            color: white;
-            font-size: 15px;
-            width: 100%;
-            outline: none;
-        }
-
-        .btn-main {
-            background: var(--primary);
-            color: white; border: none; padding: 16px;
-            border-radius: 14px; width: 100%; font-weight: 700;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-
-        /* Tabs & List */
-        .tabs { display: flex; gap: 10px; margin-bottom: 18px; }
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab {
-            flex: 1; padding: 12px; text-align: center;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px; font-size: 0.85rem; cursor: pointer;
-            border: 1px solid transparent; color: #94a3b8;
+            flex: 1; padding: 12px; text-align: center; font-size: 0.85rem;
+            background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid transparent; color: #94a3b8;
         }
         .tab.active { background: var(--glass); border-color: var(--primary); color: white; font-weight: 600; }
 
+        /* List Items */
         .file-card {
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
-            padding: 18px;
+            padding: 16px;
             margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            animation: fadeIn 0.3s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .file-info h4 { font-size: 1.15rem; margin-bottom: 4px; color: #f1f5f9; }
-        .file-info p { font-size: 0.85rem; color: #64748b; }
+        .file-info h4 { font-size: 1.1rem; color: #f1f5f9; margin-bottom: 4px; }
+        .file-info p { font-size: 0.8rem; color: #64748b; }
 
-        .item-actions { display: flex; gap: 12px; }
-        .btn-circle {
+        .item-btns { display: flex; gap: 10px; }
+        .circle-btn {
             width: 44px; height: 44px; border-radius: 14px; border: none;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        .btn-done { background: rgba(16, 185, 129, 0.15); color: var(--accent); }
-        .btn-del { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-        
-        .reset-btn {
-            background: none; border: none; color: #64748b; font-size: 0.7rem;
-            margin-top: 10px; text-decoration: underline; cursor: pointer;
-        }
+        .btn-check { background: rgba(16, 185, 129, 0.15); color: var(--accent); }
+        .btn-trash { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
@@ -169,20 +145,20 @@
         </div>
     </div>
 
-    <div class="upload-section" onclick="document.getElementById('excelInput').click()">
-        <i data-lucide="file-up" style="margin-bottom: 8px;"></i>
-        <p style="font-size: 0.9rem; font-weight: 600;">Excel Dosyası Yükle</p>
-        <p style="font-size: 0.7rem; color: #94a3b8;">(Dosya No, Tarih, Yıl sütunları olmalı)</p>
-        <input type="file" id="excelInput" accept=".xlsx, .xls, .csv">
+    <input type="file" id="fileInput" accept=".csv">
+    
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <i data-lucide="file-spreadsheet"></i>
+        <p style="margin-top: 8px; font-weight: 600;">CSV Dosyasını Yükle</p>
+        <p style="font-size: 0.7rem; color: #64748b;">(Betü Dosyalar Yapısında)</p>
     </div>
 
-    <div class="action-area">
-        <div class="input-row">
-            <input type="text" id="fNum" placeholder="Dosya No">
-            <input type="date" id="fDate">
-        </div>
-        <button class="btn-main" onclick="addFile()">
-            <i data-lucide="plus-circle"></i> Manuel Kayıt Ekle
+    <div class="action-grid">
+        <button class="btn btn-primary" onclick="addNewManual()">
+            <i data-lucide="plus"></i> Manuel Ekle
+        </button>
+        <button class="btn btn-outline" onclick="resetAll()">
+            <i data-lucide="refresh-cw"></i> Sıfırla
         </button>
     </div>
 
@@ -192,52 +168,48 @@
     </div>
 
     <div id="fileList"></div>
-    
-    <center><button class="reset-btn" onclick="resetData()">Tüm Verileri Sıfırla</button></center>
 
     <script>
         const TOTAL_FILES = 1147;
         const BASE_RESOLVED = 661;
-
-        let files = JSON.parse(localStorage.getItem('lawExcelApp')) || [];
+        let files = JSON.parse(localStorage.getItem('lawAppFiles')) || [];
         let currentTab = 'pending';
 
-        // Excel Okuma İşlemi
-        document.getElementById('excelInput').addEventListener('change', function(e) {
+        // Dosya Yükleme (CSV Okuma)
+        document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(evt) {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
+            if (!file) return;
 
-                // Excel verilerini sistem formatına çevir
-                const importedFiles = data.map((row, index) => ({
-                    id: Date.now() + index,
-                    num: row["Dosya No"] || row["dosya no"] || "Belirtilmedi",
-                    date: row["Tarih"] || row["tarih"] || "",
-                    year: row["Yıl"] || row["yıl"] || "",
-                    status: "pending"
-                }));
-
-                files = [...files, ...importedFiles];
-                save();
-                render();
-                alert(importedFiles.length + " dosya başarıyla eklendi!");
-            };
-            reader.readAsBinaryString(file);
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const newItems = results.data.map((row, idx) => ({
+                        id: Date.now() + idx,
+                        num: row["Dosya Numarası"] || "No Bilgisi Yok",
+                        date: row["Tarih"] || "",
+                        year: row["Yıl"] || "",
+                        status: "pending"
+                    }));
+                    files = [...files, ...newItems];
+                    saveAndRender();
+                    alert(newItems.length + " dosya listeye eklendi!");
+                }
+            });
         });
+
+        function saveAndRender() {
+            localStorage.setItem('lawAppFiles', JSON.stringify(files));
+            render();
+        }
 
         function render() {
             const list = document.getElementById('fileList');
             list.innerHTML = '';
             
             const filtered = files.filter(f => f.status === currentTab);
-            const resolvedCount = files.filter(f => f.status === 'resolved').length;
-            const currentTotalResolved = BASE_RESOLVED + resolvedCount;
+            const resolvedSessionCount = files.filter(f => f.status === 'resolved').length;
+            const currentTotalResolved = BASE_RESOLVED + resolvedSessionCount;
             const perc = (currentTotalResolved / TOTAL_FILES * 100).toFixed(2);
 
             document.getElementById('percDisplay').innerText = `%${perc.replace('.', ',')}`;
@@ -252,11 +224,11 @@
                         <h4>${f.num}</h4>
                         <p>${f.date ? f.date : 'Tarih Yok'} ${f.year ? '• ' + f.year : ''}</p>
                     </div>
-                    <div class="item-actions">
-                        <button class="btn-circle btn-done" onclick="toggleStatus(${f.id})">
+                    <div class="item-btns">
+                        <button class="circle-btn btn-check" onclick="toggleStatus(${f.id})">
                             <i data-lucide="${f.status === 'pending' ? 'check' : 'undo-2'}"></i>
                         </button>
-                        <button class="btn-circle btn-del" onclick="deleteFile(${f.id})">
+                        <button class="circle-btn btn-trash" onclick="deleteFile(${f.id})">
                             <i data-lucide="trash-2"></i>
                         </button>
                     </div>
@@ -266,28 +238,29 @@
             lucide.createIcons();
         }
 
-        function addFile() {
-            const num = document.getElementById('fNum').value;
-            const date = document.getElementById('fDate').value;
-            if(!num) return alert("Dosya No boş olamaz!");
-            files.push({ id: Date.now(), num, date, year: date ? new Date(date).getFullYear() : "", status: 'pending' });
-            save(); render();
-            document.getElementById('fNum').value = '';
-        }
-
         function toggleStatus(id) {
             files = files.map(f => f.id === id ? {...f, status: f.status === 'pending' ? 'resolved' : 'pending'} : f);
-            save(); render();
+            saveAndRender();
         }
 
         function deleteFile(id) {
-            if(confirm('Silinsin mi?')) { files = files.filter(f => f.id !== id); save(); render(); }
+            if(confirm('Dosya listeden silinsin mi?')) {
+                files = files.filter(f => f.id !== id);
+                saveAndRender();
+            }
         }
 
         function editFile(id) {
             const f = files.find(x => x.id === id);
-            const newNum = prompt("Dosya Numarasını Düzenle:", f.num);
-            if(newNum) { f.num = newNum; save(); render(); }
+            const newNum = prompt("Dosya Numarasını Güncelle:", f.num);
+            if(newNum) { f.num = newNum; saveAndRender(); }
+        }
+
+        function addNewManual() {
+            const num = prompt("Dosya Numarasını Girin:");
+            if(!num) return;
+            files.push({ id: Date.now(), num, date: "", year: "", status: 'pending' });
+            saveAndRender();
         }
 
         function switchTab(t) {
@@ -297,8 +270,13 @@
             render();
         }
 
-        function save() { localStorage.setItem('lawExcelApp', JSON.stringify(files)); }
-        function resetData() { if(confirm('TÜM VERİLER SİLİNECEK! Emin misiniz?')) { localStorage.clear(); location.reload(); } }
+        function resetAll() {
+            if(confirm('Tüm verileri silmek istediğinize emin misiniz?')) {
+                files = [];
+                localStorage.removeItem('lawAppFiles');
+                render();
+            }
+        }
 
         render();
     </script>
