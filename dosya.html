@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dosya Takip Sistemi</title>
+    <title>Dosya Takip Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --glass: rgba(255, 255, 255, 0.08);
@@ -74,7 +75,22 @@
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
         }
 
-        /* Input Section */
+        /* Excel Upload Section */
+        .upload-section {
+            background: var(--glass);
+            border: 2px dashed var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .upload-section:hover { border-color: var(--primary); }
+
+        #excelInput { display: none; }
+
+        /* Action Area */
         .action-area {
             background: var(--glass);
             border: 1px solid var(--glass-border);
@@ -85,7 +101,7 @@
 
         .input-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 12px; }
 
-        input {
+        input[type="text"], input[type="date"] {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
             padding: 14px;
@@ -96,31 +112,20 @@
             outline: none;
         }
 
-        input:focus { border-color: var(--primary); }
-
         .btn-main {
             background: var(--primary);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 14px;
-            width: 100%;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            color: white; border: none; padding: 16px;
+            border-radius: 14px; width: 100%; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
-        /* List Styling */
+        /* Tabs & List */
         .tabs { display: flex; gap: 10px; margin-bottom: 18px; }
         .tab {
             flex: 1; padding: 12px; text-align: center;
             background: rgba(255,255,255,0.03);
             border-radius: 12px; font-size: 0.85rem; cursor: pointer;
-            border: 1px solid transparent; transition: 0.3s;
-            color: #94a3b8;
+            border: 1px solid transparent; color: #94a3b8;
         }
         .tab.active { background: var(--glass); border-color: var(--primary); color: white; font-weight: 600; }
 
@@ -133,24 +138,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: slideUp 0.4s ease-out;
         }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
         .file-info h4 { font-size: 1.15rem; margin-bottom: 4px; color: #f1f5f9; }
         .file-info p { font-size: 0.85rem; color: #64748b; }
 
         .item-actions { display: flex; gap: 12px; }
         .btn-circle {
-            width: 46px; height: 46px; border-radius: 14px;
-            border: none; color: white; display: flex;
-            align-items: center; justify-content: center; cursor: pointer;
-            transition: transform 0.2s;
+            width: 44px; height: 44px; border-radius: 14px; border: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
-        .btn-circle:active { transform: scale(0.9); }
-        .btn-done { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .btn-del { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.15); }
+        .btn-done { background: rgba(16, 185, 129, 0.15); color: var(--accent); }
+        .btn-del { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+        
+        .reset-btn {
+            background: none; border: none; color: #64748b; font-size: 0.7rem;
+            margin-top: 10px; text-decoration: underline; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -165,13 +169,20 @@
         </div>
     </div>
 
+    <div class="upload-section" onclick="document.getElementById('excelInput').click()">
+        <i data-lucide="file-up" style="margin-bottom: 8px;"></i>
+        <p style="font-size: 0.9rem; font-weight: 600;">Excel Dosyası Yükle</p>
+        <p style="font-size: 0.7rem; color: #94a3b8;">(Dosya No, Tarih, Yıl sütunları olmalı)</p>
+        <input type="file" id="excelInput" accept=".xlsx, .xls, .csv">
+    </div>
+
     <div class="action-area">
         <div class="input-row">
             <input type="text" id="fNum" placeholder="Dosya No">
             <input type="date" id="fDate">
         </div>
         <button class="btn-main" onclick="addFile()">
-            <i data-lucide="plus-circle"></i> Yeni Kayıt Ekle
+            <i data-lucide="plus-circle"></i> Manuel Kayıt Ekle
         </button>
     </div>
 
@@ -181,29 +192,44 @@
     </div>
 
     <div id="fileList"></div>
+    
+    <center><button class="reset-btn" onclick="resetData()">Tüm Verileri Sıfırla</button></center>
 
     <script>
         const TOTAL_FILES = 1147;
         const BASE_RESOLVED = 661;
 
-        // EKSİKSİZ BAŞLANGIÇ VERİ SETİ
-        // Excel listenizdeki verileri buraya bu formatta ekledim.
-        // Tarihi olmayanların date kısmını "" bırakabilirsiniz.
-        const defaultFiles = [
-            { id: 1001, num: "2024/1", date: "2024-01-01", year: "2024", status: "pending" },
-            { id: 1002, num: "2024/2", date: "", year: "2024", status: "pending" },
-            { id: 1003, num: "2024/3", date: "2024-01-15", year: "2024", status: "pending" },
-            // Buraya Excel'deki tüm satırları eklemeye devam edebilirsiniz.
-        ];
-
-        let files = JSON.parse(localStorage.getItem('lawFilesV2'));
-        
-        if (!files) {
-            files = defaultFiles;
-            localStorage.setItem('lawFilesV2', JSON.stringify(files));
-        }
-
+        let files = JSON.parse(localStorage.getItem('lawExcelApp')) || [];
         let currentTab = 'pending';
+
+        // Excel Okuma İşlemi
+        document.getElementById('excelInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(evt) {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+
+                // Excel verilerini sistem formatına çevir
+                const importedFiles = data.map((row, index) => ({
+                    id: Date.now() + index,
+                    num: row["Dosya No"] || row["dosya no"] || "Belirtilmedi",
+                    date: row["Tarih"] || row["tarih"] || "",
+                    year: row["Yıl"] || row["yıl"] || "",
+                    status: "pending"
+                }));
+
+                files = [...files, ...importedFiles];
+                save();
+                render();
+                alert(importedFiles.length + " dosya başarıyla eklendi!");
+            };
+            reader.readAsBinaryString(file);
+        });
 
         function render() {
             const list = document.getElementById('fileList');
@@ -218,17 +244,13 @@
             document.getElementById('resolvedCount').innerText = currentTotalResolved;
             document.getElementById('progressBar').style.width = `${perc}%`;
 
-            if(filtered.length === 0) {
-                list.innerHTML = '<p style="text-align:center; color:#64748b; margin-top:20px;">Kayıt bulunamadı.</p>';
-            }
-
             filtered.forEach(f => {
                 const card = document.createElement('div');
                 card.className = 'file-card';
                 card.innerHTML = `
                     <div class="file-info" onclick="editFile(${f.id})">
                         <h4>${f.num}</h4>
-                        <p>${f.date ? formatDate(f.date) : 'Tarih Girilmedi'} ${f.year ? '• ' + f.year : ''}</p>
+                        <p>${f.date ? f.date : 'Tarih Yok'} ${f.year ? '• ' + f.year : ''}</p>
                     </div>
                     <div class="item-actions">
                         <button class="btn-circle btn-done" onclick="toggleStatus(${f.id})">
@@ -244,51 +266,28 @@
             lucide.createIcons();
         }
 
-        function formatDate(dateStr) {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('tr-TR');
-        }
-
         function addFile() {
             const num = document.getElementById('fNum').value;
             const date = document.getElementById('fDate').value;
-            if(!num) return alert("Dosya numarası girmelisiniz!");
-
-            files.push({
-                id: Date.now(),
-                num: num,
-                date: date,
-                year: date ? new Date(date).getFullYear() : "",
-                status: 'pending'
-            });
-            save();
+            if(!num) return alert("Dosya No boş olamaz!");
+            files.push({ id: Date.now(), num, date, year: date ? new Date(date).getFullYear() : "", status: 'pending' });
+            save(); render();
             document.getElementById('fNum').value = '';
-            document.getElementById('fDate').value = '';
-            render();
         }
 
         function toggleStatus(id) {
             files = files.map(f => f.id === id ? {...f, status: f.status === 'pending' ? 'resolved' : 'pending'} : f);
-            save();
-            render();
+            save(); render();
         }
 
         function deleteFile(id) {
-            if(confirm('Bu dosyayı listeden çıkarmak istiyor musunuz?')) {
-                files = files.filter(f => f.id !== id);
-                save();
-                render();
-            }
+            if(confirm('Silinsin mi?')) { files = files.filter(f => f.id !== id); save(); render(); }
         }
 
         function editFile(id) {
             const f = files.find(x => x.id === id);
             const newNum = prompt("Dosya Numarasını Düzenle:", f.num);
-            if(newNum !== null && newNum !== "") {
-                f.num = newNum;
-                save();
-                render();
-            }
+            if(newNum) { f.num = newNum; save(); render(); }
         }
 
         function switchTab(t) {
@@ -298,7 +297,8 @@
             render();
         }
 
-        function save() { localStorage.setItem('lawFilesV2', JSON.stringify(files)); }
+        function save() { localStorage.setItem('lawExcelApp', JSON.stringify(files)); }
+        function resetData() { if(confirm('TÜM VERİLER SİLİNECEK! Emin misiniz?')) { localStorage.clear(); location.reload(); } }
 
         render();
     </script>
