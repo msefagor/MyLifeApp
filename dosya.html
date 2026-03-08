@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hukuk Takip Sistemi</title>
+    <title>Hukuk Otomasyon</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root {
             --glass: rgba(255, 255, 255, 0.08);
@@ -28,75 +28,38 @@
 
         /* Liquid Glass Header */
         .glass-header {
-            position: sticky;
-            top: 10px;
-            z-index: 1000;
+            position: sticky; top: 10px; z-index: 1000;
             background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border); border-radius: 28px;
+            padding: 24px; margin-bottom: 24px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
             text-align: center;
         }
 
         .percentage {
-            font-size: 3.5rem;
-            font-weight: 800;
+            font-size: 3.5rem; font-weight: 800;
             background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-            font-variant-numeric: tabular-nums;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 5px; font-variant-numeric: tabular-nums;
         }
 
-        .stats-text {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            letter-spacing: 1.5px;
-        }
+        .stats-text { font-size: 0.8rem; color: #94a3b8; letter-spacing: 1.5px; }
 
         .progress-bar-bg {
-            height: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            margin-top: 20px;
-            overflow: hidden;
+            height: 10px; background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px; margin-top: 20px; overflow: hidden;
         }
 
         .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4f46e5, #9333ea);
-            width: 0%;
-            transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            height: 100%; background: linear-gradient(90deg, #4f46e5, #9333ea);
+            width: 0%; transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Excel Upload Zone */
-        .upload-zone {
-            background: var(--glass);
-            border: 2px dashed var(--glass-border);
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            margin-bottom: 20px;
-            transition: 0.3s;
-            cursor: pointer;
+        .search-box {
+            width: 100%; background: var(--glass); border: 1px solid var(--glass-border);
+            padding: 14px; border-radius: 14px; color: white; margin-bottom: 15px; outline: none;
         }
-        .upload-zone:active { background: rgba(255,255,255,0.12); transform: scale(0.98); }
-        .upload-zone i { color: var(--primary); margin-bottom: 10px; }
 
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .btn {
-            border: none; border-radius: 14px; padding: 15px; color: white;
-            font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-primary { background: var(--primary); }
-        .btn-outline { background: var(--glass); border: 1px solid var(--glass-border); }
-
-        /* Tabs */
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab {
             flex: 1; padding: 12px; text-align: center; font-size: 0.85rem;
@@ -104,68 +67,38 @@
         }
         .tab.active { background: var(--glass); border-color: var(--primary); color: white; font-weight: 600; }
 
-        /* File List */
         .file-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideIn 0.3s ease;
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 16px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .file-info h4 { font-size: 1.1rem; color: #f1f5f9; margin-bottom: 4px; }
         .file-info p { font-size: 0.8rem; color: #64748b; }
 
-        .item-btns { display: flex; gap: 10px; }
-        .circle-btn {
+        .btn-check { 
             width: 44px; height: 44px; border-radius: 14px; border: none;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(16, 185, 129, 0.15); color: var(--accent); 
         }
-        .btn-check { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .btn-trash { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2); }
-
-        #excelInput { display: none; }
-        .search-box {
-            width: 100%; background: var(--glass); border: 1px solid var(--glass-border);
-            padding: 14px; border-radius: 14px; color: white; margin-bottom: 15px; outline: none;
+        
+        .loading-overlay {
+            position: fixed; inset: 0; background: var(--bg);
+            display: flex; align-items: center; justify-content: center; z-index: 2000;
         }
     </style>
 </head>
 <body>
 
+    <div id="loader" class="loading-overlay">Veriler Güncelleniyor...</div>
+
     <div class="glass-header">
         <div class="percentage" id="percDisplay">%0,00</div>
-        <div class="stats-text">
-            KARAR: <span id="resolvedCount">661</span> / 1147
-        </div>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progressBar"></div>
-        </div>
+        <div class="stats-text">KARAR: <span id="resolvedCount">661</span> / 1147</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
     </div>
 
-    <input type="file" id="excelInput" accept=".xlsx, .xls">
-    
-    <div class="upload-zone" onclick="document.getElementById('excelInput').click()">
-        <i data-lucide="file-text" size="32"></i>
-        <p style="font-weight: 600;">Excel (.xlsx) Yükle</p>
-        <p style="font-size: 0.7rem; color: #64748b; margin-top: 4px;">Dosya Numarası, Tarih, Yıl sütunları</p>
-    </div>
-
-    <input type="text" class="search-box" id="searchBox" placeholder="Dosya numarası ile ara..." oninput="render()">
-
-    <div class="btn-grid">
-        <button class="btn btn-primary" onclick="addNewManual()">
-            <i data-lucide="plus"></i> Manuel Ekle
-        </button>
-        <button class="btn btn-outline" onclick="resetAll()">
-            <i data-lucide="trash-2"></i> Veriyi Temizle
-        </button>
-    </div>
+    <input type="text" class="search-box" id="searchBox" placeholder="Dosya ara..." oninput="render()">
 
     <div class="tabs">
         <div class="tab active" id="tabPending" onclick="switchTab('pending')">Bekleyenler</div>
@@ -175,41 +108,41 @@
     <div id="fileList"></div>
 
     <script>
+        // BURAYA GOOGLE SPREADSHEET CSV LINKINI YAPIŞTIR
+        const GOOGLE_SHEET_URL = 'Bhttps://docs.google.com/spreadsheets/d/e/2PACX-1vQqPPEj3gfAo7qkrxuB9Jtj2SGH4yuAqIj1Sm8MX_jONrCDM0rna_XyAn4bC4NEiiGAVw-xkZ-QOaFY/pub?output=xlsx';
+        
         const TOTAL_FILES = 1147;
         const BASE_RESOLVED = 661;
-        let files = JSON.parse(localStorage.getItem('lawExcelV3')) || [];
+        
+        let allData = []; // Google'dan gelen ham veri
+        let resolvedIds = JSON.parse(localStorage.getItem('resolvedFiles')) || [];
         let currentTab = 'pending';
 
-        // Excel Okuma
-        document.getElementById('excelInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const data = evt.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const firstSheet = workbook.SheetNames[0];
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-
-                const imported = rows.map((row, idx) => ({
-                    id: Date.now() + idx,
-                    num: row["Dosya Numarası"] || row["dosya numarası"] || "No Bilgisi Yok",
-                    date: row["Tarih"] || row["tarih"] || "",
-                    year: row["Yıl"] || row["yıl"] || "",
-                    status: "pending"
-                }));
-
-                files = [...files, ...imported];
-                saveAndRender();
-                alert(imported.length + " dosya başarıyla eklendi!");
-            };
-            reader.readAsBinaryString(file);
-        });
-
-        function saveAndRender() {
-            localStorage.setItem('lawExcelV3', JSON.stringify(files));
-            render();
+        async function fetchData() {
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                const csvData = await response.text();
+                
+                Papa.parse(csvData, {
+                    header: true,
+                    complete: function(results) {
+                        // Sütun isimlerini normalize ediyoruz (Boşlukları sil, küçük harf yap)
+                        allData = results.data.map((row, index) => {
+                            const keys = Object.keys(row);
+                            return {
+                                id: row["Dosya Numarası"] || row["Dosya No"] || index,
+                                num: row["Dosya Numarası"] || row["Dosya No"] || "İsimsiz Dosya",
+                                date: row["Tarih"] || "",
+                                year: row["Yıl"] || ""
+                            };
+                        });
+                        document.getElementById('loader').style.display = 'none';
+                        render();
+                    }
+                });
+            } catch (error) {
+                alert("Veri çekilemedi. Linki kontrol edin.");
+            }
         }
 
         function render() {
@@ -217,13 +150,18 @@
             const search = document.getElementById('searchBox').value.toLowerCase();
             list.innerHTML = '';
             
-            const filtered = files.filter(f => 
+            // Karar durumunu eşleştir
+            const processedData = allData.map(f => ({
+                ...f,
+                status: resolvedIds.includes(f.id) ? 'resolved' : 'pending'
+            }));
+
+            const filtered = processedData.filter(f => 
                 f.status === currentTab && 
                 f.num.toString().toLowerCase().includes(search)
             );
 
-            const resolvedSessionCount = files.filter(f => f.status === 'resolved').length;
-            const currentTotalResolved = BASE_RESOLVED + resolvedSessionCount;
+            const currentTotalResolved = BASE_RESOLVED + resolvedIds.length;
             const perc = (currentTotalResolved / TOTAL_FILES * 100).toFixed(2);
 
             document.getElementById('percDisplay').innerText = `%${perc.replace('.', ',')}`;
@@ -234,18 +172,13 @@
                 const card = document.createElement('div');
                 card.className = 'file-card';
                 card.innerHTML = `
-                    <div class="file-info" onclick="editFile(${f.id})">
+                    <div class="file-info">
                         <h4>${f.num}</h4>
-                        <p>${f.date ? f.date : 'Tarih Yok'} ${f.year ? '• ' + f.year : ''}</p>
+                        <p>${f.date} ${f.year ? '• ' + f.year : ''}</p>
                     </div>
-                    <div class="item-btns">
-                        <button class="circle-btn btn-check" onclick="toggleStatus(${f.id})">
-                            <i data-lucide="${f.status === 'pending' ? 'check' : 'undo-2'}"></i>
-                        </button>
-                        <button class="circle-btn btn-trash" onclick="deleteFile(${f.id})">
-                            <i data-lucide="trash-2"></i>
-                        </button>
-                    </div>
+                    <button class="btn-check" onclick="toggleStatus('${f.id}')">
+                        <i data-lucide="${f.status === 'pending' ? 'check' : 'undo-2'}"></i>
+                    </button>
                 `;
                 list.appendChild(card);
             });
@@ -253,28 +186,13 @@
         }
 
         function toggleStatus(id) {
-            files = files.map(f => f.id === id ? {...f, status: f.status === 'pending' ? 'resolved' : 'pending'} : f);
-            saveAndRender();
-        }
-
-        function deleteFile(id) {
-            if(confirm('Silinsin mi?')) {
-                files = files.filter(f => f.id !== id);
-                saveAndRender();
+            if (resolvedIds.includes(id)) {
+                resolvedIds = resolvedIds.filter(i => i !== id);
+            } else {
+                resolvedIds.push(id);
             }
-        }
-
-        function editFile(id) {
-            const f = files.find(x => x.id === id);
-            const newNum = prompt("Dosya Numarasını Düzenle:", f.num);
-            if(newNum) { f.num = newNum; saveAndRender(); }
-        }
-
-        function addNewManual() {
-            const num = prompt("Yeni Dosya Numarası:");
-            if(!num) return;
-            files.push({ id: Date.now(), num, date: "", year: "", status: 'pending' });
-            saveAndRender();
+            localStorage.setItem('resolvedFiles', JSON.stringify(resolvedIds));
+            render();
         }
 
         function switchTab(t) {
@@ -284,15 +202,7 @@
             render();
         }
 
-        function resetAll() {
-            if(confirm('Tüm veriler temizlenecek! Emin misiniz?')) {
-                files = [];
-                localStorage.removeItem('lawExcelV3');
-                render();
-            }
-        }
-
-        render();
+        fetchData();
     </script>
 </body>
 </html>
