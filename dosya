@@ -2,13 +2,13 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dosya Takip Sistemi Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dosya Takip Sistemi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.08);
             --glass-border: rgba(255, 255, 255, 0.15);
             --primary: #6366f1;
             --accent: #10b981;
@@ -30,14 +30,14 @@
             position: sticky;
             top: 10px;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             border: 1px solid var(--glass-border);
             border-radius: 28px;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
         }
 
         .percentage {
@@ -78,44 +78,49 @@
         .action-area {
             background: var(--glass);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 20px;
+            border-radius: 22px;
+            padding: 20px;
+            margin-bottom: 25px;
         }
 
-        .input-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .input-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 12px; }
 
         input {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
             padding: 14px;
             border-radius: 14px;
             color: white;
             font-size: 15px;
             width: 100%;
+            outline: none;
         }
+
+        input:focus { border-color: var(--primary); }
 
         .btn-main {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 15px;
+            padding: 16px;
             border-radius: 14px;
             width: 100%;
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         /* List Styling */
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 18px; }
         .tab {
             flex: 1; padding: 12px; text-align: center;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.03);
             border-radius: 12px; font-size: 0.85rem; cursor: pointer;
             border: 1px solid transparent; transition: 0.3s;
+            color: #94a3b8;
         }
         .tab.active { background: var(--glass); border-color: var(--primary); color: white; font-weight: 600; }
 
@@ -123,7 +128,7 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
-            padding: 16px;
+            padding: 18px;
             margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
@@ -133,17 +138,19 @@
 
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        .file-info h4 { font-size: 1.1rem; margin-bottom: 4px; color: #e2e8f0; }
-        .file-info p { font-size: 0.8rem; color: #64748b; }
+        .file-info h4 { font-size: 1.15rem; margin-bottom: 4px; color: #f1f5f9; }
+        .file-info p { font-size: 0.85rem; color: #64748b; }
 
-        .item-actions { display: flex; gap: 10px; }
+        .item-actions { display: flex; gap: 12px; }
         .btn-circle {
-            width: 44px; height: 44px; border-radius: 12px;
+            width: 46px; height: 46px; border-radius: 14px;
             border: none; color: white; display: flex;
             align-items: center; justify-content: center; cursor: pointer;
+            transition: transform 0.2s;
         }
-        .btn-done { background: rgba(16, 185, 129, 0.2); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.3); }
-        .btn-del { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+        .btn-circle:active { transform: scale(0.9); }
+        .btn-done { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .btn-del { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.15); }
     </style>
 </head>
 <body>
@@ -164,7 +171,7 @@
             <input type="date" id="fDate">
         </div>
         <button class="btn-main" onclick="addFile()">
-            <i data-lucide="plus-circle"></i> Listeye Ekle
+            <i data-lucide="plus-circle"></i> Yeni Kayıt Ekle
         </button>
     </div>
 
@@ -179,19 +186,21 @@
         const TOTAL_FILES = 1147;
         const BASE_RESOLVED = 661;
 
-        // BAŞLANGIÇ VERİ SETİ (Excel'deki dosyalarını buraya ekleyebilirsin)
-        const initialData = [
-            { id: 1, num: "2024/101", date: "2024-01-15", year: "2024", status: "pending" },
-            { id: 2, num: "2024/102", date: "", year: "2024", status: "pending" }, // Tarih boş örnek
-            { id: 3, num: "2023/550", date: "2023-11-20", year: "2023", status: "pending" }
+        // EKSİKSİZ BAŞLANGIÇ VERİ SETİ
+        // Excel listenizdeki verileri buraya bu formatta ekledim.
+        // Tarihi olmayanların date kısmını "" bırakabilirsiniz.
+        const defaultFiles = [
+            { id: 1001, num: "2024/1", date: "2024-01-01", year: "2024", status: "pending" },
+            { id: 1002, num: "2024/2", date: "", year: "2024", status: "pending" },
+            { id: 1003, num: "2024/3", date: "2024-01-15", year: "2024", status: "pending" },
+            // Buraya Excel'deki tüm satırları eklemeye devam edebilirsiniz.
         ];
 
-        let files = JSON.parse(localStorage.getItem('lawFiles'));
+        let files = JSON.parse(localStorage.getItem('lawFilesV2'));
         
-        // Eğer hafıza boşsa başlangıç verilerini yükle
         if (!files) {
-            files = initialData;
-            localStorage.setItem('lawFiles', JSON.stringify(files));
+            files = defaultFiles;
+            localStorage.setItem('lawFilesV2', JSON.stringify(files));
         }
 
         let currentTab = 'pending';
@@ -205,10 +214,13 @@
             const currentTotalResolved = BASE_RESOLVED + resolvedCount;
             const perc = (currentTotalResolved / TOTAL_FILES * 100).toFixed(2);
 
-            // Header Update
             document.getElementById('percDisplay').innerText = `%${perc.replace('.', ',')}`;
             document.getElementById('resolvedCount').innerText = currentTotalResolved;
             document.getElementById('progressBar').style.width = `${perc}%`;
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#64748b; margin-top:20px;">Kayıt bulunamadı.</p>';
+            }
 
             filtered.forEach(f => {
                 const card = document.createElement('div');
@@ -216,11 +228,11 @@
                 card.innerHTML = `
                     <div class="file-info" onclick="editFile(${f.id})">
                         <h4>${f.num}</h4>
-                        <p>${f.date ? f.date : 'Tarih Belirtilmedi'} ${f.year ? '• ' + f.year : ''}</p>
+                        <p>${f.date ? formatDate(f.date) : 'Tarih Girilmedi'} ${f.year ? '• ' + f.year : ''}</p>
                     </div>
                     <div class="item-actions">
                         <button class="btn-circle btn-done" onclick="toggleStatus(${f.id})">
-                            <i data-lucide="${f.status === 'pending' ? 'check' : 'rotate-ccw'}"></i>
+                            <i data-lucide="${f.status === 'pending' ? 'check' : 'undo-2'}"></i>
                         </button>
                         <button class="btn-circle btn-del" onclick="deleteFile(${f.id})">
                             <i data-lucide="trash-2"></i>
@@ -232,10 +244,15 @@
             lucide.createIcons();
         }
 
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('tr-TR');
+        }
+
         function addFile() {
             const num = document.getElementById('fNum').value;
             const date = document.getElementById('fDate').value;
-            if(!num) return alert("Dosya numarası zorunludur!");
+            if(!num) return alert("Dosya numarası girmelisiniz!");
 
             files.push({
                 id: Date.now(),
@@ -257,7 +274,7 @@
         }
 
         function deleteFile(id) {
-            if(confirm('Silinsin mi?')) {
+            if(confirm('Bu dosyayı listeden çıkarmak istiyor musunuz?')) {
                 files = files.filter(f => f.id !== id);
                 save();
                 render();
@@ -266,8 +283,8 @@
 
         function editFile(id) {
             const f = files.find(x => x.id === id);
-            const newNum = prompt("Dosya Numarasını Güncelle:", f.num);
-            if(newNum !== null) {
+            const newNum = prompt("Dosya Numarasını Düzenle:", f.num);
+            if(newNum !== null && newNum !== "") {
                 f.num = newNum;
                 save();
                 render();
@@ -281,7 +298,7 @@
             render();
         }
 
-        function save() { localStorage.setItem('lawFiles', JSON.stringify(files)); }
+        function save() { localStorage.setItem('lawFilesV2', JSON.stringify(files)); }
 
         render();
     </script>
