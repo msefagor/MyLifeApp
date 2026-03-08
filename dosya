@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dosya Takip Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --primary: #4f46e5;
+            --accent: #10b981;
+            --bg: #0f172a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background-attachment: fixed;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        /* Liquid Glass Header */
+        .glass-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .percentage {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .stats-text {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            width: 0%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+        }
+
+        /* Action Card */
+        .action-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 12px;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            width: 100%;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        /* List Styling */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 5px 10px;
+        }
+
+        .file-item {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+        }
+
+        .file-item.resolved {
+            border-left: 4px solid var(--accent);
+            opacity: 0.8;
+        }
+
+        .file-info h4 { font-size: 1.1rem; margin-bottom: 4px; }
+        .file-info p { font-size: 0.8rem; color: #94a3b8; }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            padding: 10px;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .icon-btn.done { color: var(--accent); }
+        .icon-btn.delete { color: #f43f5e; }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .tab.active {
+            background: var(--glass);
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-header">
+        <div class="percentage" id="percDisplay">%00,00</div>
+        <div class="stats-text">
+            KARAR VERİLEN: <span id="resolvedCount">661</span> / 1147
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <div class="action-card">
+        <div class="input-group">
+            <input type="text" id="fNum" placeholder="Dosya No">
+            <input type="date" id="fDate">
+        </div>
+        <button class="btn-add" onclick="addFile()">
+            <i data-lucide="plus-square"></i> Yeni Dosya Ekle
+        </button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" id="tabPending" onclick="setTab('pending')">Bekleyenler</div>
+        <div class="tab" id="tabDone" onclick="setTab('resolved')">Karar Verilenler</div>
+    </div>
+
+    <div id="fileList"></div>
+
+    <script>
+        const TOTAL_FILES = 1147;
+        const BASE_RESOLVED = 661;
+        let files = JSON.parse(localStorage.getItem('myFiles')) || [];
+        let currentTab = 'pending';
+
+        function updateDashboard() {
+            const resolvedSessionCount = files.filter(f => f.status === 'resolved').length;
+            const totalResolved = BASE_RESOLVED + resolvedSessionCount;
+            const percentage = (totalResolved / TOTAL_FILES * 100).toFixed(2);
+
+            document.getElementById('percDisplay').innerText = `%${percentage.replace('.', ',')}`;
+            document.getElementById('resolvedCount').innerText = totalResolved;
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+
+            renderFiles();
+            lucide.createIcons();
+        }
+
+        function addFile() {
+            const num = document.getElementById('fNum').value;
+            const date = document.getElementById('fDate').value;
+
+            if(!num || !date) return alert("Lütfen bilgileri doldurun!");
+
+            const newFile = {
+                id: Date.now(),
+                num: num,
+                date: date,
+                year: new Date(date).getFullYear(),
+                status: 'pending'
+            };
+
+            files.push(newFile);
+            save();
+            document.getElementById('fNum').value = '';
+            updateDashboard();
+        }
+
+        function toggleDone(id) {
+            files = files.map(f => f.id === id ? {...f, status: f.status === 'pending' ? 'resolved' : 'pending'} : f);
+            save();
+            updateDashboard();
+        }
+
+        function deleteFile(id) {
+            if(confirm('Dosyayı silmek istediğinize emin misiniz?')) {
+                files = files.filter(f => f.id !== id);
+                save();
+                updateDashboard();
+            }
+        }
+
+        function editFile(id) {
+            const f = files.find(x => x.id === id);
+            const newNum = prompt("Yeni Dosya Numarası:", f.num);
+            if(newNum) {
+                f.num = newNum;
+                save();
+                updateDashboard();
+            }
+        }
+
+        function setTab(tab) {
+            currentTab = tab;
+            document.getElementById('tabPending').className = tab === 'pending' ? 'tab active' : 'tab';
+            document.getElementById('tabDone').className = tab === 'resolved' ? 'tab active' : 'tab';
+            renderFiles();
+            lucide.createIcons();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('fileList');
+            container.innerHTML = '';
+
+            const filtered = files.filter(f => f.status === currentTab);
+
+            filtered.forEach(f => {
+                const div = document.createElement('div');
+                div.className = `file-item ${f.status}`;
+                div.innerHTML = `
+                    <div class="file-info" onclick="editFile(${f.id})">
+                        <h4>${f.num}</h4>
+                        <p>${f.date} • ${f.year}</p>
+                    </div>
+                    <div class="item-actions">
+                        <button class="icon-btn done" onclick="toggleDone(${f.id})">
+                            <i data-lucide="${f.status === 'pending' ? 'check-circle' : 'rotate-ccw'}"></i>
+                        </button>
+                        <button class="icon-btn delete" onclick="deleteFile(${f.id})">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function save() {
+            localStorage.setItem('myFiles', JSON.stringify(files));
+        }
+
+        // Init
+        updateDashboard();
+    </script>
+</body>
+</html>
