@@ -3,67 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hukuk Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Hukuk Panel v5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { --glass: rgba(255, 255, 255, 0.08); --primary: #6366f1; --accent: #10b981; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: radial-gradient(circle at top right, #1e293b, #0f172a); color: #f8fafc; min-height: 100vh; padding: 16px; }
+        body { background: #0f172a; color: #f8fafc; padding: 16px; min-height: 100vh; }
 
         /* Liquid Glass Header */
         .header {
             position: sticky; top: 10px; z-index: 100;
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(25px);
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
             padding: 20px; margin-bottom: 20px; text-align: center;
         }
-        .percentage { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .progress-bar { height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-top: 15px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #9333ea); width: 0%; transition: 1s; }
+        .percentage { font-size: 3.2rem; font-weight: 800; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .progress-bar { height: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #9333ea); width: 0%; transition: 1s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* Search & Tabs */
-        .search-box { width: 100%; background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 14px; border-radius: 12px; color: white; margin-bottom: 15px; outline: none; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 12px; text-align: center; background: rgba(255,255,255,0.03); border-radius: 12px; font-size: 0.8rem; color: #94a3b8; cursor: pointer; }
-        .tab.active { background: var(--glass); border: 1px solid var(--primary); color: white; }
-
-        /* File Cards */
-        .file-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .file-info h4 { font-size: 1.2rem; color: #fff; letter-spacing: 0.5px; }
-        .file-info p { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+        .search-box { width: 100%; background: var(--glass); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; color: white; margin-bottom: 15px; outline: none; }
         
-        .actions { display: flex; gap: 8px; }
-        .btn-icon { width: 38px; height: 38px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; transition: 0.2s; }
-        .btn-check { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .btn-edit { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
-        .btn-del { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: rgba(255,255,255,0.03); border-radius: 12px; font-size: 0.85rem; color: #94a3b8; cursor: pointer; border: 1px solid transparent; }
+        .tab.active { background: var(--glass); border-color: var(--primary); color: white; font-weight: 600; }
 
-        .loader { position: fixed; inset: 0; background: #0f172a; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        /* File Card Design */
+        .file-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .file-info h4 { font-size: 1.3rem; color: #fff; font-weight: 700; }
+        .file-info p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        
+        .actions { display: flex; gap: 10px; }
+        .btn-icon { width: 42px; height: 42px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-check { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .btn-edit { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+        .btn-del { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
+
+        .loader { position: fixed; inset: 0; background: #0f172a; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="loader">Veriler E-Tablodan Çekiliyor...</div>
+    <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <p>E-Tablo ile Senkronize Ediliyor...</p>
+    </div>
 
     <div class="header">
         <div class="percentage" id="percDisplay">%0,00</div>
-        <div id="stats" style="font-size: 0.8rem; color: #94a3b8;">Yükleniyor...</div>
+        <div id="stats" style="font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">Hesaplanıyor...</div>
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     </div>
 
-    <input type="text" class="search-box" id="searchBox" placeholder="Dosya No veya Tarih ile ara..." oninput="render()">
+    <input type="text" class="search-box" id="searchBox" placeholder="Dosya No ara..." oninput="render()">
 
     <div class="tabs">
         <div class="tab active" id="tabPending" onclick="switchTab('pending')">Bekleyenler</div>
-        <div class="tab" id="tabDone" onclick="switchTab('resolved')">Karar Verilenler</div>
+        <div class="tab" id="tabDone" onclick="switchTab('resolved')">Kararlar</div>
     </div>
 
     <div id="fileList"></div>
 
     <script>
-        // BURAYA APPS SCRIPT URL'SİNİ YAPIŞTIR
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwI1jh0rksl7iu-qlclaPVwRyg-E2Kl7uW0B3tr5z5CojF2aRg89JkvdT6B1wgLz6c9/exec';
+        // ÖNEMLİ: Yeni Apps Script URL'ni buraya yapıştır
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz62r4Y4fxJOj4yrjbM2t_RRs8UGvlro0M2pLVoWCG7R3iH_scVtp5yNMdACCjMJsWX/exec';
         
         const TOTAL_FILES = 1147;
         const BASE_RESOLVED = 661;
@@ -71,10 +76,10 @@
         let currentTab = 'pending';
 
         async function loadData() {
+            document.getElementById('loader').style.display = 'flex';
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
-                // Google Sheets formatı: [ [Tarih, Yıl, No, Durum], [...] ]
                 allFiles = data.slice(1).map(row => ({
                     date: row[0] || "",
                     year: row[1] || "",
@@ -83,13 +88,22 @@
                 }));
                 document.getElementById('loader').style.display = 'none';
                 render();
-            } catch(e) { alert("Veri hatası!"); }
+            } catch(e) { 
+                alert("Hata: E-Tabloya erişilemedi. Dağıtım ayarlarını 'Herkes' olarak güncellediğinizden emin olun."); 
+            }
         }
 
         async function syncAction(params) {
             document.getElementById('loader').style.display = 'flex';
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(params) });
-            await loadData();
+            try {
+                await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(params),
+                    mode: 'no-cors' // Hızlı işlem için
+                });
+                // Küçük bir gecikme ile veriyi tekrar çek
+                setTimeout(loadData, 800);
+            } catch(e) { alert("Güncelleme sırasında hata oluştu."); }
         }
 
         function render() {
@@ -99,11 +113,12 @@
 
             const filtered = allFiles.filter(f => f.status === currentTab && f.num.toString().toLowerCase().includes(search));
             
-            const resolvedCount = allFiles.filter(f => f.status === 'resolved').length + BASE_RESOLVED;
-            const perc = (resolvedCount / TOTAL_FILES * 100).toFixed(2);
+            const resolvedCountInSheet = allFiles.filter(f => f.status === 'resolved').length;
+            const finalResolvedCount = BASE_RESOLVED + resolvedCountInSheet;
+            const perc = (finalResolvedCount / TOTAL_FILES * 100).toFixed(2);
             
             document.getElementById('percDisplay').innerText = `%${perc.replace('.', ',')}`;
-            document.getElementById('stats').innerText = `KARAR: ${resolvedCount} / ${TOTAL_FILES}`;
+            document.getElementById('stats').innerText = `KARAR: ${finalResolvedCount} / ${TOTAL_FILES}`;
             document.getElementById('progressFill').style.width = perc + "%";
 
             filtered.forEach(f => {
@@ -112,14 +127,14 @@
                 card.innerHTML = `
                     <div class="file-info">
                         <h4>${f.num}</h4>
-                        <p>${f.date ? f.date : 'Tarih Girilmedi'}</p>
+                        <p>${f.date ? f.date : 'Tarih Bilgisi Yok'}</p>
                     </div>
                     <div class="actions">
                         <button class="btn-icon btn-check" onclick="updateStatus('${f.num}', '${f.status}')">
-                            <i data-lucide="${f.status === 'pending' ? 'check' : 'undo'}"></i>
+                            <i data-lucide="${f.status === 'pending' ? 'check-circle' : 'rotate-ccw'}"></i>
                         </button>
                         <button class="btn-icon btn-edit" onclick="editFile('${f.num}', '${f.date}', '${f.year}')">
-                            <i data-lucide="edit-3"></i>
+                            <i data-lucide="edit"></i>
                         </button>
                         <button class="btn-icon btn-del" onclick="deleteFile('${f.num}')">
                             <i data-lucide="trash-2"></i>
@@ -131,26 +146,28 @@
             lucide.createIcons();
         }
 
-        function updateStatus(num, currentStatus) {
-            const newStatus = currentStatus === "pending" ? "Karar Verildi" : "Bekliyor";
+        function updateStatus(num, status) {
+            const newStatus = status === "pending" ? "Karar Verildi" : "Bekliyor";
             syncAction({ action: "status", oldNum: num, status: newStatus });
         }
 
         function deleteFile(num) {
-            if(confirm("Dosya silinsin mi?")) syncAction({ action: "delete", oldNum: num });
+            if(confirm(num + " nolu dosyayı silmek istediğinize emin misiniz?")) {
+                syncAction({ action: "delete", oldNum: num });
+            }
         }
 
         function editFile(num, date, year) {
-            const newNum = prompt("Yeni Dosya No:", num);
-            const newDate = prompt("Yeni Tarih:", date);
-            const newYear = prompt("Yeni Yıl:", year);
-            if(newNum) syncAction({ action: "update", oldNum: num, newNum, newDate, newYear });
+            const nNum = prompt("Yeni Dosya No:", num);
+            const nDate = prompt("Yeni Tarih:", date);
+            const nYear = prompt("Yeni Yıl:", year);
+            if(nNum) syncAction({ action: "update", oldNum: num, newNum: nNum, newDate: nDate, newYear: nYear });
         }
 
         function switchTab(t) {
             currentTab = t;
-            document.getElementById('tabPending').className = t === 'pending' ? 'tab active' : 'tab';
-            document.getElementById('tabDone').className = t === 'resolved' ? 'tab active' : 'tab';
+            document.getElementById('tabPending').classList.toggle('active', t === 'pending');
+            document.getElementById('tabDone').classList.toggle('active', t === 'resolved');
             render();
         }
 
