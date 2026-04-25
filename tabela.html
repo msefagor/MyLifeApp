@@ -391,6 +391,145 @@
         /* Ceza modali */
         #penalty-list { padding: 4px 0; min-height: 44px; }
         #num-grid .calc-btn { font-size: 14px; padding: 12px 0; font-weight: 900; }
+
+        /* === TABELADA SADE CEZA SAYISI (taş yok) === */
+        .ceza-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 22px; padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 12px; font-weight: 800;
+            line-height: 1; margin: 1.5px;
+            border: 1px solid;
+        }
+        .ceza-num.tek {
+            color: #5dade2; background: rgba(30, 144, 255, 0.18);
+            border-color: rgba(30, 144, 255, 0.45);
+        }
+        .ceza-num.cift {
+            color: #ff8a9b; background: rgba(255, 107, 129, 0.18);
+            border-color: rgba(255, 107, 129, 0.45);
+        }
+
+        /* === SİZ takımı bölümü için === */
+        .section-label.tone-siz { color: var(--siz-color); }
+        .section-label.tone-siz::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--siz-color); box-shadow: 0 0 10px var(--siz-glow);
+        }
+
+        /* === OYUN SAYISI input === */
+        .rounds-row {
+            display: grid; grid-template-columns: 1fr auto auto auto;
+            gap: 8px; align-items: center;
+        }
+        .rounds-row input[type="number"] {
+            text-align: center; font-size: 18px; font-weight: 900;
+            color: var(--accent-color); padding: 10px;
+            background: rgba(241, 196, 15, 0.08);
+            border-color: rgba(241, 196, 15, 0.35);
+        }
+        .rounds-step {
+            background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+            color: white; width: 38px; height: 42px; border-radius: 10px;
+            font-size: 18px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .rounds-step:active { background: rgba(255,255,255,0.18); }
+        .rounds-row .rounds-suffix {
+            font-size: 11px; color: var(--text-muted);
+            font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+        }
+
+        /* === İSTATİSTİK BUTONU === */
+        .stats-launch-btn {
+            width: 100%;
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.16), rgba(0, 206, 201, 0.10));
+            border: 1px solid rgba(241, 196, 15, 0.42);
+            color: #fff; padding: 14px 16px; border-radius: 14px;
+            font-size: 14px; font-weight: 800; cursor: pointer;
+            margin-top: 12px;
+        }
+        .stats-launch-btn .stats-l-icon {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-color), #ff9f43);
+            color: #2c1810; font-size: 16px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(241, 196, 15, 0.32);
+        }
+        .stats-launch-btn .stats-l-text { flex: 1; text-align: left; padding-left: 12px; }
+        .stats-launch-btn .stats-l-text small { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; letter-spacing: 0.6px; }
+        .stats-launch-btn .stats-l-arrow { color: var(--accent-color); font-size: 18px; }
+
+        /* === İSTATİSTİK MODALİ === */
+        .stat-row {
+            display: grid; grid-template-columns: 1.2fr 0.8fr 0.7fr 0.7fr 1fr;
+            gap: 6px; padding: 12px 12px;
+            border-radius: 12px; margin-bottom: 6px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+            align-items: center;
+        }
+        .stat-row.header {
+            background: transparent; border: none;
+            font-size: 9.5px; font-weight: 900; letter-spacing: 1.2px;
+            color: var(--text-muted); text-transform: uppercase;
+            padding: 4px 12px;
+        }
+        .stat-name {
+            font-weight: 800; font-size: 14px; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .stat-cell { text-align: center; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stat-cell.win { color: var(--siler-color); }
+        .stat-cell.lose { color: var(--danger-color); }
+        .stat-rate-bar {
+            position: relative; height: 22px; border-radius: 999px;
+            background: rgba(255,255,255,0.06); overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+        .stat-rate-fill {
+            position: absolute; top: 0; left: 0; bottom: 0;
+            background: linear-gradient(90deg, var(--siler-color), var(--biz-color));
+            transition: width 0.4s ease;
+        }
+        .stat-rate-text {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 900; color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            font-variant-numeric: tabular-nums;
+        }
+        .stats-empty {
+            text-align: center; padding: 22px 12px;
+            color: var(--text-muted); font-size: 13px; line-height: 1.5;
+        }
+        .stats-info-banner {
+            background: rgba(0, 206, 201, 0.10);
+            border: 1px solid rgba(0, 206, 201, 0.35);
+            color: var(--biz-color);
+            padding: 10px 14px; border-radius: 12px;
+            font-size: 12px; line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        /* Oyun bitti banner (toast benzeri) */
+        .game-end-banner {
+            position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 110;
+            padding: 14px 20px; border-radius: 16px;
+            background: linear-gradient(135deg, rgba(0,206,201,0.95), rgba(123, 237, 159, 0.92));
+            color: #042;
+            font-size: 14px; font-weight: 900; letter-spacing: 0.4px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            animation: gameEndPop 0.4s cubic-bezier(0.22, 1.5, 0.36, 1) both;
+            max-width: 90vw; text-align: center;
+        }
+        .game-end-banner.siz { background: linear-gradient(135deg, rgba(250,177,160,0.95), rgba(255, 159, 67, 0.92)); color: #5a1a0a; }
+        .game-end-banner.draw { background: linear-gradient(135deg, rgba(241, 196, 15, 0.95), rgba(255, 159, 67, 0.92)); color: #2c1810; }
+        @keyframes gameEndPop {
+            from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.94); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -498,7 +637,16 @@
                 </div>
             </div>
 
-            <!-- 2. Dağıtıcı Sırası (altta) -->
+            <!-- 2. SİZ Takımı -->
+            <div class="section-block">
+                <span class="section-label tone-siz">SİZ Takımı</span>
+                <div class="section-grid-2">
+                    <select id="sel-siz1" onchange="onTeamChange()"></select>
+                    <select id="sel-siz2" onchange="onTeamChange()"></select>
+                </div>
+            </div>
+
+            <!-- 3. Dağıtıcı Sırası (sadece aktif 4 oyuncudan seçim) -->
             <div class="section-block">
                 <span class="section-label tone-amber">Dağıtıcı Sırası</span>
                 <div class="dealer-row">
@@ -519,6 +667,31 @@
                 </div>
             </div>
 
+            <!-- 4. Oyun Sayısı -->
+            <div class="section-block">
+                <span class="section-label tone-amber">Oyun Sayısı</span>
+                <div class="rounds-row">
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="rounds-input"
+                           min="1" max="50" step="1" value="11" onchange="onRoundsChange()">
+                    <button type="button" class="rounds-step" onclick="adjRounds(-1)">−</button>
+                    <button type="button" class="rounds-step" onclick="adjRounds(1)">+</button>
+                    <span class="rounds-suffix">EL</span>
+                </div>
+                <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
+                    Genelde <b style="color:var(--accent-color)">11</b> el oynanır. İhtiyaca göre değiştirebilirsin.
+                </div>
+            </div>
+
+            <!-- 5. Oyuncu İstatistikleri butonu -->
+            <button class="stats-launch-btn" onclick="openStatsModal()">
+                <span class="stats-l-icon">📊</span>
+                <span class="stats-l-text">
+                    Oyuncu İstatistikleri
+                    <small>Galibiyet, mağlubiyet ve başarı oranı</small>
+                </span>
+                <span class="stats-l-arrow">›</span>
+            </button>
+
             <button class="action-btn save-btn" onclick="saveSettings()">AYARLARI UYGULA</button>
             <button class="action-btn" style="background:var(--danger-color)" onclick="resetGame()">OYUNU SIFIRLA</button>
             <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
@@ -535,6 +708,30 @@
             <div id="pool-list"></div>
             <button class="pool-add-btn" onclick="addPoolName()">+ Yeni oyuncu ekle</button>
             <button class="action-btn save-btn" onclick="closePoolModal()">TAMAMLA</button>
+        </div>
+    </div>
+
+    <!-- OYUNCU İSTATİSTİK MODALİ -->
+    <div id="stats-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="text-align:center; margin: 0 0 6px;">Oyuncu İstatistikleri</h3>
+            <p style="color: var(--text-muted); font-size: 12.5px; margin: 0 0 14px; line-height: 1.5; text-align:center;">
+                Tamamlanan oyunlardaki galibiyet/mağlubiyet kayıtları.
+            </p>
+            <div class="stats-info-banner">
+                Bir oyun ancak <b id="stats-rounds-info">11</b> el dolduğunda istatistiğe işlenir.
+            </div>
+            <div class="stat-row header">
+                <div>OYUNCU</div>
+                <div style="text-align:center;">OYUN</div>
+                <div style="text-align:center;">G</div>
+                <div style="text-align:center;">M</div>
+                <div style="text-align:center;">ORAN</div>
+            </div>
+            <div id="stats-list"></div>
+            <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
+            <button class="action-btn" style="background:rgba(255, 107, 129, 0.2); color: var(--danger-color); border: 1px solid rgba(255, 107, 129, 0.45);"
+                    onclick="resetStats()">İstatistikleri Sıfırla</button>
         </div>
     </div>
 
@@ -558,9 +755,17 @@
         let playerPool = ["Sefa", "Fatih", "Halil", "İlker"];
         // BİZ takımı: pool indeksleri (2 oyuncu)
         let bizPair = [0, 2];
+        // SİZ takımı: pool indeksleri (2 oyuncu) — havuz > 4 olduğunda manuel seçim
+        let sizPair = [1, 3];
         // Dağıtıcı seçimleri (pool indeksleri). 3. ve 4. otomatik hesaplanır.
         let dealer1Idx = 0;  // 1. dağıtıcı (havuz indeksi)
         let dealer2Idx = 1;  // 2. dağıtıcı (havuz indeksi)
+        // Oyun ayarları
+        let totalRounds = 11;
+        // Oyun bittiğinde istatistik kaydedildi mi?
+        let gameRecorded = false;
+        // Oyuncu istatistikleri: { "Sefa": { games, wins, losses } }
+        let playerStats = {};
 
         let gameData = [];
         let activeR = 0, activeC = '', m1 = 1, m2 = 1, tSiler = 0, curPMode = 'tek';
@@ -585,21 +790,39 @@
         };
 
         function initData() {
-            gameData = Array.from({ length: 11 }, () => ({
-                bizScore: { val: 0, siler: 0 },
-                sizScore: { val: 0, siler: 0 },
-                bizCeza: [], sizCeza: []
-            }));
+            const empty = () => ({ bizScore: { val: 0, siler: 0 }, sizScore: { val: 0, siler: 0 }, bizCeza: [], sizCeza: [] });
+            gameData = Array.from({ length: totalRounds || 11 }, empty);
+        }
+        // gameData uzunluğunu totalRounds'a göre ayarla (mevcut verileri koru)
+        function resizeGameData() {
+            const empty = () => ({ bizScore: { val: 0, siler: 0 }, sizScore: { val: 0, siler: 0 }, bizCeza: [], sizCeza: [] });
+            if (gameData.length < totalRounds) {
+                while (gameData.length < totalRounds) gameData.push(empty());
+            } else if (gameData.length > totalRounds) {
+                gameData = gameData.slice(0, totalRounds);
+            }
         }
 
         // === TEAM HELPERS ===
-        // SİZ pair = BİZ olmayan pool indekslerinin ilk 2'si
-        function computeSizPair() {
+        // SİZ pair artık manuel seçilir (havuz > 4 olabilir).
+        // Eğer SİZ pair geçersizse (BİZ ile çakışıyor) yedekle: BİZ olmayan ilk 2 havuz indeksi
+        function fallbackSizPair() {
             const others = playerPool.map((_, i) => i).filter(i => !bizPair.includes(i));
             return others.slice(0, 2);
         }
+        function ensureValidPairs() {
+            // BİZ pair sağlama
+            bizPair = bizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
+            if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % Math.max(playerPool.length, 2);
+            // SİZ pair sağlama
+            if (!Array.isArray(sizPair) || sizPair.length !== 2 ||
+                sizPair[0] === sizPair[1] ||
+                sizPair.some(i => bizPair.includes(i))) {
+                sizPair = fallbackSizPair();
+            }
+            sizPair = sizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
+        }
         function getTeammate(idx) {
-            const sizPair = computeSizPair();
             if (bizPair.includes(idx)) return bizPair.find(i => i !== idx);
             if (sizPair.includes(idx)) return sizPair.find(i => i !== idx);
             return idx;
@@ -617,12 +840,17 @@
         function getActivePlayers() {
             return getDealerOrder().map(i => playerPool[i] || `Oyu ${i + 1}`);
         }
+        function getActivePoolIndices() {
+            return [...bizPair, ...sizPair];
+        }
 
         // === SETTINGS MODAL ===
         function openSettings() {
+            ensureValidPairs();
             renderTeamSelectors();
             renderDealerSelectors();
             updatePoolCount();
+            document.getElementById('rounds-input').value = totalRounds;
             document.getElementById('settings-modal').style.display = 'flex';
         }
 
@@ -630,45 +858,52 @@
             document.getElementById('pool-count').textContent = playerPool.length;
         }
 
-        // BİZ takımı dropdown'larını doldur
+        // BİZ ve SİZ takımı dropdown'larını doldur
         function renderTeamSelectors() {
-            const s1 = document.getElementById('sel-biz1');
-            const s2 = document.getElementById('sel-biz2');
-            s1.innerHTML = ''; s2.innerHTML = '';
-            playerPool.forEach((name, i) => {
-                s1.add(new Option(name, i));
-                s2.add(new Option(name, i));
+            ['sel-biz1', 'sel-biz2', 'sel-siz1', 'sel-siz2'].forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '';
+                playerPool.forEach((name, i) => sel.add(new Option(name, i)));
             });
-            s1.value = bizPair[0];
-            s2.value = bizPair[1];
+            document.getElementById('sel-biz1').value = bizPair[0];
+            document.getElementById('sel-biz2').value = bizPair[1];
+            document.getElementById('sel-siz1').value = sizPair[0];
+            document.getElementById('sel-siz2').value = sizPair[1];
         }
 
-        // BİZ takımı değişti → SİZ pair otomatik güncellenir, dealer dropdownları yenilenir
+        // BİZ veya SİZ takımı değişti → çakışma kontrolü, dealer dropdown yenile
         function onTeamChange() {
             const b1 = parseInt(document.getElementById('sel-biz1').value);
             const b2 = parseInt(document.getElementById('sel-biz2').value);
-            if (b1 === b2) {
-                alert('BİZ takımının iki üyesi aynı kişi olamaz.');
+            const s1 = parseInt(document.getElementById('sel-siz1').value);
+            const s2 = parseInt(document.getElementById('sel-siz2').value);
+            const arr = [b1, b2, s1, s2];
+            const unique = new Set(arr);
+            if (b1 === b2) { alert('BİZ takımının iki üyesi aynı kişi olamaz.'); document.getElementById('sel-biz2').value = bizPair[1]; return; }
+            if (s1 === s2) { alert('SİZ takımının iki üyesi aynı kişi olamaz.'); document.getElementById('sel-siz2').value = sizPair[1]; return; }
+            if (unique.size !== 4) {
+                alert('BİZ ve SİZ takımlarındaki 4 oyuncu birbirinden farklı olmalı.');
+                // Geri al — son geçerli durumu yansıt
+                document.getElementById('sel-biz1').value = bizPair[0];
                 document.getElementById('sel-biz2').value = bizPair[1];
+                document.getElementById('sel-siz1').value = sizPair[0];
+                document.getElementById('sel-siz2').value = sizPair[1];
                 return;
             }
             bizPair = [b1, b2];
-            // Dealer seçimleri geçerliliğini koru
-            const active = [...bizPair, ...computeSizPair()];
+            sizPair = [s1, s2];
+            const active = getActivePoolIndices();
+            // Dealer seçimleri aktif 4 içinde değilse düzelt
             if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
             if (!active.includes(dealer2Idx) || isBizMember(dealer2Idx) === isBizMember(dealer1Idx)) {
-                // 2. dağıtıcı 1.'in karşı takımından olmalı
                 dealer2Idx = active.find(i => isBizMember(i) !== isBizMember(dealer1Idx)) || active[1];
             }
             renderDealerSelectors();
         }
 
-        // Dağıtıcı dropdown'larını doldur ve 3./4. otomatik isimlerini göster
+        // Dağıtıcı dropdown'larını doldur (sadece aktif 4 oyuncu)
         function renderDealerSelectors() {
-            const sizPair = computeSizPair();
-            const active = [...bizPair, ...sizPair];
-
-            // 1. dağıtıcı: aktif 4 oyuncudan seç
+            const active = getActivePoolIndices();
             const d1 = document.getElementById('dealer-1st');
             d1.innerHTML = '';
             active.forEach(i => {
@@ -678,13 +913,12 @@
             if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
             d1.value = dealer1Idx;
 
-            // 2. dağıtıcı: 1.'in karşı takımındaki 2 oyuncudan seç
             refresh2ndDealerOptions();
             updateAutoDealers();
         }
 
         function refresh2ndDealerOptions() {
-            const sizPair = computeSizPair();
+            // Sadece 1. dağıtıcının karşı takımı — yine aktif 4'ten
             const otherTeam = isBizMember(dealer1Idx) ? sizPair : bizPair;
             const d2 = document.getElementById('dealer-2nd');
             const cur = parseInt(d2.value);
@@ -694,11 +928,7 @@
                 d2.add(new Option(`${playerPool[i]}  (${team})`, i));
             });
             if (otherTeam.includes(cur)) dealer2Idx = cur;
-            else if (otherTeam.includes(dealer2Idx)) {
-                /* keep */
-            } else {
-                dealer2Idx = otherTeam[0];
-            }
+            else if (!otherTeam.includes(dealer2Idx)) dealer2Idx = otherTeam[0];
             d2.value = dealer2Idx;
         }
 
@@ -719,18 +949,41 @@
             updateAutoDealers();
         }
 
+        // Oyun sayısı kontrolleri
+        function adjRounds(d) {
+            const inp = document.getElementById('rounds-input');
+            const v = Math.max(1, Math.min(50, (parseInt(inp.value) || 11) + d));
+            inp.value = v;
+            onRoundsChange();
+        }
+        function onRoundsChange() {
+            const inp = document.getElementById('rounds-input');
+            let v = parseInt(inp.value) || 11;
+            v = Math.max(1, Math.min(50, v));
+            inp.value = v;
+            totalRounds = v;
+        }
+
         function saveSettings() {
-            // BİZ pair
             const b1 = parseInt(document.getElementById('sel-biz1').value);
             const b2 = parseInt(document.getElementById('sel-biz2').value);
-            if (b1 === b2) {
-                alert('BİZ takımının iki üyesi aynı kişi olamaz.');
+            const s1 = parseInt(document.getElementById('sel-siz1').value);
+            const s2 = parseInt(document.getElementById('sel-siz2').value);
+            const unique = new Set([b1, b2, s1, s2]);
+            if (b1 === b2 || s1 === s2 || unique.size !== 4) {
+                alert('BİZ ve SİZ takımlarında 4 farklı oyuncu olmalı.');
                 return;
             }
             bizPair = [b1, b2];
-            // Dealer indices already updated via onChange
+            sizPair = [s1, s2];
             dealer1Idx = parseInt(document.getElementById('dealer-1st').value);
             dealer2Idx = parseInt(document.getElementById('dealer-2nd').value);
+            const newRounds = Math.max(1, Math.min(50, parseInt(document.getElementById('rounds-input').value) || 11));
+            if (newRounds !== totalRounds) {
+                totalRounds = newRounds;
+                resizeGameData();
+                gameRecorded = false; // yeni el sayısıyla baştan değerlendirilir
+            }
             closeModals(); render();
         }
 
@@ -830,10 +1083,16 @@
         }
 
         // === RENDER ===
+        // Ceza modali için: gerçek okey-taşı görünümü (sayı + nokta)
         function makePenaltyCardHtml(c) {
             const num = c.mode === 'tek' ? c.val / 10 : c.val / 20;
             const dots = c.mode === 'tek' ? '<i></i>' : '<i></i><i></i>';
             return `<span class="penalty-card ${c.mode}"><span class="pc-num">${num}</span><span class="pc-dots">${dots}</span></span>`;
+        }
+        // Tabela hücresi için: sade renkli sayı rozeti
+        function makeCezaNumHtml(c) {
+            const num = c.mode === 'tek' ? c.val / 10 : c.val / 20;
+            return `<span class="ceza-num ${c.mode}">${num}</span>`;
         }
 
         function render() {
@@ -856,8 +1115,9 @@
                     else if (diff > 0) diffHtml = `<span style="color:var(--siz-color)" class="diff-text">SİZ +${Math.abs(diff)}</span>`;
                     else diffHtml = "EŞİT";
                 }
-                const bizCezaHtml = row.bizCeza.map(makePenaltyCardHtml).join('');
-                const sizCezaHtml = row.sizCeza.map(makePenaltyCardHtml).join('');
+                // Tabelada SADE sayı (taş yok)
+                const bizCezaHtml = row.bizCeza.map(makeCezaNumHtml).join('');
+                const sizCezaHtml = row.sizCeza.map(makeCezaNumHtml).join('');
 
                 container.insertAdjacentHTML('beforeend', `
                     <div class="game-row">
@@ -878,8 +1138,10 @@
             });
             document.getElementById('total-biz').innerText = bT;
             document.getElementById('total-siz').innerText = sT;
-            document.getElementById('kalan-oyun').innerText = Math.max(0, 11 - count);
+            document.getElementById('kalan-oyun').innerText = Math.max(0, totalRounds - count);
             updateStatus(bT, sT);
+            // Oyun bittiyse istatistik kaydet
+            if (count >= totalRounds) checkGameComplete(bT, sT);
             saveAll();
         }
 
@@ -920,15 +1182,119 @@
             });
         }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
-        function resetGame() { if (confirm("Tüm oyun sıfırlansın mı?")) { localStorage.clear(); location.reload(); } }
+
+        // Reset: SADECE oyun puanlarını sıfırla. Pool, takımlar, dağıtıcı, oyun sayısı, istatistikler korunur.
+        function resetGame() {
+            if (!confirm("Tüm oyun puanları sıfırlansın mı?\n(Oyuncu havuzu, takımlar, ayarlar ve istatistikler korunacak.)")) return;
+            initData();
+            gameRecorded = false;
+            // Süreyi sıfırla
+            if (timerInt) { clearInterval(timerInt); timerInt = null; }
+            tStart = null;
+            document.getElementById('game-timer').innerText = '00:00';
+            saveAll();
+            render();
+            closeModals();
+        }
+        // İsteğe bağlı: istatistikleri ayrıca sıfırlamak için
+        function resetStats() {
+            if (!confirm("Tüm oyuncu istatistikleri sıfırlansın mı?")) return;
+            playerStats = {};
+            saveAll();
+            renderStats();
+        }
+
+        // === İSTATİSTİK SİSTEMİ ===
+        function ensureStat(name) {
+            if (!playerStats[name]) playerStats[name] = { games: 0, wins: 0, losses: 0 };
+            return playerStats[name];
+        }
+        function recordGameResult(winnerNames, loserNames) {
+            winnerNames.forEach(n => { const s = ensureStat(n); s.games++; s.wins++; });
+            loserNames.forEach(n => { const s = ensureStat(n); s.games++; s.losses++; });
+            saveAll();
+        }
+        function recordGameDraw(allNames) {
+            allNames.forEach(n => { const s = ensureStat(n); s.games++; });
+            saveAll();
+        }
+
+        // Oyun bittiğinde (count === totalRounds) bir kez stats'a yaz ve banner göster
+        function checkGameComplete(bT, sT) {
+            if (gameRecorded) return;
+            const bizNames = bizPair.map(i => playerPool[i] || `Oyu ${i+1}`);
+            const sizNames = sizPair.map(i => playerPool[i] || `Oyu ${i+1}`);
+            let teamLabel = 'BERABERE', cls = 'draw';
+            if (bT < sT) {
+                recordGameResult(bizNames, sizNames);
+                teamLabel = 'BİZ KAZANDI'; cls = '';
+            } else if (sT < bT) {
+                recordGameResult(sizNames, bizNames);
+                teamLabel = 'SİZ KAZANDI'; cls = 'siz';
+            } else {
+                recordGameDraw([...bizNames, ...sizNames]);
+            }
+            gameRecorded = true;
+            showGameEndBanner(teamLabel, cls);
+        }
+        function showGameEndBanner(text, cls) {
+            // Eski banner varsa kaldır
+            document.querySelectorAll('.game-end-banner').forEach(el => el.remove());
+            const b = document.createElement('div');
+            b.className = 'game-end-banner ' + (cls || '');
+            b.textContent = `🏆 ${text} · İSTATİSTİĞE EKLENDİ`;
+            document.body.appendChild(b);
+            setTimeout(() => b.remove(), 4000);
+        }
+
+        function openStatsModal() {
+            document.getElementById('stats-rounds-info').textContent = totalRounds;
+            renderStats();
+            document.getElementById('stats-modal').style.display = 'flex';
+        }
+        function renderStats() {
+            const list = document.getElementById('stats-list');
+            list.innerHTML = '';
+            // Havuzdaki tüm oyuncuları göster (kayıtsız olanlar 0/0/0)
+            const rows = playerPool.map(name => {
+                const s = playerStats[name] || { games: 0, wins: 0, losses: 0 };
+                const rate = s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0;
+                return { name, ...s, rate };
+            });
+            // Önce galibiyet oranına göre sırala (yüksekten düşüğe)
+            rows.sort((a, b) => (b.rate - a.rate) || (b.wins - a.wins) || (b.games - a.games));
+            if (rows.every(r => r.games === 0)) {
+                list.innerHTML = '<div class="stats-empty">Henüz tamamlanmış bir oyun yok.<br>Oyun bittiğinde takım sonuçları otomatik olarak buraya yansır.</div>';
+                return;
+            }
+            rows.forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'stat-row';
+                row.innerHTML = `
+                    <div class="stat-name">${escapeHtml(r.name)}</div>
+                    <div class="stat-cell">${r.games}</div>
+                    <div class="stat-cell win">${r.wins}</div>
+                    <div class="stat-cell lose">${r.losses}</div>
+                    <div class="stat-rate-bar">
+                        <div class="stat-rate-fill" style="width: ${r.rate}%;"></div>
+                        <div class="stat-rate-text">%${r.rate}</div>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
 
         // === STORAGE ===
         function saveAll() {
             localStorage.setItem('101_v4_data', JSON.stringify(gameData));
             localStorage.setItem('101_v6_pool', JSON.stringify(playerPool));
             localStorage.setItem('101_v6_biz', JSON.stringify(bizPair));
+            localStorage.setItem('101_v7_siz', JSON.stringify(sizPair));
             localStorage.setItem('101_v6_d1', String(dealer1Idx));
             localStorage.setItem('101_v6_d2', String(dealer2Idx));
+            localStorage.setItem('101_v7_rounds', String(totalRounds));
+            localStorage.setItem('101_v7_stats', JSON.stringify(playerStats));
+            localStorage.setItem('101_v7_rec', gameRecorded ? '1' : '0');
         }
         function loadAll() {
             try {
@@ -937,16 +1303,21 @@
 
                 const pool = localStorage.getItem('101_v6_pool');
                 const bz = localStorage.getItem('101_v6_biz');
+                const sz = localStorage.getItem('101_v7_siz');
                 const d1 = localStorage.getItem('101_v6_d1');
                 const d2 = localStorage.getItem('101_v6_d2');
+                const rs = localStorage.getItem('101_v7_rounds');
+                const st = localStorage.getItem('101_v7_stats');
+                const rc = localStorage.getItem('101_v7_rec');
 
                 if (pool && bz && d1 && d2) {
                     playerPool = JSON.parse(pool);
                     bizPair = JSON.parse(bz);
+                    if (sz) sizPair = JSON.parse(sz);
                     dealer1Idx = parseInt(d1);
                     dealer2Idx = parseInt(d2);
                 } else {
-                    // v5 → v6 migrate
+                    // v5 → v7 migrate
                     const oldPool = localStorage.getItem('101_v5_pool');
                     const oldOrder = localStorage.getItem('101_v5_order');
                     const oldBpos = localStorage.getItem('101_v5_bpos');
@@ -958,7 +1329,6 @@
                         dealer1Idx = order[0];
                         dealer2Idx = order[1];
                     } else {
-                        // v4 fallback
                         const oldP = localStorage.getItem('101_v4_p');
                         const oldB = localStorage.getItem('101_v4_biz');
                         if (oldP) playerPool = JSON.parse(oldP);
@@ -967,12 +1337,16 @@
                         dealer2Idx = (bizPair[0] === 0) ? 1 : 0;
                     }
                 }
+                if (rs) totalRounds = Math.max(1, Math.min(50, parseInt(rs) || 11));
+                if (st) playerStats = JSON.parse(st);
+                gameRecorded = rc === '1';
+
                 // Sağlamlık
                 while (playerPool.length < 4) playerPool.push(`Oyu ${playerPool.length + 1}`);
-                bizPair = bizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
-                if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % playerPool.length;
+                ensureValidPairs();
                 if (dealer1Idx >= playerPool.length || dealer1Idx < 0) dealer1Idx = bizPair[0];
-                if (dealer2Idx >= playerPool.length || dealer2Idx < 0) dealer2Idx = computeSizPair()[0];
+                if (dealer2Idx >= playerPool.length || dealer2Idx < 0) dealer2Idx = sizPair[0];
+                resizeGameData();
             } catch (e) {
                 console.warn('Veri yükleme hatası:', e);
             }
