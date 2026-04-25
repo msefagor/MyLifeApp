@@ -380,10 +380,15 @@
         }
         .ph-dialogue {
             background: rgba(255,255,255,0.05); border-radius: 12px;
-            padding: 12px 14px; font-size: 0.92rem; line-height: 1.5;
+            padding: 12px 14px; font-size: 0.92rem; line-height: 1.65;
             border: 1px solid var(--glass-border);
             border-left: 3px solid var(--warm);
         }
+        .ph-dialogue .speaker-a, .ph-dialogue .speaker-b {
+            display: inline-block; min-width: 22px; font-weight: 800; margin-right: 4px;
+        }
+        .ph-dialogue .speaker-a { color: var(--primary); }
+        .ph-dialogue .speaker-b { color: var(--warm); }
 
         /* Reading */
         .reading-container { display: flex; flex-direction: column; gap: 12px; }
@@ -475,7 +480,11 @@
             border-radius: 14px;
         }
         .hw-block:last-child { margin-bottom: 0; }
-        .hw-title { color: var(--gold); font-weight: 800; display: block; margin-bottom: 10px; font-size: 0.95rem; letter-spacing: 0.3px; }
+        .hw-title { color: var(--gold); font-weight: 800; display: block; margin-bottom: 6px; font-size: 0.95rem; letter-spacing: 0.3px; }
+        .hw-description {
+            color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55;
+            margin: 4px 0 12px;
+        }
         .hw-content { line-height: 1.7; font-size: 0.95rem; color: var(--text); }
         .hw-content ol { padding-left: 22px; margin: 0; }
         .hw-content ol li { margin-bottom: 6px; }
@@ -539,6 +548,92 @@
         .toast-body { flex: 1; min-width: 0; padding-top: 2px; }
         .toast-title { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
         .toast-msg { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+
+        /* --- YILLIK ANALİZ EKRANI --- */
+        .analiz-hero {
+            position: relative;
+            background: linear-gradient(160deg, rgba(76,201,240,0.16), rgba(67,97,238,0.08));
+            border: 1px solid rgba(76,201,240,0.32);
+            border-radius: 22px;
+            padding: 22px 20px;
+            margin-bottom: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .analiz-hero::before {
+            content: ''; position: absolute; right: -40px; top: -40px;
+            width: 160px; height: 160px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(76,201,240,0.35), transparent 70%);
+            filter: blur(20px);
+        }
+        .analiz-year-tag {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-radius: 999px;
+            background: rgba(76,201,240,0.16); color: var(--primary);
+            font-size: 11px; font-weight: 800; letter-spacing: 1.4px;
+            text-transform: uppercase; margin-bottom: 10px;
+            border: 1px solid rgba(76,201,240,0.32);
+        }
+        .analiz-year-tag svg { width: 13px; height: 13px; }
+        .analiz-hero h2 {
+            font-size: 1.4rem; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #fff 0%, #b6c8ff 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .analiz-hero p { margin: 0; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; }
+
+        .analiz-grid {
+            display: grid; grid-template-columns: 1fr; gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (min-width: 480px) { .analiz-grid { grid-template-columns: 1fr 1fr; } }
+
+        .analiz-card {
+            position: relative;
+            padding: 18px 18px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .analiz-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        }
+        .analiz-card.tone-blue::before  { background: var(--primary-gradient); }
+        .analiz-card.tone-green::before { background: var(--accent-gradient); }
+        .analiz-card.tone-violet::before{ background: var(--violet-gradient); }
+        .analiz-card.tone-gold::before  { background: var(--gold-gradient); }
+
+        .analiz-card .ac-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            margin-bottom: 12px;
+        }
+        .analiz-card.tone-blue   .ac-icon { background: var(--primary-gradient); }
+        .analiz-card.tone-green  .ac-icon { background: var(--accent-gradient); }
+        .analiz-card.tone-violet .ac-icon { background: var(--violet-gradient); }
+        .analiz-card.tone-gold   .ac-icon { background: var(--gold-gradient); }
+        .analiz-card .ac-icon svg { width: 20px; height: 20px; }
+
+        .ac-value {
+            font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; line-height: 1;
+            background: linear-gradient(135deg, #fff 0%, #b6c8ff 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .ac-value-suffix { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+        .ac-label {
+            font-size: 11px; color: var(--text-muted); letter-spacing: 1.4px;
+            text-transform: uppercase; margin-top: 6px; font-weight: 700;
+        }
+        .ac-sublabel { font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
+
+        .analiz-empty {
+            text-align: center; padding: 28px 18px;
+            color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;
+        }
 
         /* --- ONAY MODALI (özel confirm yerine) --- */
         .conf-modal {
@@ -648,6 +743,24 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Metni Yapıştır / Düzenle
             </button>
+            <button class="btn-secondary" onclick="openAnaliz()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Yıllık Analiz
+            </button>
+        </div>
+
+        <div id="analiz-screen" class="screen">
+            <div class="lesson-toolbar">
+                <span id="lesson-date">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Yıllık İlerleme
+                </span>
+                <button onclick="goHome()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    Çıkış
+                </button>
+            </div>
+            <div id="analiz-content"></div>
         </div>
 
         <div id="editor-screen" class="screen">
@@ -927,6 +1040,16 @@
             return text.split(/⸻|---/).filter(s => s.trim());
         }
 
+        // Başlık parçalarını ayır: ana satır + altyazı
+        // "📅 GÜNÜN TEMASI (Tarih: 25 Nisan 2026)" → { main: "📅 GÜNÜN TEMASI", paren: "Tarih: 25 Nisan 2026" }
+        // "📖 KISA OKUMA METNİ (Reading)" → { main: "📖 KISA OKUMA METNİ", paren: "Reading" }
+        function splitTitleParen(rawTitle) {
+            const title = (rawTitle || '').replace(/^\s*\d+\.\s*/, '').trim();
+            const m = title.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+            if (!m) return { main: title, paren: '' };
+            return { main: m[1].trim(), paren: m[2].trim() };
+        }
+
         // Başlık → tema bilgisi
         function detectSectionTheme(title) {
             const t = title.toLowerCase();
@@ -992,7 +1115,7 @@
                     /^örnek\s*:/i.test(cleanLine) ||
                     /^ornek\s*:/i.test(cleanLine);
                 if (!isProp) {
-                    if (current) phrases.push(current);
+                    if (current && current.text) phrases.push(current);
                     current = { text: cleanLine, mean: '', use: '', ex: '' };
                 } else if (current) {
                     if (/^anlam/i.test(cleanLine)) current.mean = cleanLine.replace(/^anlam[ıi]\s*:\s*/i, '').trim();
@@ -1000,8 +1123,9 @@
                     else if (/^(örnek|ornek)/i.test(cleanLine)) current.ex = cleanLine.replace(/^(örnek|ornek)\s*:\s*/i, '').trim();
                 }
             }
-            if (current) phrases.push(current);
-            return phrases;
+            if (current && current.text) phrases.push(current);
+            // Defansif: yalnızca text'i olan ve EN AZ bir alanı dolu olanlar kalsın
+            return phrases.filter(p => p.text && p.text.length > 1 && (p.mean || p.use || p.ex));
         }
 
         /* ----- Dialogue ----- */
@@ -1107,14 +1231,16 @@
             for (const raw of contentLines) {
                 const cleanLine = raw.replace(/^[\s•*\-–]+/, '').trim();
                 if (!cleanLine || cleanLine.startsWith('(')) continue;
+                if (cleanLine.length < 2) continue;
                 items.push(cleanLine);
             }
-            return items;
+            // Boş veya tek karakter girdileri at
+            return items.filter(s => s && s.trim().length > 1);
         }
 
         /* ----- Homework ----- */
         function parseHomework(contentLines) {
-            const blocks = []; // [{ title, items: string[] }]
+            const blocks = []; // [{ title, description, items: string[] }]
             let cur = null;
             for (const raw of contentLines) {
                 const line = raw.trim();
@@ -1122,15 +1248,24 @@
                 const head = line.match(/^([A-Z])\.\s+(.+)$/);
                 if (head) {
                     if (cur) blocks.push(cur);
-                    cur = { title: line, items: [] };
+                    // İlk iki nokta üst üsteden sonrasını açıklama olarak ayır
+                    const colonIdx = line.indexOf(':');
+                    let title = line, description = '';
+                    if (colonIdx >= 0) {
+                        title = line.slice(0, colonIdx + 1).trim();
+                        description = line.slice(colonIdx + 1).trim();
+                    }
+                    cur = { title, description, items: [] };
                     continue;
                 }
                 const num = line.match(/^\d+\.\s*(.+)$/);
                 if (num && cur) {
                     cur.items.push(num[1]);
                 } else if (cur) {
+                    // Sayı ile başlamayan satırlar açıklamaya / önceki maddeye eklenir
                     if (cur.items.length) cur.items[cur.items.length-1] += ' ' + line;
-                    else cur.items.push(line);
+                    else if (cur.description) cur.description += ' ' + line;
+                    else cur.description = line;
                 }
             }
             if (cur) blocks.push(cur);
@@ -1185,14 +1320,23 @@
                 card.id = `card-${index}`;
                 if (index === 0) card.classList.add('visible');
 
-                // Header
+                // Header — parantez içeriğini ana başlıktan ayır
+                const tParts = splitTitleParen(titleRaw);
+                let subtitle = '';
+                if (tParts.paren && !/[\d:]/.test(tParts.paren)) {
+                    // Parantez sadece İngilizce etiket gibi görünüyor → onu kullan
+                    subtitle = tParts.paren.toUpperCase();
+                } else {
+                    // Tarih, sayı vs. içeriyor → tema etiketini kullan
+                    subtitle = theme.label.toUpperCase();
+                }
                 const head = document.createElement('div');
                 head.className = 'section-header';
                 head.innerHTML = `
                     <div class="section-icon">${theme.icon}</div>
                     <div class="section-title-text">
-                        ${escapeHtml(titleClean)}
-                        <small>${theme.label}</small>
+                        ${escapeHtml(tParts.main)}
+                        <small>${escapeHtml(subtitle)}</small>
                     </div>`;
                 card.appendChild(head);
 
@@ -1223,9 +1367,11 @@
                     parsePhrases(contentLines).forEach(p => {
                         const el = document.createElement('div');
                         el.className = 'phrase-unit';
-                        const colored = (p.ex || '')
-                            .replace(/\bA:/g, '<b style="color:var(--primary)">A:</b>')
-                            .replace(/\bB:/g, '<b style="color:var(--warm)">B:</b>');
+                        // Önce HTML kaçışı, sonra B: öncesine satır kırma, sonra A:/B: vurgu
+                        const colored = escapeHtml(p.ex || '')
+                            .replace(/\s+B:/g, '<br>B:')      // B: yeni satıra
+                            .replace(/^A:/,    '<span class="speaker-a">A:</span>')
+                            .replace(/<br>B:/, '<br><span class="speaker-b">B:</span>');
                         el.innerHTML = `
                             <span class="ph-title">${escapeHtml(p.text)}</span>
                             ${(p.mean || p.use) ? `
@@ -1303,7 +1449,10 @@
                         const list = b.items.length
                             ? `<ol>${b.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}</ol>`
                             : '';
-                        el.innerHTML = `<span class="hw-title">${escapeHtml(b.title)}</span><div class="hw-content">${list}</div>`;
+                        const desc = b.description
+                            ? `<div class="hw-description">${escapeHtml(b.description)}</div>`
+                            : '';
+                        el.innerHTML = `<span class="hw-title">${escapeHtml(b.title)}</span>${desc}<div class="hw-content">${list}</div>`;
                         wrap.appendChild(el);
                     });
                     card.appendChild(wrap);
@@ -1333,7 +1482,7 @@
                 if (index < sections.length - 1) {
                     const btn = document.createElement('button');
                     btn.className = 'nav-btn';
-                    btn.innerHTML = `Bu bölümü tamamladım, sıradaki <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
+                    btn.innerHTML = `Bu bölümü tamamladım, sıradaki <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
                     btn.onclick = function() {
                         this.disabled = true;
                         this.style.opacity = '0.6';
@@ -1353,13 +1502,117 @@
                     btn.onclick = () => {
                         const cur = document.getElementById(`step-${index}`);
                         if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
-                        showToast('Tebrikler! Bugünün dersini tamamladın.', { type: 'success', title: 'Harika!' });
+                        // Tamamlandı işareti — yıllık analizde sayım için
+                        try { localStorage.setItem('eng_done_' + date, '1'); } catch (e) {}
+                        showToast('Bugünün dersini başarıyla tamamladın.', { type: 'success', title: 'Tebrikler!' });
                         setTimeout(goHome, 1300);
                     };
                     card.appendChild(btn);
                 }
                 container.appendChild(card);
             });
+        }
+
+        /* ===========================================================
+         *  YILLIK ANALİZ
+         * =========================================================== */
+        function getYearStats() {
+            const year = String(new Date().getFullYear());
+            const stats = {
+                year,
+                completedDays: 0,
+                addedDays: 0,
+                vocabCount: 0,
+                phraseCount: 0
+            };
+            const seenDays = new Set();
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (!key) continue;
+
+                if (key.startsWith('eng_done_')) {
+                    const d = key.replace('eng_done_', '');
+                    if (d.startsWith(year)) stats.completedDays++;
+                    continue;
+                }
+                if (key.startsWith('eng_day_')) {
+                    const d = key.replace('eng_day_', '');
+                    if (!d.startsWith(year)) continue;
+                    if (seenDays.has(d)) continue;
+                    seenDays.add(d);
+                    stats.addedDays++;
+                    const content = localStorage.getItem(key) || '';
+                    const sections = splitSections(content);
+                    sections.forEach(s => {
+                        const lines = s.replace(/\r/g,'').split('\n');
+                        const fnIdx = lines.findIndex(l => l.trim() !== '');
+                        if (fnIdx < 0) return;
+                        const titleClean = lines[fnIdx].replace(/^\s*\d+\.\s*/, '').trim();
+                        const theme = detectSectionTheme(titleClean);
+                        const cl = lines.slice(fnIdx + 1).filter(l => l.trim() !== '');
+                        if (theme.key === 'vocab') stats.vocabCount += parseVocab(cl).length;
+                        else if (theme.key === 'phrase') stats.phraseCount += parsePhrases(cl).length;
+                    });
+                }
+            }
+            return stats;
+        }
+
+        const ANALIZ_ICONS = {
+            check:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+            flame:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s4 5 4 9a4 4 0 11-8 0c0-2 1-3 1-3-1 4-5 5-5 9a8 8 0 0016 0c0-5-4-7-4-12-1 1-2 3-4 3-2 0-2-2 0-6z"/></svg>',
+            book:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/><path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/></svg>',
+            chat:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>'
+        };
+
+        function openAnaliz() {
+            const s = getYearStats();
+            const container = document.getElementById('analiz-content');
+            const hasAny = s.addedDays + s.completedDays + s.vocabCount + s.phraseCount > 0;
+
+            container.innerHTML = `
+                <div class="analiz-hero">
+                    <div class="analiz-year-tag">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        ${escapeHtml(s.year)} özeti
+                    </div>
+                    <h2>İngilizce Yolculuğun</h2>
+                    <p>Bu yıl içinde tamamladığın dersler ve öğrendiğin kelimeler/kalıplar — tek bakışta görüyorsun.</p>
+                </div>
+
+                <div class="analiz-grid">
+                    <div class="analiz-card tone-green">
+                        <div class="ac-icon">${ANALIZ_ICONS.check}</div>
+                        <div><span class="ac-value">${s.completedDays}</span><span class="ac-value-suffix">gün</span></div>
+                        <div class="ac-label">Tamamlanan Ders</div>
+                        <div class="ac-sublabel">Başarıyla bitirip "Bitir" dediğin gün sayısı.</div>
+                    </div>
+                    <div class="analiz-card tone-blue">
+                        <div class="ac-icon">${ANALIZ_ICONS.book}</div>
+                        <div><span class="ac-value">${s.vocabCount}</span><span class="ac-value-suffix">kelime</span></div>
+                        <div class="ac-label">Ezberlenen Kelime</div>
+                        <div class="ac-sublabel">Tüm derslerdeki Vocabulary bölümlerinin toplamı.</div>
+                    </div>
+                    <div class="analiz-card tone-violet">
+                        <div class="ac-icon">${ANALIZ_ICONS.chat}</div>
+                        <div><span class="ac-value">${s.phraseCount}</span><span class="ac-value-suffix">kalıp</span></div>
+                        <div class="ac-label">Günlük Kalıp</div>
+                        <div class="ac-sublabel">Phrases bölümlerinde öğrendiğin ifade sayısı.</div>
+                    </div>
+                    <div class="analiz-card tone-gold">
+                        <div class="ac-icon">${ANALIZ_ICONS.flame}</div>
+                        <div><span class="ac-value">${s.addedDays}</span><span class="ac-value-suffix">gün</span></div>
+                        <div class="ac-label">İçerik Eklenen Gün</div>
+                        <div class="ac-sublabel">Bu yıl içerik kaydettiğin toplam gün sayısı.</div>
+                    </div>
+                </div>
+
+                ${!hasAny ? '<div class="analiz-empty">Bu yıl için henüz veri yok.<br>İlk dersini ekleyip başlatınca burada istatistikler oluşmaya başlayacak.</div>' : ''}
+            `;
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('analiz-screen').classList.add('active');
+            window.scrollTo(0, 0);
         }
 
         // İlk yükleme
