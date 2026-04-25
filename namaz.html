@@ -116,17 +116,48 @@
         .btn-primary:active { transform: scale(0.98); }
         .btn-batch { background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%); margin-bottom: 20px; }
 
-        /* Prayer List — KOMPAKT */
+        /* Prayer List — KOMPAKT + RENKLİ VAKİTLER */
         .prayer-list { display: flex; flex-direction: column; gap: 8px; }
         .prayer-item {
             padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 16px;
             display: grid; grid-template-columns: 1fr auto; align-items: center;
             border: 1px solid rgba(255,255,255,0.05);
+            position: relative; overflow: hidden;
+        }
+        .prayer-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: linear-gradient(180deg, var(--p-from, #fff), var(--p-to, #ccc));
+            opacity: 0.85;
         }
         .prayer-item.status-vakit { background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.4); }
         .prayer-item.status-kaza { background: rgba(247, 183, 51, 0.15); border-color: rgba(247, 183, 51, 0.4); }
-        .prayer-name { font-size: 17px; font-weight: 700; line-height: 1.1; }
-        .prayer-rekat { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+        .prayer-info {
+            display: flex; flex-direction: column; gap: 4px; min-width: 0;
+            padding-left: 4px; /* Sol şeritle nefes alacak boşluk */
+        }
+        .prayer-name-row { display: flex; align-items: center; gap: 8px; }
+        .prayer-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--p-from, #fff); flex-shrink: 0;
+            box-shadow: 0 0 10px var(--p-from, transparent);
+        }
+        .prayer-name {
+            font-size: 17px; font-weight: 800; line-height: 1.1; letter-spacing: -0.2px;
+            background: linear-gradient(135deg, var(--p-from, #fff), var(--p-to, #ccc));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .prayer-rekat {
+            font-size: 10.5px; font-weight: 700; letter-spacing: 1.4px;
+            text-transform: uppercase; color: rgba(255,255,255,0.55);
+        }
+
+        /* Günün saatlerine göre vakit renkleri */
+        .prayer-time-sabah  { --p-from: #4cc9f0; --p-to: #4361ee; }   /* şafak — soğuk mavi */
+        .prayer-time-ogle   { --p-from: #ffd166; --p-to: #fcbf49; }   /* öğle — altın güneş */
+        .prayer-time-ikindi { --p-from: #ff8c42; --p-to: #ff5e62; }   /* ikindi — turuncu */
+        .prayer-time-aksam  { --p-from: #f72585; --p-to: #b5179e; }   /* akşam — gün batımı */
+        .prayer-time-yatsi  { --p-from: #b388ff; --p-to: #7209b7; }   /* yatsı — gece moru */
 
         /* Controls */
         .controls { display: flex; flex-direction: row; align-items: center; gap: 8px; }
@@ -588,11 +619,14 @@
                 if (!status) status = null;
 
                 const item = document.createElement('div');
-                item.className = `prayer-item ${status ? 'status-' + status : ''}`;
-                
+                item.className = `prayer-item prayer-time-${prayer.id} ${status ? 'status-' + status : ''}`;
+
                 item.innerHTML = `
                     <div class="prayer-info">
-                        <span class="prayer-name">${prayer.name}</span>
+                        <div class="prayer-name-row">
+                            <span class="prayer-dot"></span>
+                            <span class="prayer-name">${prayer.name}</span>
+                        </div>
                         <span class="prayer-rekat">${prayer.rekat} Rekat</span>
                     </div>
                     <div class="controls">
