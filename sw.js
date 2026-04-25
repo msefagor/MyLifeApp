@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v1';
+const CACHE_NAME = 'glass-planner-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -7,6 +7,9 @@ const urlsToCache = [
   './ingilizce.html',
   './kitap1.html',
   './yatirim1.html',
+  './devam.html',
+  './sureler.json',
+  './db.json',
   './manifest.json',
   './app-icon.png',
   './splash-screen.png'
@@ -18,7 +21,16 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        return cache.addAll(urlsToCache);
+        // addAll, herhangi bir kaynak başarısız olursa tüm install'ı patlatır.
+        // Tek tek ekleyip eksik dosyalar nedeniyle SW'nin install'ını çökertmemek için
+        // her dosyayı ayrı ayrı eklemeyi deniyoruz.
+        return Promise.all(
+          urlsToCache.map(url =>
+            cache.add(url).catch(err => {
+              console.warn('SW: cache eklenemedi:', url, err);
+            })
+          )
+        );
       })
   );
 });
@@ -34,30 +46,51 @@ self.addEventListener('activate', event => {
            }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Tüm sayfaların kontrolünü hemen al
   );
-  self.clients.claim(); // Tüm sayfaların kontrolünü hemen al
 });
 
-// Fetch (İstek Yakalama) - NETWORK FIRST STRATEJİSİ
+// Fetch (İstek Yakalama) - NETWORK FIRST STRATEJİSİ + güvenli fallback
 self.addEventListener('fetch', event => {
+  // Sadece GET isteklerini ve aynı kaynaklı http(s) isteklerini ele al
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
         // İnternet var: Cevabı al, klonla ve cache'e kaydet (güncelle)
-        if (!response || response.status !== 200) {
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
         const responseToCache = response.clone();
         caches.open(CACHE_NAME)
           .then(cache => {
             cache.put(event.request, responseToCache);
-          });
+          })
+          .catch(() => {});
         return response;
       })
-      .catch(() => {
-        // İnternet yok: Cache'den dön
-        return caches.match(event.request);
+      .catch(async () => {
+        // İnternet yok / ağ hatası: Önce tam URL ile cache, yoksa pathname ile cache, yoksa index.html
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+
+        // Query string'i atıp tekrar dene (ör. devam.html?date=2026-04-25 → devam.html)
+        const noQuery = new Request(url.origin + url.pathname);
+        const cachedNoQuery = await caches.match(noQuery);
+        if (cachedNoQuery) return cachedNoQuery;
+
+        // Navigasyon (HTML) isteğiyse en azından ana sayfayı dön
+        if (event.request.mode === 'navigate') {
+          const fallback = await caches.match('./index.html');
+          if (fallback) return fallback;
+        }
+        return new Response('Çevrimdışı: kaynak bulunamadı', {
+          status: 503, statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
       })
   );
 });
