@@ -166,20 +166,31 @@
         .blob-3 { top: 38%; left: 30%; width: 200px; height: 200px; background: #4cc9f0; opacity: 0.32; }
         @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
 
-        /* Üst Bar */
+        /* Üst Bar (Nameplate) */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 22px 0 6px; margin-bottom: 16px;
+            padding: 22px 0 6px; margin-bottom: 16px; gap: 14px;
         }
-        .header-text { display: flex; flex-direction: column; gap: 2px; }
-        .header-greeting {
-            font-size: 12px; color: var(--text-muted); letter-spacing: 1.4px; text-transform: uppercase;
+        .header-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+        .header-prefix {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 10.5px; font-weight: 700;
+            letter-spacing: 1.6px; text-transform: uppercase;
+            color: #4cc9f0;
+            position: relative;
+        }
+        .header-prefix::before {
+            content: ''; display: inline-block; width: 18px; height: 1px;
+            background: linear-gradient(90deg, transparent, #4cc9f0);
         }
         .header h1 {
-            font-size: 30px; margin: 0; font-weight: 800; letter-spacing: -0.6px;
+            font-size: 22px; margin: 0; font-weight: 800; letter-spacing: -0.4px;
+            line-height: 1.15;
             background: linear-gradient(135deg, #ffffff 0%, #b6c8ff 100%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .header h1 .name-last { font-weight: 900; letter-spacing: 0.5px; }
         .backup-btn {
             background: var(--glass-bg-strong); border: 1px solid var(--glass-stroke); color: white;
             width: 46px; height: 46px; border-radius: 14px;
@@ -408,8 +419,8 @@
 
     <div class="header">
         <div class="header-text">
-            <span class="header-greeting" id="greetingText">Merhaba</span>
-            <h1>Günlük Akış</h1>
+            <span class="header-prefix">Öğr. Gör. Dr.</span>
+            <h1>Muhammed Sefa <span class="name-last">GÖR</span></h1>
         </div>
         <div class="backup-btn" onclick="checkPasswordAndOpen()" aria-label="Veri yönetimi">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -440,9 +451,15 @@
     <div class="menu-list">
         <a href="#" onclick="navigateTo('namaz.html')" class="menu-item theme-namaz">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 21V11a7 7 0 0114 0v10M5 21h14M9 21v-5a3 3 0 016 0v5"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4V2m0 2c1.6 1.2 1.6 3.8 0 5"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 20V11"/>
+                    <path d="M19 20V11"/>
+                    <path d="M4.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
+                    <path d="M18.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
+                    <path d="M8 20v-6c0-2.2 1.8-4 4-4s4 1.8 4 4v6"/>
+                    <path d="M12 9.5V8m0 0a1.2 1.2 0 010-2.4M12 8a1.2 1.2 0 000-2.4"/>
+                    <path d="M3 20h18"/>
+                    <path d="M11 20v-2.8a1 1 0 012 0V20"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -456,9 +473,11 @@
 
         <a href="#" onclick="navigateTo('notlar.html')" class="menu-item theme-not">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h4"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/>
+                    <path d="M14 3v5a1 1 0 001 1h5"/>
+                    <path d="M8 13h8M8 17h5"/>
+                    <path d="M16.5 14.5l1.8-1.8a1 1 0 011.4 1.4L17.9 16"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -472,9 +491,13 @@
 
         <a href="#" onclick="navigateTo('ingilizce.html')" class="menu-item theme-eng">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 5h7"/>
+                    <path d="M9 3v2"/>
+                    <path d="M5.5 8c0 0 .5 4.5 4.5 6.5"/>
+                    <path d="M11 8c0 0-1 5.5-7 8.5"/>
+                    <path d="M13 21l4-9 4 9"/>
+                    <path d="M14.4 18h5.2"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -488,8 +511,10 @@
 
         <a href="#" onclick="navigateTo('kitap1.html')" class="menu-item theme-book">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.253v13M12 6.253C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253M12 6.253C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/>
+                    <path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/>
+                    <path d="M6 8.5h3M6 11.5h3M15 8.5h3M15 11.5h3"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -503,9 +528,11 @@
 
         <a href="#" onclick="navigateTo('yatirim1.html')" class="menu-item theme-money">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 17l6-6 4 4 8-8"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 7h7v7"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="6" rx="7" ry="2.4"/>
+                    <path d="M5 6v4.5c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4V6"/>
+                    <path d="M5 10.5V15c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-4.5"/>
+                    <path d="M5 15v3c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-3"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -519,9 +546,11 @@
 
         <a href="#" onclick="navigateTo('devam.html')" class="menu-item theme-school">
             <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 14l6.16-3.422a12 12 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12 12 0 01.665-6.479L12 14z"/>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                    <rect x="9" y="3" width="6" height="4" rx="1.2"/>
+                    <path d="M9 13.5l2.3 2.3L15.5 11.5"/>
+                    <path d="M9 18h4"/>
                 </svg>
             </div>
             <div class="item-info">
@@ -624,8 +653,8 @@
             const progressText = document.getElementById('progressText');
 
             let progress = 0;
-            const totalTime = 1400;       // Eskiden 5000 ms idi
-            const intervalTime = 35;
+            const totalTime = 2600;       // Daha rahat, profesyonel bir tempo
+            const intervalTime = 40;
             const step = 100 / (totalTime / intervalTime);
 
             const loadingInterval = setInterval(() => {
