@@ -63,22 +63,62 @@
             transition: opacity 0.55s ease, visibility 0.55s;
             overflow: hidden;
         }
-        #loading-screen::before, #loading-screen::after {
-            content: ''; position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.55;
-            animation: splashFloat 8s ease-in-out infinite alternate;
+        /* --- DUMAN / AKIŞ KATMANLARI (sağ alt blob kaldırıldı) --- */
+        .smoke-bg {
+            position: absolute; inset: 0; overflow: hidden;
+            pointer-events: none; z-index: 0;
+            animation: smokeHue 26s linear infinite;
         }
-        #loading-screen::before {
-            width: 320px; height: 320px; top: -80px; left: -80px;
-            background: linear-gradient(135deg, #4cc9f0, #4361ee);
+        @keyframes smokeHue {
+            0%   { filter: hue-rotate(0deg); }
+            50%  { filter: hue-rotate(28deg); }
+            100% { filter: hue-rotate(0deg); }
         }
-        #loading-screen::after {
-            width: 360px; height: 360px; bottom: -120px; right: -100px;
-            background: linear-gradient(135deg, #f72585, #7209b7);
-            animation-delay: 1.4s;
+        .smoke {
+            position: absolute; border-radius: 50%;
+            filter: blur(48px);
+            mix-blend-mode: screen;
+            will-change: transform, opacity;
         }
-        @keyframes splashFloat {
-            from { transform: translate(0,0) scale(1); }
-            to   { transform: translate(20px, 30px) scale(1.05); }
+        .smoke-1 {
+            width: 70%; height: 70%; top: -10%; left: -18%;
+            background: radial-gradient(circle, rgba(76, 201, 240, 0.55) 0%, transparent 65%);
+            animation: smokeDrift1 18s ease-in-out infinite alternate;
+        }
+        .smoke-2 {
+            width: 75%; height: 75%; top: 25%; right: -22%;
+            background: radial-gradient(circle, rgba(247, 37, 133, 0.45) 0%, transparent 65%);
+            animation: smokeDrift2 22s ease-in-out infinite alternate;
+        }
+        .smoke-3 {
+            width: 60%; height: 60%; bottom: -10%; left: 10%;
+            background: radial-gradient(circle, rgba(115, 9, 183, 0.50) 0%, transparent 65%);
+            animation: smokeDrift3 20s ease-in-out infinite alternate;
+        }
+        .smoke-4 {
+            width: 55%; height: 55%; top: 50%; left: 35%;
+            background: radial-gradient(circle, rgba(67, 97, 238, 0.42) 0%, transparent 65%);
+            animation: smokeDrift4 16s ease-in-out infinite alternate;
+        }
+        @keyframes smokeDrift1 {
+            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.45; }
+            50%  { transform: translate(15%, 8%) scale(1.2); opacity: 0.7;  }
+            100% { transform: translate(5%, 18%) scale(1.08);opacity: 0.5;  }
+        }
+        @keyframes smokeDrift2 {
+            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
+            50%  { transform: translate(-12%, -10%) scale(1.15); opacity: 0.6; }
+            100% { transform: translate(-5%, 6%) scale(0.95); opacity: 0.45; }
+        }
+        @keyframes smokeDrift3 {
+            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
+            50%  { transform: translate(-14%, -8%) scale(1.22); opacity: 0.6; }
+            100% { transform: translate(8%, -14%) scale(1.05); opacity: 0.45;}
+        }
+        @keyframes smokeDrift4 {
+            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.3;  }
+            50%  { transform: translate(-10%, 8%) scale(1.18); opacity: 0.55;}
+            100% { transform: translate(-18%, -4%) scale(1.08); opacity: 0.4; }
         }
 
         /* Logo en üstte */
@@ -422,6 +462,12 @@
 <body>
 
     <div id="loading-screen">
+        <div class="smoke-bg">
+            <div class="smoke smoke-1"></div>
+            <div class="smoke smoke-2"></div>
+            <div class="smoke smoke-3"></div>
+            <div class="smoke smoke-4"></div>
+        </div>
         <div class="splash-tint" id="splashTint"></div>
         <div class="splash-logo">
             <img src="app-icon.png?v=3" alt="">
