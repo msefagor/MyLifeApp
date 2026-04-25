@@ -20,8 +20,10 @@
             --siler-color: #7bed9f;
             --biz-color: #00cec9;
             --siz-color: #fab1a0;
-            --biz-glow: rgba(0, 206, 201, 0.45);
-            --siz-glow: rgba(250, 177, 160, 0.45);
+            --biz-glow: rgba(0, 206, 201, 0.55);
+            --siz-glow: rgba(250, 177, 160, 0.55);
+            --tile-ivory: #fffaf0;
+            --tile-shadow: rgba(0,0,0,0.45);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -47,19 +49,52 @@
             border: 1px solid var(--glass-border);
             box-shadow: var(--glass-shadow);
         }
+
+        /* === HEADER & MARKA === */
         header {
-            padding: 50px 15px 15px;
+            padding: 50px 16px 16px;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 50; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-            margin-bottom: 10px;
+            z-index: 50;
+            border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
+            margin-bottom: 12px;
+            gap: 10px;
         }
-        h1 { margin: 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        .game-badge {
-            background: var(--accent-color); color: #000;
-            padding: 2px 10px; border-radius: 8px; font-size: 12px; font-weight: 900;
-            box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+        .brand-block { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+        .brand-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 9.5px; font-weight: 800; letter-spacing: 2.4px;
+            color: var(--siler-color); text-transform: uppercase;
+            margin-bottom: 3px; line-height: 1;
         }
-        .header-btns { display: flex; gap: 8px; align-items: center; }
+        .brand-row::before {
+            content: ''; width: 5px; height: 5px; border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+        .brand-rounds {
+            background: rgba(241, 196, 15, 0.18);
+            color: var(--accent-color);
+            padding: 1px 8px; border-radius: 8px;
+            font-weight: 900; letter-spacing: 1.4px;
+            border: 1px solid rgba(241, 196, 15, 0.35);
+        }
+        .brand-title {
+            font-size: 26px; font-weight: 900; letter-spacing: 2.6px;
+            line-height: 1; margin: 0;
+            background: linear-gradient(135deg, #ffffff 0%, var(--siler-color) 50%, var(--biz-color) 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            text-shadow: 0 0 18px rgba(0, 206, 201, 0.35);
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .brand-title::after {
+            content: '';
+            display: block; height: 2px; width: 56px;
+            margin-top: 4px;
+            background: linear-gradient(90deg, var(--biz-color), transparent);
+            border-radius: 2px;
+        }
+
+        .header-btns { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .timer-display {
             background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 20px;
             font-family: 'Courier New', Courier, monospace; font-size: 14px;
@@ -67,13 +102,14 @@
         }
         .settings-btn {
             background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-            color: white; padding: 8px 16px; border-radius: 25px; font-size: 12px; font-weight: 600;
+            color: white; padding: 8px 14px; border-radius: 22px; font-size: 12px; font-weight: 700;
         }
+
         .game-container { flex: 1; overflow-y: auto; padding-bottom: 140px; }
 
         .grid-header {
             display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr 1.5fr 1.4fr;
-            padding: 15px 5px; font-size: 10px; font-weight: 900; text-align: center;
+            padding: 14px 5px; font-size: 10px; font-weight: 900; text-align: center;
             background: rgba(0,0,0,0.3); margin: 0 10px; border-radius: 15px;
             text-transform: uppercase; border: 1px solid var(--glass-border);
         }
@@ -86,7 +122,6 @@
         .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; text-align: center; flex-wrap: wrap; }
         .score-val { font-size: 18px; font-weight: 700; }
 
-        /* Dağıtıcı Vurgusu */
         .dealer-active {
             font-weight: 900 !important;
             font-size: 14px !important;
@@ -96,39 +131,36 @@
         }
         .diff-text { font-size: 11px; font-weight: 800; }
 
-        /* === KART STİLİ CEZA TAGLERI === */
+        /* === OKEY-TAŞI STİLİ CEZA === */
         .penalty-card {
             display: inline-flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            width: 22px; height: 30px;
-            background: linear-gradient(180deg, #ffffff 0%, #ececec 100%);
-            border-radius: 3px;
-            border: 1px solid rgba(0,0,0,0.22);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.85);
+            align-items: center; justify-content: space-between;
+            width: 22px; height: 32px;
+            background: linear-gradient(180deg, var(--tile-ivory) 0%, #ede1c8 100%);
+            border-radius: 5px;
+            border: 1.6px solid #1a1a1a;
+            box-shadow: 0 2px 4px var(--tile-shadow), inset 0 1px 0 rgba(255,255,255,0.7);
+            padding: 3px 0 4px;
             margin: 1.5px;
             cursor: pointer;
-            font-family: Georgia, 'Times New Roman', serif;
             line-height: 1;
-            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
         }
-        .penalty-card.tek { color: #1a1a1a; }
-        .penalty-card.cift { color: #c0392b; }
-        .pc-num { font-size: 11px; font-weight: 900; }
-        .pc-suit { font-size: 8px; margin-top: 1px; }
-        .penalty-card.cift::after {
-            content: '×2'; position: absolute;
-            top: 1px; right: 2px;
-            font-size: 6px; font-weight: 900; color: #c0392b;
-            font-family: -apple-system, sans-serif;
-            line-height: 1;
+        .penalty-card.tek { border-color: #1a1a1a; color: #1a1a1a; }
+        .penalty-card.cift { border-color: #c0392b; color: #c0392b; }
+        .pc-num { font-size: 12px; font-weight: 900; }
+        .pc-dots { display: flex; gap: 2px; align-items: center; }
+        .pc-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; display: block; }
+
+        /* Büyük taş — havuz/önizleme için */
+        .penalty-card.big {
+            width: 30px; height: 42px;
+            border-width: 2px; border-radius: 6px;
+            padding: 4px 0 5px;
+            margin: 2px;
         }
-        .penalty-card.tek::after {
-            content: '×1'; position: absolute;
-            top: 1px; right: 2px;
-            font-size: 6px; font-weight: 900; color: var(--blue-color);
-            font-family: -apple-system, sans-serif;
-            line-height: 1;
-        }
+        .penalty-card.big .pc-num { font-size: 16px; }
+        .penalty-card.big .pc-dots i { width: 6px; height: 6px; }
 
         .footer-totals {
             position: fixed; bottom: 0; left: 0; right: 0; height: 115px;
@@ -149,21 +181,22 @@
         .res-diff { font-size: 28px; font-weight: 900; margin: 2px 0; }
         .res-label { font-size: 10px; opacity: 0.8; }
 
-        /* Modal Styles */
+        /* === MODAL === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
             display: none; justify-content: center; align-items: center; z-index: 100;
+            padding: 16px;
         }
         .modal-content {
-            background: #1e272e; width: 90%; max-width: 420px;
+            background: #1e272e; width: 100%; max-width: 420px;
             border-radius: 24px; padding: 22px; border: 1px solid var(--glass-border);
+            max-height: 92vh; overflow-y: auto;
         }
         input[type="text"], input[type="number"], input[type="tel"], select {
             width: 100%; background: #000; border: 1px solid #333; color: #fff;
             padding: 12px; border-radius: 12px; font-size: 16px; box-sizing: border-box;
-            outline: none;
-            font-family: inherit;
+            outline: none; font-family: inherit;
         }
         input:focus, select:focus { border-color: var(--biz-color); }
         .calc-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #2d3436; color: white; font-weight: 800; font-size: 12px; cursor: pointer; }
@@ -172,12 +205,58 @@
         .action-btn { width: 100%; padding: 16px; border: none; border-radius: 14px; margin-top: 10px; font-weight: 800; cursor: pointer; color: white; font-size: 14px; }
         .save-btn { background: linear-gradient(135deg, #00b894, #00cec9); color: #000; }
 
-        /* === SKOR GİRİŞ EKRANI: BÜYÜK & RENKLİ OYUNCU İSİMLERİ === */
-        .score-player-card {
-            position: relative;
+        /* === SKOR MODALİ — TEMALI BAŞLIK === */
+        .sc-modal-title {
+            display: flex; align-items: center; justify-content: center; gap: 14px;
+            margin: 0 0 18px;
             padding: 16px 18px;
             border-radius: 18px;
-            margin-bottom: 14px;
+            border: 1px solid;
+            position: relative; overflow: hidden;
+        }
+        .sc-modal-title::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        }
+        .sc-modal-title.team-biz {
+            background: linear-gradient(135deg, rgba(0,206,201,0.20), rgba(0,206,201,0.05));
+            border-color: rgba(0, 206, 201, 0.5);
+        }
+        .sc-modal-title.team-biz::before { background: var(--biz-color); box-shadow: 0 0 14px var(--biz-glow); }
+        .sc-modal-title.team-siz {
+            background: linear-gradient(135deg, rgba(250,177,160,0.20), rgba(250,177,160,0.05));
+            border-color: rgba(250, 177, 160, 0.5);
+        }
+        .sc-modal-title.team-siz::before { background: var(--siz-color); box-shadow: 0 0 14px var(--siz-glow); }
+        .sc-team-text {
+            font-size: 26px; font-weight: 900; letter-spacing: 2px;
+            line-height: 1;
+        }
+        .sc-modal-title.team-biz .sc-team-text {
+            background: linear-gradient(135deg, #ffffff, var(--biz-color));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            text-shadow: 0 0 14px var(--biz-glow);
+        }
+        .sc-modal-title.team-siz .sc-team-text {
+            background: linear-gradient(135deg, #ffffff, var(--siz-color));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            text-shadow: 0 0 14px var(--siz-glow);
+        }
+        .sc-divider {
+            width: 1px; height: 26px;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.45), transparent);
+        }
+        .sc-action-text {
+            font-size: 11.5px; font-weight: 800;
+            letter-spacing: 2.4px; text-transform: uppercase;
+            color: rgba(255,255,255,0.72);
+        }
+
+        /* Skor oyuncu kartları (Eş 1 etiketi yok artık) */
+        .score-player-card {
+            position: relative;
+            padding: 14px 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
             border: 1px solid;
             overflow: hidden;
         }
@@ -185,55 +264,113 @@
             content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
         }
         .score-player-card.team-biz {
-            background: linear-gradient(160deg, rgba(0,206,201,0.18), rgba(0,206,201,0.04));
-            border-color: rgba(0, 206, 201, 0.45);
+            background: linear-gradient(160deg, rgba(0,206,201,0.16), rgba(0,206,201,0.04));
+            border-color: rgba(0, 206, 201, 0.42);
         }
-        .score-player-card.team-biz::before { background: var(--biz-color); box-shadow: 0 0 14px var(--biz-glow); }
+        .score-player-card.team-biz::before { background: var(--biz-color); box-shadow: 0 0 12px var(--biz-glow); }
         .score-player-card.team-siz {
-            background: linear-gradient(160deg, rgba(250,177,160,0.18), rgba(250,177,160,0.04));
-            border-color: rgba(250, 177, 160, 0.45);
+            background: linear-gradient(160deg, rgba(250,177,160,0.16), rgba(250,177,160,0.04));
+            border-color: rgba(250, 177, 160, 0.42);
         }
-        .score-player-card.team-siz::before { background: var(--siz-color); box-shadow: 0 0 14px var(--siz-glow); }
-
-        .player-team-tag {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 10.5px; font-weight: 900;
-            letter-spacing: 1.6px; text-transform: uppercase;
-            margin-bottom: 6px; opacity: 0.85;
-        }
-        .player-team-tag::before {
-            content: ''; width: 6px; height: 6px; border-radius: 50%;
-            background: currentColor; box-shadow: 0 0 8px currentColor;
-        }
-        .score-player-card.team-biz .player-team-tag { color: var(--biz-color); }
-        .score-player-card.team-siz .player-team-tag { color: var(--siz-color); }
+        .score-player-card.team-siz::before { background: var(--siz-color); box-shadow: 0 0 12px var(--siz-glow); }
         .player-name-big {
-            font-size: 24px; font-weight: 900; letter-spacing: -0.5px;
+            font-size: 22px; font-weight: 900; letter-spacing: -0.4px;
             line-height: 1.05; margin-bottom: 12px;
         }
         .score-player-card.team-biz .player-name-big {
             background: linear-gradient(135deg, #ffffff, var(--biz-color));
             -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 2px 14px var(--biz-glow);
+            text-shadow: 0 2px 12px var(--biz-glow);
         }
         .score-player-card.team-siz .player-name-big {
             background: linear-gradient(135deg, #ffffff, var(--siz-color));
             -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 2px 14px var(--siz-glow);
+            text-shadow: 0 2px 12px var(--siz-glow);
         }
 
-        /* === AYARLAR: HAVUZ + DAĞITICI === */
+        /* === AYARLAR — BÖLÜM BLOKLARI === */
         .section-block {
             background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
             border-radius: 16px; padding: 14px 14px 12px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .section-label {
-            display: block; font-size: 11px; font-weight: 800;
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 900;
             letter-spacing: 1.4px; text-transform: uppercase;
             color: var(--text-muted); margin-bottom: 10px;
         }
         .section-label.tone-biz { color: var(--biz-color); }
+        .section-label.tone-biz::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--biz-color); box-shadow: 0 0 10px var(--biz-glow);
+        }
+        .section-label.tone-amber { color: var(--accent-color); }
+        .section-label.tone-amber::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-color); box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+        .section-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .section-grid-2 select { padding: 11px 10px; font-size: 13px; }
+
+        .pool-launch-btn {
+            width: 100%;
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(135deg, rgba(123, 237, 159, 0.15), rgba(0, 206, 201, 0.12));
+            border: 1px solid rgba(123, 237, 159, 0.45);
+            color: #fff; padding: 14px 16px; border-radius: 14px;
+            font-size: 14px; font-weight: 800; cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .pool-launch-btn .pool-l-icon {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--siler-color), var(--biz-color));
+            color: #042; font-size: 16px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 206, 201, 0.3);
+        }
+        .pool-launch-btn .pool-l-text { flex: 1; text-align: left; padding-left: 12px; }
+        .pool-launch-btn .pool-l-text small { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; letter-spacing: 0.6px; }
+        .pool-launch-btn .pool-l-arrow { color: var(--siler-color); font-size: 18px; }
+
+        .dealer-row {
+            display: grid; grid-template-columns: 88px 1fr; gap: 10px;
+            margin-bottom: 8px; align-items: center;
+        }
+        .dealer-tag {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11.5px; font-weight: 900; color: var(--accent-color);
+            letter-spacing: 0.5px;
+        }
+        .dealer-tag .dealer-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--accent-color); color: #000;
+            font-size: 12px; font-weight: 900;
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+        }
+        .dealer-row.auto .dealer-tag { color: var(--siler-color); }
+        .dealer-row.auto .dealer-tag .dealer-num {
+            background: rgba(123, 237, 159, 0.18);
+            color: var(--siler-color);
+            border: 1px solid rgba(123, 237, 159, 0.5);
+            box-shadow: none;
+        }
+        .dealer-row select { padding: 10px 12px; font-size: 14px; }
+        .dealer-locked {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(123, 237, 159, 0.10);
+            border: 1px dashed rgba(123, 237, 159, 0.45);
+            border-radius: 12px;
+            padding: 10px 14px; font-size: 14px; font-weight: 800;
+            color: var(--siler-color);
+            min-height: 42px;
+        }
+        .dealer-locked::before {
+            content: '🤝'; font-size: 14px;
+        }
+
+        /* Oyuncu Havuzu modalı */
         .pool-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .pool-row input { flex: 1; padding: 10px 12px; font-size: 14px; }
         .pool-del-btn {
@@ -251,33 +388,20 @@
         }
         .pool-add-btn:active { background: rgba(255,255,255,0.08); }
 
-        .dealer-row {
-            display: grid; grid-template-columns: 90px 1fr; gap: 10px;
-            margin-bottom: 8px; align-items: center;
-        }
-        .dealer-tag {
-            font-size: 11px; font-weight: 900; color: var(--accent-color);
-            letter-spacing: 0.6px;
-            text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
-            display: flex; align-items: center; gap: 6px;
-        }
-        .dealer-tag .dealer-num {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 22px; height: 22px; border-radius: 50%;
-            background: var(--accent-color); color: #000;
-            font-size: 11px; font-weight: 900;
-            box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
-        }
-        .dealer-row select { padding: 10px 12px; font-size: 14px; }
-
-        /* Ceza modali kart-stili buton tutucusu */
-        #penalty-list { padding: 4px 0; }
+        /* Ceza modali */
+        #penalty-list { padding: 4px 0; min-height: 44px; }
         #num-grid .calc-btn { font-size: 14px; padding: 12px 0; font-weight: 900; }
     </style>
 </head>
 <body>
     <header class="glass-panel">
-        <h1>MSEFAGOR <span class="game-badge" id="kalan-oyun">11</span></h1>
+        <div class="brand-block">
+            <div class="brand-row">
+                101 TABELA
+                <span class="brand-rounds"><span id="kalan-oyun">11</span> EL</span>
+            </div>
+            <h1 class="brand-title">MSEFAGOR</h1>
+        </div>
         <div class="header-btns">
             <div class="timer-display" id="game-timer">00:00</div>
             <button class="settings-btn" onclick="openSettings()">Ayarlar</button>
@@ -313,10 +437,13 @@
     <!-- SKOR GİRİŞ MODALİ -->
     <div id="score-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="text-align:center; margin:0 0 18px 0;" id="sc-title">Skor Girişi</h3>
+            <div class="sc-modal-title" id="sc-title">
+                <span class="sc-team-text" id="sc-team-text">BİZ</span>
+                <span class="sc-divider"></span>
+                <span class="sc-action-text">Skor Girişi</span>
+            </div>
 
             <div class="score-player-card" id="player-card-1">
-                <div class="player-team-tag" id="p1-team-tag">Eş 1</div>
                 <div class="player-name-big" id="p1-name">—</div>
                 <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" id="sc1-val" placeholder="Sayı girin">
                 <div style="display:flex; gap:6px; margin-top:10px;">
@@ -326,7 +453,6 @@
             </div>
 
             <div class="score-player-card" id="player-card-2">
-                <div class="player-team-tag" id="p2-team-tag">Eş 2</div>
                 <div class="player-name-big" id="p2-name">—</div>
                 <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" id="sc2-val" placeholder="Sayı girin">
                 <div style="display:flex; gap:6px; margin-top:10px;">
@@ -350,35 +476,65 @@
 
     <!-- AYARLAR MODALİ -->
     <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-            <h3 style="text-align:center; margin: 0 0 14px;">Oyun Ayarları</h3>
+        <div class="modal-content">
+            <h3 style="text-align:center; margin: 0 0 16px;">Oyun Ayarları</h3>
 
+            <!-- Oyuncu Havuzu butonu -->
+            <button class="pool-launch-btn" onclick="openPoolModal()">
+                <span class="pool-l-icon">👥</span>
+                <span class="pool-l-text">
+                    Oyuncu Havuzu
+                    <small><span id="pool-count">4</span> isim · düzenle</small>
+                </span>
+                <span class="pool-l-arrow">›</span>
+            </button>
+
+            <!-- 1. BİZ Takımı (üstte) -->
             <div class="section-block">
-                <span class="section-label">Oyuncu Havuzu</span>
-                <div id="pool-list"></div>
-                <button class="pool-add-btn" onclick="addPoolName()">+ Yeni oyuncu ekle</button>
+                <span class="section-label tone-biz">BİZ Takımı</span>
+                <div class="section-grid-2">
+                    <select id="sel-biz1" onchange="onTeamChange()"></select>
+                    <select id="sel-biz2" onchange="onTeamChange()"></select>
+                </div>
             </div>
 
+            <!-- 2. Dağıtıcı Sırası (altta) -->
             <div class="section-block">
-                <span class="section-label">Masa Sırası — Kaçıncı Dağıtıcı?</span>
-                <div id="dealer-list"></div>
-            </div>
-
-            <div class="section-block">
-                <span class="section-label tone-biz">BİZ Takımı (Dağıtıcı Pozisyonu)</span>
+                <span class="section-label tone-amber">Dağıtıcı Sırası</span>
                 <div class="dealer-row">
-                    <span class="dealer-tag" style="color:var(--biz-color); text-shadow:0 0 10px var(--biz-glow);">Eş 1</span>
-                    <select id="sel-biz1"></select>
+                    <span class="dealer-tag"><span class="dealer-num">1</span>Dağıtan</span>
+                    <select id="dealer-1st" onchange="onDealer1Change()"></select>
                 </div>
                 <div class="dealer-row">
-                    <span class="dealer-tag" style="color:var(--biz-color); text-shadow:0 0 10px var(--biz-glow);">Eş 2</span>
-                    <select id="sel-biz2"></select>
+                    <span class="dealer-tag"><span class="dealer-num">2</span>Dağıtan</span>
+                    <select id="dealer-2nd" onchange="onDealer2Change()"></select>
+                </div>
+                <div class="dealer-row auto">
+                    <span class="dealer-tag"><span class="dealer-num">3</span>Otomatik</span>
+                    <span class="dealer-locked" id="dealer-3rd-name">—</span>
+                </div>
+                <div class="dealer-row auto">
+                    <span class="dealer-tag"><span class="dealer-num">4</span>Otomatik</span>
+                    <span class="dealer-locked" id="dealer-4th-name">—</span>
                 </div>
             </div>
 
             <button class="action-btn save-btn" onclick="saveSettings()">AYARLARI UYGULA</button>
             <button class="action-btn" style="background:var(--danger-color)" onclick="resetGame()">OYUNU SIFIRLA</button>
             <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
+        </div>
+    </div>
+
+    <!-- OYUNCU HAVUZU MODALİ (ayrı buton ile açılır) -->
+    <div id="pool-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="text-align:center; margin: 0 0 6px;">Oyuncu Havuzu</h3>
+            <p style="color: var(--text-muted); font-size: 12.5px; margin: 0 0 16px; line-height: 1.5; text-align:center;">
+                İsim ekle, düzenle veya sil. En az 4 oyuncu olmalı.
+            </p>
+            <div id="pool-list"></div>
+            <button class="pool-add-btn" onclick="addPoolName()">+ Yeni oyuncu ekle</button>
+            <button class="action-btn save-btn" onclick="closePoolModal()">TAMAMLA</button>
         </div>
     </div>
 
@@ -398,12 +554,13 @@
 
     <script>
         // === DATA MODELİ ===
-        // Önceden yazılmış havuz isimleri (her zaman mevcut)
+        // Pool: tüm bilinen oyuncu isimleri (≥ 4)
         let playerPool = ["Sefa", "Fatih", "Halil", "İlker"];
-        // 4 dağıtıcı pozisyonu için havuz indexleri (1., 2., 3., 4. dağıtıcı)
-        let dealerOrder = [0, 1, 2, 3];
-        // BİZ takımının pozisyonları (dealerOrder içinde 0-3)
-        let bizPositions = [0, 2];
+        // BİZ takımı: pool indeksleri (2 oyuncu)
+        let bizPair = [0, 2];
+        // Dağıtıcı seçimleri (pool indeksleri). 3. ve 4. otomatik hesaplanır.
+        let dealer1Idx = 0;  // 1. dağıtıcı (havuz indeksi)
+        let dealer2Idx = 1;  // 2. dağıtıcı (havuz indeksi)
 
         let gameData = [];
         let activeR = 0, activeC = '', m1 = 1, m2 = 1, tSiler = 0, curPMode = 'tek';
@@ -435,17 +592,159 @@
             }));
         }
 
-        // Aktif oyuncuların isimlerini dağıtıcı sırasına göre döner
-        function getActivePlayers() {
-            return dealerOrder.map(i => playerPool[i] || `Oyu ${i + 1}`);
+        // === TEAM HELPERS ===
+        // SİZ pair = BİZ olmayan pool indekslerinin ilk 2'si
+        function computeSizPair() {
+            const others = playerPool.map((_, i) => i).filter(i => !bizPair.includes(i));
+            return others.slice(0, 2);
+        }
+        function getTeammate(idx) {
+            const sizPair = computeSizPair();
+            if (bizPair.includes(idx)) return bizPair.find(i => i !== idx);
+            if (sizPair.includes(idx)) return sizPair.find(i => i !== idx);
+            return idx;
+        }
+        function isBizMember(idx) { return bizPair.includes(idx); }
+
+        // Dağıtıcı sırası: [d1, d2, teammate(d1), teammate(d2)]
+        function getDealerOrder() {
+            const t1 = getTeammate(dealer1Idx);
+            const t2 = getTeammate(dealer2Idx);
+            return [dealer1Idx, dealer2Idx, t1, t2];
         }
 
-        // === AYARLAR ===
+        // Aktif 4 oyuncuyu (BİZ + SİZ pair) getir, dağıtıcı sırasına göre
+        function getActivePlayers() {
+            return getDealerOrder().map(i => playerPool[i] || `Oyu ${i + 1}`);
+        }
+
+        // === SETTINGS MODAL ===
         function openSettings() {
-            renderPlayerPool();
+            renderTeamSelectors();
             renderDealerSelectors();
-            renderBizSelectors();
+            updatePoolCount();
             document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function updatePoolCount() {
+            document.getElementById('pool-count').textContent = playerPool.length;
+        }
+
+        // BİZ takımı dropdown'larını doldur
+        function renderTeamSelectors() {
+            const s1 = document.getElementById('sel-biz1');
+            const s2 = document.getElementById('sel-biz2');
+            s1.innerHTML = ''; s2.innerHTML = '';
+            playerPool.forEach((name, i) => {
+                s1.add(new Option(name, i));
+                s2.add(new Option(name, i));
+            });
+            s1.value = bizPair[0];
+            s2.value = bizPair[1];
+        }
+
+        // BİZ takımı değişti → SİZ pair otomatik güncellenir, dealer dropdownları yenilenir
+        function onTeamChange() {
+            const b1 = parseInt(document.getElementById('sel-biz1').value);
+            const b2 = parseInt(document.getElementById('sel-biz2').value);
+            if (b1 === b2) {
+                alert('BİZ takımının iki üyesi aynı kişi olamaz.');
+                document.getElementById('sel-biz2').value = bizPair[1];
+                return;
+            }
+            bizPair = [b1, b2];
+            // Dealer seçimleri geçerliliğini koru
+            const active = [...bizPair, ...computeSizPair()];
+            if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
+            if (!active.includes(dealer2Idx) || isBizMember(dealer2Idx) === isBizMember(dealer1Idx)) {
+                // 2. dağıtıcı 1.'in karşı takımından olmalı
+                dealer2Idx = active.find(i => isBizMember(i) !== isBizMember(dealer1Idx)) || active[1];
+            }
+            renderDealerSelectors();
+        }
+
+        // Dağıtıcı dropdown'larını doldur ve 3./4. otomatik isimlerini göster
+        function renderDealerSelectors() {
+            const sizPair = computeSizPair();
+            const active = [...bizPair, ...sizPair];
+
+            // 1. dağıtıcı: aktif 4 oyuncudan seç
+            const d1 = document.getElementById('dealer-1st');
+            d1.innerHTML = '';
+            active.forEach(i => {
+                const team = isBizMember(i) ? 'BİZ' : 'SİZ';
+                d1.add(new Option(`${playerPool[i]}  (${team})`, i));
+            });
+            if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
+            d1.value = dealer1Idx;
+
+            // 2. dağıtıcı: 1.'in karşı takımındaki 2 oyuncudan seç
+            refresh2ndDealerOptions();
+            updateAutoDealers();
+        }
+
+        function refresh2ndDealerOptions() {
+            const sizPair = computeSizPair();
+            const otherTeam = isBizMember(dealer1Idx) ? sizPair : bizPair;
+            const d2 = document.getElementById('dealer-2nd');
+            const cur = parseInt(d2.value);
+            d2.innerHTML = '';
+            otherTeam.forEach(i => {
+                const team = isBizMember(i) ? 'BİZ' : 'SİZ';
+                d2.add(new Option(`${playerPool[i]}  (${team})`, i));
+            });
+            if (otherTeam.includes(cur)) dealer2Idx = cur;
+            else if (otherTeam.includes(dealer2Idx)) {
+                /* keep */
+            } else {
+                dealer2Idx = otherTeam[0];
+            }
+            d2.value = dealer2Idx;
+        }
+
+        function updateAutoDealers() {
+            const t1 = getTeammate(dealer1Idx);
+            const t2 = getTeammate(dealer2Idx);
+            document.getElementById('dealer-3rd-name').textContent = playerPool[t1] || '—';
+            document.getElementById('dealer-4th-name').textContent = playerPool[t2] || '—';
+        }
+
+        function onDealer1Change() {
+            dealer1Idx = parseInt(document.getElementById('dealer-1st').value);
+            refresh2ndDealerOptions();
+            updateAutoDealers();
+        }
+        function onDealer2Change() {
+            dealer2Idx = parseInt(document.getElementById('dealer-2nd').value);
+            updateAutoDealers();
+        }
+
+        function saveSettings() {
+            // BİZ pair
+            const b1 = parseInt(document.getElementById('sel-biz1').value);
+            const b2 = parseInt(document.getElementById('sel-biz2').value);
+            if (b1 === b2) {
+                alert('BİZ takımının iki üyesi aynı kişi olamaz.');
+                return;
+            }
+            bizPair = [b1, b2];
+            // Dealer indices already updated via onChange
+            dealer1Idx = parseInt(document.getElementById('dealer-1st').value);
+            dealer2Idx = parseInt(document.getElementById('dealer-2nd').value);
+            closeModals(); render();
+        }
+
+        // === OYUNCU HAVUZU MODALİ (ayrı) ===
+        function openPoolModal() {
+            renderPlayerPool();
+            document.getElementById('pool-modal').style.display = 'flex';
+        }
+        function closePoolModal() {
+            // Havuz değişimini settings dropdown'larına yansıt
+            renderTeamSelectors();
+            renderDealerSelectors();
+            updatePoolCount();
+            document.getElementById('pool-modal').style.display = 'none';
         }
 
         function renderPlayerPool() {
@@ -464,96 +763,48 @@
                 c.appendChild(row);
             });
         }
-
-        function updatePoolName(i, val) { playerPool[i] = val; refreshPoolDependent(); }
-
+        function updatePoolName(i, val) { playerPool[i] = val; }
         function addPoolName() {
             playerPool.push(`Yeni Oyuncu ${playerPool.length + 1}`);
             renderPlayerPool();
-            refreshPoolDependent();
         }
-
         function removePoolName(i) {
             if (playerPool.length <= 4) return;
             playerPool.splice(i, 1);
-            // Dağıtıcı sırasını güncelle (silinen index'e bakanlar 0'a düşer)
-            dealerOrder = dealerOrder.map(idx => idx >= playerPool.length ? 0 : idx);
+            // BİZ pair'i sağlamlaştır
+            bizPair = bizPair.map(idx => idx >= playerPool.length ? 0 : idx);
+            if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % playerPool.length;
+            // Dealer indekslerini sağlamlaştır
+            if (dealer1Idx >= playerPool.length) dealer1Idx = bizPair[0];
+            if (dealer2Idx >= playerPool.length) dealer2Idx = computeSizPair()[0];
             renderPlayerPool();
-            refreshPoolDependent();
-        }
-
-        function refreshPoolDependent() {
-            // Dropdown'ların seçeneklerini güncelle (seçilen index'leri koru)
-            renderDealerSelectors();
-            renderBizSelectors();
-        }
-
-        function renderDealerSelectors() {
-            const c = document.getElementById('dealer-list');
-            c.innerHTML = '';
-            for (let pos = 0; pos < 4; pos++) {
-                const row = document.createElement('div');
-                row.className = 'dealer-row';
-                const tag = `<span class="dealer-tag"><span class="dealer-num">${pos + 1}</span>Dağıtıcı</span>`;
-                let opts = '';
-                playerPool.forEach((name, i) => {
-                    opts += `<option value="${i}" ${i === dealerOrder[pos] ? 'selected' : ''}>${escapeHtml(name)}</option>`;
-                });
-                row.innerHTML = `${tag}<select id="dealer-${pos}">${opts}</select>`;
-                c.appendChild(row);
-            }
-        }
-
-        function renderBizSelectors() {
-            const s1 = document.getElementById('sel-biz1');
-            const s2 = document.getElementById('sel-biz2');
-            s1.innerHTML = ''; s2.innerHTML = '';
-            for (let pos = 0; pos < 4; pos++) {
-                const playerName = playerPool[dealerOrder[pos]] || `?`;
-                s1.add(new Option(`${pos + 1}. Dağıtıcı — ${playerName}`, pos));
-                s2.add(new Option(`${pos + 1}. Dağıtıcı — ${playerName}`, pos));
-            }
-            s1.value = bizPositions[0];
-            s2.value = bizPositions[1];
-        }
-
-        function saveSettings() {
-            // Havuz isimlerini güncelle
-            const inputs = document.querySelectorAll('#pool-list input');
-            inputs.forEach((inp, i) => {
-                playerPool[i] = (inp.value || `Oyu ${i + 1}`).trim();
-            });
-            // Dağıtıcı sırasını oku
-            for (let pos = 0; pos < 4; pos++) {
-                const sel = document.getElementById(`dealer-${pos}`);
-                if (sel) dealerOrder[pos] = parseInt(sel.value);
-            }
-            // BİZ pozisyonlarını oku
-            const b1 = parseInt(document.getElementById('sel-biz1').value);
-            const b2 = parseInt(document.getElementById('sel-biz2').value);
-            if (b1 === b2) {
-                alert('BİZ takımının iki üyesi aynı dağıtıcı pozisyonunda olamaz.');
-                return;
-            }
-            bizPositions = [b1, b2];
-            closeModals(); render();
         }
 
         // === SKOR MODALİ ===
         function openScoreModal(r, c) {
             activeR = r; activeC = c;
             const isBiz = c === 'bizScore';
-            const teamPos = isBiz ? bizPositions : [0, 1, 2, 3].filter(p => !bizPositions.includes(p));
+            const dealerOrder = getDealerOrder();
+            // BİZ pozisyonları: dealerOrder içinde isBizMember olanların indeksleri
+            const teamPos = dealerOrder
+                .map((idx, pos) => ({ idx, pos }))
+                .filter(o => isBizMember(o.idx) === isBiz)
+                .map(o => o.pos);
             const active = getActivePlayers();
+
             const card1 = document.getElementById('player-card-1');
             const card2 = document.getElementById('player-card-2');
             card1.className = 'score-player-card ' + (isBiz ? 'team-biz' : 'team-siz');
             card2.className = 'score-player-card ' + (isBiz ? 'team-biz' : 'team-siz');
-            document.getElementById('p1-team-tag').textContent = (isBiz ? 'BİZ — Eş 1' : 'SİZ — Eş 1');
-            document.getElementById('p2-team-tag').textContent = (isBiz ? 'BİZ — Eş 2' : 'SİZ — Eş 2');
             document.getElementById('p1-name').textContent = active[teamPos[0]] || '—';
             document.getElementById('p2-name').textContent = active[teamPos[1]] || '—';
-            document.getElementById('sc-title').textContent = isBiz ? 'BİZ — Skor Girişi' : 'SİZ — Skor Girişi';
+
+            // Başlığı temalandır
+            const titleEl = document.getElementById('sc-title');
+            const teamText = document.getElementById('sc-team-text');
+            titleEl.className = 'sc-modal-title ' + (isBiz ? 'team-biz' : 'team-siz');
+            teamText.textContent = isBiz ? 'BİZ' : 'SİZ';
+
             document.getElementById('sc1-val').value = '';
             document.getElementById('sc2-val').value = '';
             m1 = 1; m2 = 1; tSiler = gameData[r][c].siler;
@@ -581,8 +832,8 @@
         // === RENDER ===
         function makePenaltyCardHtml(c) {
             const num = c.mode === 'tek' ? c.val / 10 : c.val / 20;
-            const suit = c.mode === 'tek' ? '♠' : '♥';
-            return `<span class="penalty-card ${c.mode}"><span class="pc-num">${num}</span><span class="pc-suit">${suit}</span></span>`;
+            const dots = c.mode === 'tek' ? '<i></i>' : '<i></i><i></i>';
+            return `<span class="penalty-card ${c.mode}"><span class="pc-num">${num}</span><span class="pc-dots">${dots}</span></span>`;
         }
 
         function render() {
@@ -596,7 +847,6 @@
                 bT += bS; sT += sS;
                 if (row.bizScore.val !== 0 || row.sizScore.val !== 0 || row.bizCeza.length > 0 || row.sizCeza.length > 0) count++;
 
-                // i-th oyunda dağıtan: dealerOrder[i % 4] havuz indeksindeki oyuncu
                 const dealerName = active[i % 4];
                 const isDealer = (count === i);
                 const diff = bS - sS;
@@ -662,7 +912,7 @@
             c.innerHTML = '';
             gameData[activeR][activeC].forEach((p, i) => {
                 const wrap = document.createElement('span');
-                wrap.innerHTML = makePenaltyCardHtml(p);
+                wrap.innerHTML = makePenaltyCardHtml(p).replace('penalty-card', 'penalty-card big');
                 const cardEl = wrap.firstChild;
                 cardEl.title = 'Silmek için tıkla';
                 cardEl.onclick = () => { gameData[activeR][activeC].splice(i, 1); render(); renderPL(); };
@@ -675,36 +925,54 @@
         // === STORAGE ===
         function saveAll() {
             localStorage.setItem('101_v4_data', JSON.stringify(gameData));
-            localStorage.setItem('101_v5_pool',  JSON.stringify(playerPool));
-            localStorage.setItem('101_v5_order', JSON.stringify(dealerOrder));
-            localStorage.setItem('101_v5_bpos',  JSON.stringify(bizPositions));
+            localStorage.setItem('101_v6_pool', JSON.stringify(playerPool));
+            localStorage.setItem('101_v6_biz', JSON.stringify(bizPair));
+            localStorage.setItem('101_v6_d1', String(dealer1Idx));
+            localStorage.setItem('101_v6_d2', String(dealer2Idx));
         }
         function loadAll() {
             try {
                 const d = localStorage.getItem('101_v4_data');
                 if (d) gameData = JSON.parse(d);
 
-                const pool = localStorage.getItem('101_v5_pool');
-                const ord = localStorage.getItem('101_v5_order');
-                const bp  = localStorage.getItem('101_v5_bpos');
+                const pool = localStorage.getItem('101_v6_pool');
+                const bz = localStorage.getItem('101_v6_biz');
+                const d1 = localStorage.getItem('101_v6_d1');
+                const d2 = localStorage.getItem('101_v6_d2');
 
-                if (pool && ord && bp) {
-                    playerPool   = JSON.parse(pool);
-                    dealerOrder  = JSON.parse(ord);
-                    bizPositions = JSON.parse(bp);
+                if (pool && bz && d1 && d2) {
+                    playerPool = JSON.parse(pool);
+                    bizPair = JSON.parse(bz);
+                    dealer1Idx = parseInt(d1);
+                    dealer2Idx = parseInt(d2);
                 } else {
-                    // Eski v4 verisini migrate et
-                    const oldP = localStorage.getItem('101_v4_p');
-                    const oldB = localStorage.getItem('101_v4_biz');
-                    if (oldP) playerPool = JSON.parse(oldP);
-                    if (oldB) bizPositions = JSON.parse(oldB);
-                    dealerOrder = [0, 1, 2, 3];
+                    // v5 → v6 migrate
+                    const oldPool = localStorage.getItem('101_v5_pool');
+                    const oldOrder = localStorage.getItem('101_v5_order');
+                    const oldBpos = localStorage.getItem('101_v5_bpos');
+                    if (oldPool && oldOrder && oldBpos) {
+                        playerPool = JSON.parse(oldPool);
+                        const order = JSON.parse(oldOrder);
+                        const bpos = JSON.parse(oldBpos);
+                        bizPair = bpos.map(p => order[p]);
+                        dealer1Idx = order[0];
+                        dealer2Idx = order[1];
+                    } else {
+                        // v4 fallback
+                        const oldP = localStorage.getItem('101_v4_p');
+                        const oldB = localStorage.getItem('101_v4_biz');
+                        if (oldP) playerPool = JSON.parse(oldP);
+                        if (oldB) bizPair = JSON.parse(oldB);
+                        dealer1Idx = bizPair[0];
+                        dealer2Idx = (bizPair[0] === 0) ? 1 : 0;
+                    }
                 }
-                // Sağlamlık kontrolleri
+                // Sağlamlık
                 while (playerPool.length < 4) playerPool.push(`Oyu ${playerPool.length + 1}`);
-                dealerOrder = dealerOrder.map(idx => (typeof idx === 'number' && idx < playerPool.length) ? idx : 0);
-                while (dealerOrder.length < 4) dealerOrder.push(0);
-                if (!Array.isArray(bizPositions) || bizPositions.length !== 2) bizPositions = [0, 2];
+                bizPair = bizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
+                if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % playerPool.length;
+                if (dealer1Idx >= playerPool.length || dealer1Idx < 0) dealer1Idx = bizPair[0];
+                if (dealer2Idx >= playerPool.length || dealer2Idx < 0) dealer2Idx = computeSizPair()[0];
             } catch (e) {
                 console.warn('Veri yükleme hatası:', e);
             }
@@ -735,12 +1003,11 @@
         }
     </script>
     <script>
-        // URL'den tarih senk. (ana sayfadan tarih gönderiliyorsa — bu sayfada kullanmıyoruz ama yine de safe parse)
         (function syncDateFromUrl() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                urlParams.get('date'); // okunup yutulur, herhangi bir state'i etkilemez
-            } catch (e) { /* sessizce yut */ }
+                urlParams.get('date');
+            } catch (e) { /* yut */ }
         })();
     </script>
 </body>
