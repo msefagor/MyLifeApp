@@ -184,11 +184,15 @@
         .total-score { font-size: 32px; font-weight: 900; }
         .status-wrapper {
             position: relative; width: 130px; height: 90px;
-            background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            background: #1e272e;
             border-radius: 15px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.18);
+            border: 2px solid rgba(255,255,255,0.10);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             box-shadow: var(--glass-shadow);
+        }
+        #scratch-canvas {
+            position: absolute; top: 0; left: 0; z-index: 10;
+            touch-action: none; cursor: crosshair;
         }
         .res-box { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
         .res-team { font-size: 12px; letter-spacing: 1px; }
@@ -657,6 +661,7 @@
         </div>
         <div class="status-wrapper">
             <div id="result-content" class="res-box"></div>
+            <canvas id="scratch-canvas"></canvas>
         </div>
         <div class="total-box" style="text-align: center;">
             <div style="font-size:10px; opacity:0.6; margin-bottom:5px;">SİZ TOPLAM</div>
@@ -873,6 +878,9 @@
         let a1 = false, a2 = false; // Açamadı durumları
         let timerInt = null, tStart = null;
 
+        const canv = document.getElementById('scratch-canvas');
+        const ctx = canv.getContext('2d');
+
         window.onload = () => {
             initData(); loadAll(); render();
             const grid = document.getElementById('num-grid');
@@ -885,6 +893,7 @@
                 };
                 grid.appendChild(b);
             }
+            initScratch();
         };
 
         function initData() {
@@ -1297,6 +1306,7 @@
             } else {
                 res.innerHTML = `<div class="res-team">DURUM</div><div class="res-diff">0</div><div class="res-label">EŞİT</div>`;
             }
+            initScratch();
         }
 
         function updateT() {
@@ -1492,6 +1502,36 @@
                 console.warn('Veri yükleme hatası:', e);
             }
         }
+
+        // === KAZI-KAZAN ===
+        function initScratch() {
+            if (!canv || !canv.parentNode) return;
+            canv.width = canv.parentNode.offsetWidth;
+            canv.height = canv.parentNode.offsetHeight;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#95a5a6';
+            ctx.fillRect(0, 0, canv.width, canv.height);
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = "bold 14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("KAZI", canv.width / 2, canv.height / 2 + 5);
+            ctx.globalCompositeOperation = 'destination-out';
+        }
+        function scratchAt(clientX, clientY) {
+            const r = canv.getBoundingClientRect();
+            ctx.beginPath();
+            ctx.arc(clientX - r.left, clientY - r.top, 18, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Dokunmatik
+        canv.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; if (t) scratchAt(t.clientX, t.clientY); }, { passive: false });
+        canv.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; if (t) scratchAt(t.clientX, t.clientY); }, { passive: false });
+        // Fare (masaüstü)
+        let _scratching = false;
+        canv.addEventListener('mousedown', e => { _scratching = true; scratchAt(e.clientX, e.clientY); });
+        canv.addEventListener('mousemove', e => { if (_scratching) scratchAt(e.clientX, e.clientY); });
+        canv.addEventListener('mouseup',   () => { _scratching = false; });
+        canv.addEventListener('mouseleave',() => { _scratching = false; });
 
         // === HELPERLAR ===
         function escapeHtml(s) {
