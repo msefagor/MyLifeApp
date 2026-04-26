@@ -26,16 +26,23 @@
             --tile-shadow: rgba(0,0,0,0.45);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
+        html, body {
             margin: 0; padding: 0;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background: linear-gradient(135deg, #093028, #237a57, #093028);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
             color: var(--text-color);
             min-height: 100vh;
+            min-height: -webkit-fill-available;
+            min-height: 100dvh;
             display: flex; flex-direction: column;
-            overflow-x: hidden;
+            position: relative;
+            padding-bottom: env(safe-area-inset-bottom);
         }
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
@@ -105,7 +112,7 @@
             color: white; padding: 8px 14px; border-radius: 22px; font-size: 12px; font-weight: 700;
         }
 
-        .game-container { flex: 1; overflow-y: auto; padding-bottom: 140px; }
+        /* (game-container alttaki tek kuralda tanımlı) */
 
         .grid-header {
             display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr 1.5fr 1.4fr;
@@ -163,35 +170,54 @@
         .penalty-card.big .pc-dots i { width: 6px; height: 6px; }
 
         .footer-totals {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 115px;
-            background: rgba(15, 20, 25, 0.9); backdrop-filter: blur(25px);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: calc(95px + env(safe-area-inset-bottom));
+            background: rgba(15, 20, 25, 0.9); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             display: flex; justify-content: space-around; align-items: center;
-            padding-bottom: 25px; z-index: 60; border-top: 1px solid rgba(255,255,255,0.15);
+            padding: 0 8px env(safe-area-inset-bottom);
+            z-index: 60; border-top: 1px solid rgba(255,255,255,0.15);
+        }
+        .game-container {
+            flex: 1; overflow-y: auto;
+            padding-bottom: calc(120px + env(safe-area-inset-bottom));
         }
         .total-score { font-size: 32px; font-weight: 900; }
         .status-wrapper {
             position: relative; width: 130px; height: 90px;
-            background: #1e272e; border-radius: 15px; overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.1);
+            background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border-radius: 15px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.18);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: var(--glass-shadow);
         }
-        #scratch-canvas { position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair; }
         .res-box { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
         .res-team { font-size: 12px; letter-spacing: 1px; }
         .res-diff { font-size: 28px; font-weight: 900; margin: 2px 0; }
         .res-label { font-size: 10px; opacity: 0.8; }
 
-        /* === MODAL === */
+        /* === MODAL (visibility tabanlı — iOS dostu) === */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
-            display: none; justify-content: center; align-items: center; z-index: 100;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
             padding: 16px;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
         }
+        .modal-overlay.open {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* Açık değilken iç içeriği render etme — iOS Safari'de "kod sızıntısı" olmasın */
+        .modal-overlay:not(.open) > .modal-content { display: none; }
         .modal-content {
             background: #1e272e; width: 100%; max-width: 420px;
             border-radius: 24px; padding: 22px; border: 1px solid var(--glass-border);
-            max-height: 92vh; overflow-y: auto;
+            max-height: calc(100dvh - 32px); overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         input[type="text"], input[type="number"], input[type="tel"], select {
             width: 100%; background: #000; border: 1px solid #333; color: #fff;
@@ -631,7 +657,6 @@
         </div>
         <div class="status-wrapper">
             <div id="result-content" class="res-box"></div>
-            <canvas id="scratch-canvas"></canvas>
         </div>
         <div class="total-box" style="text-align: center;">
             <div style="font-size:10px; opacity:0.6; margin-bottom:5px;">SİZ TOPLAM</div>
@@ -848,9 +873,6 @@
         let a1 = false, a2 = false; // Açamadı durumları
         let timerInt = null, tStart = null;
 
-        const canv = document.getElementById('scratch-canvas');
-        const ctx = canv.getContext('2d');
-
         window.onload = () => {
             initData(); loadAll(); render();
             const grid = document.getElementById('num-grid');
@@ -863,7 +885,6 @@
                 };
                 grid.appendChild(b);
             }
-            initScratch();
         };
 
         function initData() {
@@ -928,7 +949,7 @@
             renderDealerSelectors();
             updatePoolCount();
             document.getElementById('rounds-input').value = totalRounds;
-            document.getElementById('settings-modal').style.display = 'flex';
+            document.getElementById('settings-modal').classList.add('open');
         }
 
         function updatePoolCount() {
@@ -1080,14 +1101,14 @@
         // === OYUNCU HAVUZU MODALİ (ayrı) ===
         function openPoolModal() {
             renderPlayerPool();
-            document.getElementById('pool-modal').style.display = 'flex';
+            document.getElementById('pool-modal').classList.add('open');
         }
         function closePoolModal() {
             // Havuz değişimini settings dropdown'larına yansıt
             renderTeamSelectors();
             renderDealerSelectors();
             updatePoolCount();
-            document.getElementById('pool-modal').style.display = 'none';
+            document.getElementById('pool-modal').classList.remove('open');
         }
 
         function renderPlayerPool() {
@@ -1153,7 +1174,7 @@
             m1 = 1; m2 = 1; a1 = false; a2 = false;
             tSiler = gameData[r][c].siler;
             updateScoreUI();
-            document.getElementById('score-modal').style.display = 'flex';
+            document.getElementById('score-modal').classList.add('open');
         }
         function setM(p, m) {
             if (p === 1) m1 = m; else m2 = m;
@@ -1276,7 +1297,6 @@
             } else {
                 res.innerHTML = `<div class="res-team">DURUM</div><div class="res-diff">0</div><div class="res-label">EŞİT</div>`;
             }
-            initScratch();
         }
 
         function updateT() {
@@ -1289,7 +1309,7 @@
             document.getElementById('btn-tek').className = m === 'tek' ? 'calc-btn active' : 'calc-btn';
             document.getElementById('btn-cift').className = m === 'cift' ? 'calc-btn active cift' : 'calc-btn';
         }
-        function openPenaltyModal(r, c) { activeR = r; activeC = c; renderPL(); document.getElementById('penalty-modal').style.display = 'flex'; }
+        function openPenaltyModal(r, c) { activeR = r; activeC = c; renderPL(); document.getElementById('penalty-modal').classList.add('open'); }
         function renderPL() {
             const c = document.getElementById('penalty-list');
             c.innerHTML = '';
@@ -1302,7 +1322,7 @@
                 c.appendChild(cardEl);
             });
         }
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); }
 
         // Reset: SADECE oyun puanlarını sıfırla. Pool, takımlar, dağıtıcı, oyun sayısı, istatistikler korunur.
         function resetGame() {
@@ -1371,7 +1391,7 @@
         function openStatsModal() {
             document.getElementById('stats-rounds-info').textContent = totalRounds;
             renderStats();
-            document.getElementById('stats-modal').style.display = 'flex';
+            document.getElementById('stats-modal').classList.add('open');
         }
         function renderStats() {
             const list = document.getElementById('stats-list');
@@ -1471,1374 +1491,6 @@
             } catch (e) {
                 console.warn('Veri yükleme hatası:', e);
             }
-        }
-
-        // === KAZI-KAZAN ===
-        function initScratch() {
-            canv.width = canv.parentNode.offsetWidth; canv.height = canv.parentNode.offsetHeight;
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = '#95a5a6'; ctx.fillRect(0, 0, canv.width, canv.height);
-            ctx.fillStyle = '#2c3e50'; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("KAZI", canv.width / 2, canv.height / 2 + 5);
-            ctx.globalCompositeOperation = 'destination-out';
-        }
-        canv.addEventListener('touchstart', e => { e.preventDefault(); scratch(e); });
-        canv.addEventListener('touchmove', e => { e.preventDefault(); scratch(e); });
-        function scratch(e) {
-            const r = canv.getBoundingClientRect(); const t = e.touches[0];
-            ctx.beginPath(); ctx.arc(t.clientX - r.left, t.clientY - r.top, 18, 0, Math.PI * 2); ctx.fill();
-        }
-
-        // === HELPERLAR ===
-        function escapeHtml(s) {
-            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-        function escapeAttr(s) {
-            return String(s || '').replace(/"/g, '&quot;');
-        }
-    </script>
-    <script>
-        (function syncDateFromUrl() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                urlParams.get('date');
-            } catch (e) { /* yut */ }
-        })();
-    </script>
-</body>
-</html>
-            display: flex; flex-direction: column;
-            overflow-x: hidden;
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* === HEADER & MARKA === */
-        header {
-            padding: 50px 16px 16px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 50;
-            border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
-            margin-bottom: 12px;
-            gap: 10px;
-        }
-        .brand-block { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-        .brand-row {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 9.5px; font-weight: 800; letter-spacing: 2.4px;
-            color: var(--siler-color); text-transform: uppercase;
-            margin-bottom: 3px; line-height: 1;
-        }
-        .brand-row::before {
-            content: ''; width: 5px; height: 5px; border-radius: 50%;
-            background: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-color);
-        }
-        .brand-rounds {
-            background: rgba(241, 196, 15, 0.18);
-            color: var(--accent-color);
-            padding: 1px 8px; border-radius: 8px;
-            font-weight: 900; letter-spacing: 1.4px;
-            border: 1px solid rgba(241, 196, 15, 0.35);
-        }
-        .brand-title {
-            font-size: 26px; font-weight: 900; letter-spacing: 2.6px;
-            line-height: 1; margin: 0;
-            background: linear-gradient(135deg, #ffffff 0%, var(--siler-color) 50%, var(--biz-color) 100%);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 0 18px rgba(0, 206, 201, 0.35);
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        .brand-title::after {
-            content: '';
-            display: block; height: 2px; width: 56px;
-            margin-top: 4px;
-            background: linear-gradient(90deg, var(--biz-color), transparent);
-            border-radius: 2px;
-        }
-
-        .header-btns { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-        .timer-display {
-            background: rgba(0,0,0,0.4); padding: 8px 12px; border-radius: 20px;
-            font-family: 'Courier New', Courier, monospace; font-size: 14px;
-            color: var(--siler-color); border: 1px solid var(--glass-border);
-        }
-        .settings-btn {
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-            color: white; padding: 8px 14px; border-radius: 22px; font-size: 12px; font-weight: 700;
-        }
-
-        .game-container { flex: 1; overflow-y: auto; padding-bottom: 140px; }
-
-        .grid-header {
-            display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr 1.5fr 1.4fr;
-            padding: 14px 5px; font-size: 10px; font-weight: 900; text-align: center;
-            background: rgba(0,0,0,0.3); margin: 0 10px; border-radius: 15px;
-            text-transform: uppercase; border: 1px solid var(--glass-border);
-        }
-        .game-row {
-            display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr 1.5fr 1.4fr;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            min-height: 70px; margin: 5px 10px; border-radius: 12px;
-            transition: all 0.3s;
-        }
-        .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; text-align: center; flex-wrap: wrap; }
-        .score-val { font-size: 18px; font-weight: 700; }
-
-        .dealer-active {
-            font-weight: 900 !important;
-            font-size: 14px !important;
-            color: var(--accent-color) !important;
-            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
-            transform: scale(1.05);
-        }
-        .diff-text { font-size: 11px; font-weight: 800; }
-
-        /* === OKEY-TAŞI STİLİ CEZA === */
-        .penalty-card {
-            display: inline-flex; flex-direction: column;
-            align-items: center; justify-content: space-between;
-            width: 22px; height: 32px;
-            background: linear-gradient(180deg, var(--tile-ivory) 0%, #ede1c8 100%);
-            border-radius: 5px;
-            border: 1.6px solid #1a1a1a;
-            box-shadow: 0 2px 4px var(--tile-shadow), inset 0 1px 0 rgba(255,255,255,0.7);
-            padding: 3px 0 4px;
-            margin: 1.5px;
-            cursor: pointer;
-            line-height: 1;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-        }
-        .penalty-card.tek { border-color: #1a1a1a; color: #1a1a1a; }
-        .penalty-card.cift { border-color: #c0392b; color: #c0392b; }
-        .pc-num { font-size: 12px; font-weight: 900; }
-        .pc-dots { display: flex; gap: 2px; align-items: center; }
-        .pc-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; display: block; }
-
-        /* Büyük taş — havuz/önizleme için */
-        .penalty-card.big {
-            width: 30px; height: 42px;
-            border-width: 2px; border-radius: 6px;
-            padding: 4px 0 5px;
-            margin: 2px;
-        }
-        .penalty-card.big .pc-num { font-size: 16px; }
-        .penalty-card.big .pc-dots i { width: 6px; height: 6px; }
-
-        .footer-totals {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 115px;
-            background: rgba(15, 20, 25, 0.9); backdrop-filter: blur(25px);
-            display: flex; justify-content: space-around; align-items: center;
-            padding-bottom: 25px; z-index: 60; border-top: 1px solid rgba(255,255,255,0.15);
-        }
-        .total-score { font-size: 32px; font-weight: 900; }
-        .status-wrapper {
-            position: relative; width: 130px; height: 90px;
-            background: #1e272e; border-radius: 15px; overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.1);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        #scratch-canvas { position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair; }
-        .res-box { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
-        .res-team { font-size: 12px; letter-spacing: 1px; }
-        .res-diff { font-size: 28px; font-weight: 900; margin: 2px 0; }
-        .res-label { font-size: 10px; opacity: 0.8; }
-
-        /* === MODAL === */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
-            display: none; justify-content: center; align-items: center; z-index: 100;
-            padding: 16px;
-        }
-        .modal-content {
-            background: #1e272e; width: 100%; max-width: 420px;
-            border-radius: 24px; padding: 22px; border: 1px solid var(--glass-border);
-            max-height: 92vh; overflow-y: auto;
-        }
-        input[type="text"], input[type="number"], input[type="tel"], select {
-            width: 100%; background: #000; border: 1px solid #333; color: #fff;
-            padding: 12px; border-radius: 12px; font-size: 16px; box-sizing: border-box;
-            outline: none; font-family: inherit;
-        }
-        input:focus, select:focus { border-color: var(--biz-color); }
-        .calc-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: #2d3436; color: white; font-weight: 800; font-size: 12px; cursor: pointer; }
-        .calc-btn.active { background: var(--blue-color); box-shadow: 0 4px 10px rgba(30, 144, 255, 0.3); }
-        .calc-btn.active.cift { background: var(--danger-color); box-shadow: 0 4px 10px rgba(255, 107, 129, 0.3); }
-        .action-btn { width: 100%; padding: 16px; border: none; border-radius: 14px; margin-top: 10px; font-weight: 800; cursor: pointer; color: white; font-size: 14px; }
-        .save-btn { background: linear-gradient(135deg, #00b894, #00cec9); color: #000; }
-
-        /* === SKOR MODALİ — TEMALI BAŞLIK === */
-        .sc-modal-title {
-            display: flex; align-items: center; justify-content: center; gap: 14px;
-            margin: 0 0 18px;
-            padding: 16px 18px;
-            border-radius: 18px;
-            border: 1px solid;
-            position: relative; overflow: hidden;
-        }
-        .sc-modal-title::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-        }
-        .sc-modal-title.team-biz {
-            background: linear-gradient(135deg, rgba(0,206,201,0.20), rgba(0,206,201,0.05));
-            border-color: rgba(0, 206, 201, 0.5);
-        }
-        .sc-modal-title.team-biz::before { background: var(--biz-color); box-shadow: 0 0 14px var(--biz-glow); }
-        .sc-modal-title.team-siz {
-            background: linear-gradient(135deg, rgba(250,177,160,0.20), rgba(250,177,160,0.05));
-            border-color: rgba(250, 177, 160, 0.5);
-        }
-        .sc-modal-title.team-siz::before { background: var(--siz-color); box-shadow: 0 0 14px var(--siz-glow); }
-        .sc-team-text {
-            font-size: 26px; font-weight: 900; letter-spacing: 2px;
-            line-height: 1;
-        }
-        .sc-modal-title.team-biz .sc-team-text {
-            background: linear-gradient(135deg, #ffffff, var(--biz-color));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 0 14px var(--biz-glow);
-        }
-        .sc-modal-title.team-siz .sc-team-text {
-            background: linear-gradient(135deg, #ffffff, var(--siz-color));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 0 14px var(--siz-glow);
-        }
-        .sc-divider {
-            width: 1px; height: 26px;
-            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.45), transparent);
-        }
-        .sc-action-text {
-            font-size: 11.5px; font-weight: 800;
-            letter-spacing: 2.4px; text-transform: uppercase;
-            color: rgba(255,255,255,0.72);
-        }
-
-        /* Skor oyuncu kartları (Eş 1 etiketi yok artık) */
-        .score-player-card {
-            position: relative;
-            padding: 14px 16px;
-            border-radius: 16px;
-            margin-bottom: 12px;
-            border: 1px solid;
-            overflow: hidden;
-        }
-        .score-player-card::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-        }
-        .score-player-card.team-biz {
-            background: linear-gradient(160deg, rgba(0,206,201,0.16), rgba(0,206,201,0.04));
-            border-color: rgba(0, 206, 201, 0.42);
-        }
-        .score-player-card.team-biz::before { background: var(--biz-color); box-shadow: 0 0 12px var(--biz-glow); }
-        .score-player-card.team-siz {
-            background: linear-gradient(160deg, rgba(250,177,160,0.16), rgba(250,177,160,0.04));
-            border-color: rgba(250, 177, 160, 0.42);
-        }
-        .score-player-card.team-siz::before { background: var(--siz-color); box-shadow: 0 0 12px var(--siz-glow); }
-        .player-name-big {
-            font-size: 22px; font-weight: 900; letter-spacing: -0.4px;
-            line-height: 1.05; margin-bottom: 12px;
-        }
-        .score-player-card.team-biz .player-name-big {
-            background: linear-gradient(135deg, #ffffff, var(--biz-color));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 2px 12px var(--biz-glow);
-        }
-        .score-player-card.team-siz .player-name-big {
-            background: linear-gradient(135deg, #ffffff, var(--siz-color));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: 0 2px 12px var(--siz-glow);
-        }
-
-        /* === AYARLAR — BÖLÜM BLOKLARI === */
-        .section-block {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            border-radius: 16px; padding: 14px 14px 12px;
-            margin-bottom: 12px;
-        }
-        .section-label {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; font-weight: 900;
-            letter-spacing: 1.4px; text-transform: uppercase;
-            color: var(--text-muted); margin-bottom: 10px;
-        }
-        .section-label.tone-biz { color: var(--biz-color); }
-        .section-label.tone-biz::before {
-            content: ''; width: 8px; height: 8px; border-radius: 50%;
-            background: var(--biz-color); box-shadow: 0 0 10px var(--biz-glow);
-        }
-        .section-label.tone-amber { color: var(--accent-color); }
-        .section-label.tone-amber::before {
-            content: ''; width: 8px; height: 8px; border-radius: 50%;
-            background: var(--accent-color); box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
-        }
-        .section-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .section-grid-2 select { padding: 11px 10px; font-size: 13px; }
-
-        .pool-launch-btn {
-            width: 100%;
-            display: flex; align-items: center; justify-content: space-between;
-            background: linear-gradient(135deg, rgba(123, 237, 159, 0.15), rgba(0, 206, 201, 0.12));
-            border: 1px solid rgba(123, 237, 159, 0.45);
-            color: #fff; padding: 14px 16px; border-radius: 14px;
-            font-size: 14px; font-weight: 800; cursor: pointer;
-            margin-bottom: 12px;
-        }
-        .pool-launch-btn .pool-l-icon {
-            width: 32px; height: 32px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--siler-color), var(--biz-color));
-            color: #042; font-size: 16px;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0, 206, 201, 0.3);
-        }
-        .pool-launch-btn .pool-l-text { flex: 1; text-align: left; padding-left: 12px; }
-        .pool-launch-btn .pool-l-text small { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; letter-spacing: 0.6px; }
-        .pool-launch-btn .pool-l-arrow { color: var(--siler-color); font-size: 18px; }
-
-        .dealer-row {
-            display: grid; grid-template-columns: 88px 1fr; gap: 10px;
-            margin-bottom: 8px; align-items: center;
-        }
-        .dealer-tag {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 11.5px; font-weight: 900; color: var(--accent-color);
-            letter-spacing: 0.5px;
-        }
-        .dealer-tag .dealer-num {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 24px; height: 24px; border-radius: 50%;
-            background: var(--accent-color); color: #000;
-            font-size: 12px; font-weight: 900;
-            box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
-        }
-        .dealer-row.auto .dealer-tag { color: var(--siler-color); }
-        .dealer-row.auto .dealer-tag .dealer-num {
-            background: rgba(123, 237, 159, 0.18);
-            color: var(--siler-color);
-            border: 1px solid rgba(123, 237, 159, 0.5);
-            box-shadow: none;
-        }
-        .dealer-row select { padding: 10px 12px; font-size: 14px; }
-        .dealer-locked {
-            display: flex; align-items: center; gap: 8px;
-            background: rgba(123, 237, 159, 0.10);
-            border: 1px dashed rgba(123, 237, 159, 0.45);
-            border-radius: 12px;
-            padding: 10px 14px; font-size: 14px; font-weight: 800;
-            color: var(--siler-color);
-            min-height: 42px;
-        }
-        .dealer-locked::before {
-            content: '🤝'; font-size: 14px;
-        }
-
-        /* Oyuncu Havuzu modalı */
-        .pool-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .pool-row input { flex: 1; padding: 10px 12px; font-size: 14px; }
-        .pool-del-btn {
-            background: rgba(255, 107, 129, 0.15); border: 1px solid rgba(255, 107, 129, 0.45);
-            color: var(--danger-color); width: 38px; height: 38px;
-            border-radius: 10px; font-size: 18px; font-weight: 700; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            line-height: 1;
-        }
-        .pool-add-btn {
-            width: 100%; padding: 10px; border: 1px dashed var(--glass-stroke);
-            background: transparent; color: var(--text-muted);
-            border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer;
-            margin-top: 4px;
-        }
-        .pool-add-btn:active { background: rgba(255,255,255,0.08); }
-
-        /* Ceza modali */
-        #penalty-list { padding: 4px 0; min-height: 44px; }
-        #num-grid .calc-btn { font-size: 14px; padding: 12px 0; font-weight: 900; }
-
-        /* === TABELADA SADE CEZA SAYISI (taş yok) === */
-        .ceza-num {
-            display: inline-flex; align-items: center; justify-content: center;
-            min-width: 22px; padding: 2px 7px;
-            border-radius: 6px;
-            font-size: 12px; font-weight: 800;
-            line-height: 1; margin: 1.5px;
-            border: 1px solid;
-        }
-        .ceza-num.tek {
-            color: #5dade2; background: rgba(30, 144, 255, 0.18);
-            border-color: rgba(30, 144, 255, 0.45);
-        }
-        .ceza-num.cift {
-            color: #ff8a9b; background: rgba(255, 107, 129, 0.18);
-            border-color: rgba(255, 107, 129, 0.45);
-        }
-
-        /* === SİZ takımı bölümü için === */
-        .section-label.tone-siz { color: var(--siz-color); }
-        .section-label.tone-siz::before {
-            content: ''; width: 8px; height: 8px; border-radius: 50%;
-            background: var(--siz-color); box-shadow: 0 0 10px var(--siz-glow);
-        }
-
-        /* === OYUN SAYISI input === */
-        .rounds-row {
-            display: grid; grid-template-columns: 1fr auto auto auto;
-            gap: 8px; align-items: center;
-        }
-        .rounds-row input[type="number"] {
-            text-align: center; font-size: 18px; font-weight: 900;
-            color: var(--accent-color); padding: 10px;
-            background: rgba(241, 196, 15, 0.08);
-            border-color: rgba(241, 196, 15, 0.35);
-        }
-        .rounds-step {
-            background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
-            color: white; width: 38px; height: 42px; border-radius: 10px;
-            font-size: 18px; font-weight: 700; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .rounds-step:active { background: rgba(255,255,255,0.18); }
-        .rounds-row .rounds-suffix {
-            font-size: 11px; color: var(--text-muted);
-            font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
-        }
-
-        /* === İSTATİSTİK BUTONU === */
-        .stats-launch-btn {
-            width: 100%;
-            display: flex; align-items: center; justify-content: space-between;
-            background: linear-gradient(135deg, rgba(241, 196, 15, 0.16), rgba(0, 206, 201, 0.10));
-            border: 1px solid rgba(241, 196, 15, 0.42);
-            color: #fff; padding: 14px 16px; border-radius: 14px;
-            font-size: 14px; font-weight: 800; cursor: pointer;
-            margin-top: 12px;
-        }
-        .stats-launch-btn .stats-l-icon {
-            width: 32px; height: 32px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent-color), #ff9f43);
-            color: #2c1810; font-size: 16px;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(241, 196, 15, 0.32);
-        }
-        .stats-launch-btn .stats-l-text { flex: 1; text-align: left; padding-left: 12px; }
-        .stats-launch-btn .stats-l-text small { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; letter-spacing: 0.6px; }
-        .stats-launch-btn .stats-l-arrow { color: var(--accent-color); font-size: 18px; }
-
-        /* === İSTATİSTİK MODALİ === */
-        .stat-row {
-            display: grid; grid-template-columns: 1.2fr 0.8fr 0.7fr 0.7fr 1fr;
-            gap: 6px; padding: 12px 12px;
-            border-radius: 12px; margin-bottom: 6px;
-            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
-            align-items: center;
-        }
-        .stat-row.header {
-            background: transparent; border: none;
-            font-size: 9.5px; font-weight: 900; letter-spacing: 1.2px;
-            color: var(--text-muted); text-transform: uppercase;
-            padding: 4px 12px;
-        }
-        .stat-name {
-            font-weight: 800; font-size: 14px; min-width: 0;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .stat-cell { text-align: center; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .stat-cell.win { color: var(--siler-color); }
-        .stat-cell.lose { color: var(--danger-color); }
-        .stat-rate-bar {
-            position: relative; height: 22px; border-radius: 999px;
-            background: rgba(255,255,255,0.06); overflow: hidden;
-            border: 1px solid var(--glass-border);
-        }
-        .stat-rate-fill {
-            position: absolute; top: 0; left: 0; bottom: 0;
-            background: linear-gradient(90deg, var(--siler-color), var(--biz-color));
-            transition: width 0.4s ease;
-        }
-        .stat-rate-text {
-            position: absolute; inset: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 900; color: #fff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-variant-numeric: tabular-nums;
-        }
-        .stats-empty {
-            text-align: center; padding: 22px 12px;
-            color: var(--text-muted); font-size: 13px; line-height: 1.5;
-        }
-        .stats-info-banner {
-            background: rgba(0, 206, 201, 0.10);
-            border: 1px solid rgba(0, 206, 201, 0.35);
-            color: var(--biz-color);
-            padding: 10px 14px; border-radius: 12px;
-            font-size: 12px; line-height: 1.5;
-            margin-bottom: 14px;
-        }
-
-        /* Oyun bitti banner (toast benzeri) */
-        .game-end-banner {
-            position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
-            z-index: 110;
-            padding: 14px 20px; border-radius: 16px;
-            background: linear-gradient(135deg, rgba(0,206,201,0.95), rgba(123, 237, 159, 0.92));
-            color: #042;
-            font-size: 14px; font-weight: 900; letter-spacing: 0.4px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-            animation: gameEndPop 0.4s cubic-bezier(0.22, 1.5, 0.36, 1) both;
-            max-width: 90vw; text-align: center;
-        }
-        .game-end-banner.siz { background: linear-gradient(135deg, rgba(250,177,160,0.95), rgba(255, 159, 67, 0.92)); color: #5a1a0a; }
-        .game-end-banner.draw { background: linear-gradient(135deg, rgba(241, 196, 15, 0.95), rgba(255, 159, 67, 0.92)); color: #2c1810; }
-        @keyframes gameEndPop {
-            from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.94); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        }
-    </style>
-</head>
-<body>
-    <header class="glass-panel">
-        <div class="brand-block">
-            <div class="brand-row">
-                101 TABELA
-                <span class="brand-rounds"><span id="kalan-oyun">11</span> EL</span>
-            </div>
-            <h1 class="brand-title">MSEFAGOR</h1>
-        </div>
-        <div class="header-btns">
-            <div class="timer-display" id="game-timer">00:00</div>
-            <button class="settings-btn" onclick="openSettings()">Ayarlar</button>
-        </div>
-    </header>
-
-    <div class="grid-header glass-panel">
-        <div>Biz</div>
-        <div>Siz</div>
-        <div>B.Cz</div>
-        <div>S.Cz</div>
-        <div>Dağıtan</div>
-        <div>Fark</div>
-    </div>
-
-    <div class="game-container" id="game-rows"></div>
-
-    <div class="footer-totals">
-        <div class="total-box" style="text-align: center;">
-            <div style="font-size:10px; opacity:0.6; margin-bottom:5px;">BİZ TOPLAM</div>
-            <div class="total-score" id="total-biz" style="color:var(--biz-color)">0</div>
-        </div>
-        <div class="status-wrapper">
-            <div id="result-content" class="res-box"></div>
-            <canvas id="scratch-canvas"></canvas>
-        </div>
-        <div class="total-box" style="text-align: center;">
-            <div style="font-size:10px; opacity:0.6; margin-bottom:5px;">SİZ TOPLAM</div>
-            <div class="total-score" id="total-siz" style="color:var(--siz-color)">0</div>
-        </div>
-    </div>
-
-    <!-- SKOR GİRİŞ MODALİ -->
-    <div id="score-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="sc-modal-title" id="sc-title">
-                <span class="sc-team-text" id="sc-team-text">BİZ</span>
-                <span class="sc-divider"></span>
-                <span class="sc-action-text">Skor Girişi</span>
-            </div>
-
-            <div class="score-player-card" id="player-card-1">
-                <div class="player-name-big" id="p1-name">—</div>
-                <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" id="sc1-val" placeholder="Sayı girin">
-                <div style="display:flex; gap:6px; margin-top:10px;">
-                    <button id="m1-1" class="calc-btn active" onclick="setM(1,1)">DÜZ ×1</button>
-                    <button id="m1-2" class="calc-btn" onclick="setM(1,2)">ÇİFT ×2</button>
-                </div>
-            </div>
-
-            <div class="score-player-card" id="player-card-2">
-                <div class="player-name-big" id="p2-name">—</div>
-                <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" step="1" id="sc2-val" placeholder="Sayı girin">
-                <div style="display:flex; gap:6px; margin-top:10px;">
-                    <button id="m2-1" class="calc-btn active" onclick="setM(2,1)">DÜZ ×1</button>
-                    <button id="m2-2" class="calc-btn" onclick="setM(2,2)">ÇİFT ×2</button>
-                </div>
-            </div>
-
-            <div style="text-align:center; padding: 12px; background: rgba(255,255,255,0.04); border-radius: 14px; margin-top: 4px;">
-                <div id="modal-siler-icons" style="color:var(--siler-color); font-size:24px; min-height:30px; line-height: 1;"></div>
-                <div style="display:flex; gap:10px; margin-top:8px;">
-                    <button class="calc-btn" onclick="changeSiler(-1)">Siler −</button>
-                    <button class="calc-btn" style="background:var(--siler-color); color:#000" onclick="changeSiler(1)">Siler +</button>
-                </div>
-            </div>
-
-            <button class="action-btn save-btn" onclick="applyScore()">SKORU KAYDET</button>
-            <button class="action-btn" style="background:transparent; color:#888" onclick="closeModals()">Vazgeç</button>
-        </div>
-    </div>
-
-    <!-- AYARLAR MODALİ -->
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="text-align:center; margin: 0 0 16px;">Oyun Ayarları</h3>
-
-            <!-- Oyuncu Havuzu butonu -->
-            <button class="pool-launch-btn" onclick="openPoolModal()">
-                <span class="pool-l-icon">👥</span>
-                <span class="pool-l-text">
-                    Oyuncu Havuzu
-                    <small><span id="pool-count">4</span> isim · düzenle</small>
-                </span>
-                <span class="pool-l-arrow">›</span>
-            </button>
-
-            <!-- 1. BİZ Takımı (üstte) -->
-            <div class="section-block">
-                <span class="section-label tone-biz">BİZ Takımı</span>
-                <div class="section-grid-2">
-                    <select id="sel-biz1" onchange="onTeamChange()"></select>
-                    <select id="sel-biz2" onchange="onTeamChange()"></select>
-                </div>
-            </div>
-
-            <!-- 2. SİZ Takımı -->
-            <div class="section-block">
-                <span class="section-label tone-siz">SİZ Takımı</span>
-                <div class="section-grid-2">
-                    <select id="sel-siz1" onchange="onTeamChange()"></select>
-                    <select id="sel-siz2" onchange="onTeamChange()"></select>
-                </div>
-            </div>
-
-            <!-- 3. Dağıtıcı Sırası (sadece aktif 4 oyuncudan seçim) -->
-            <div class="section-block">
-                <span class="section-label tone-amber">Dağıtıcı Sırası</span>
-                <div class="dealer-row">
-                    <span class="dealer-tag"><span class="dealer-num">1</span>Dağıtan</span>
-                    <select id="dealer-1st" onchange="onDealer1Change()"></select>
-                </div>
-                <div class="dealer-row">
-                    <span class="dealer-tag"><span class="dealer-num">2</span>Dağıtan</span>
-                    <select id="dealer-2nd" onchange="onDealer2Change()"></select>
-                </div>
-                <div class="dealer-row auto">
-                    <span class="dealer-tag"><span class="dealer-num">3</span>Otomatik</span>
-                    <span class="dealer-locked" id="dealer-3rd-name">—</span>
-                </div>
-                <div class="dealer-row auto">
-                    <span class="dealer-tag"><span class="dealer-num">4</span>Otomatik</span>
-                    <span class="dealer-locked" id="dealer-4th-name">—</span>
-                </div>
-            </div>
-
-            <!-- 4. Oyun Sayısı -->
-            <div class="section-block">
-                <span class="section-label tone-amber">Oyun Sayısı</span>
-                <div class="rounds-row">
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="rounds-input"
-                           min="1" max="50" step="1" value="11" onchange="onRoundsChange()">
-                    <button type="button" class="rounds-step" onclick="adjRounds(-1)">−</button>
-                    <button type="button" class="rounds-step" onclick="adjRounds(1)">+</button>
-                    <span class="rounds-suffix">EL</span>
-                </div>
-                <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
-                    Genelde <b style="color:var(--accent-color)">11</b> el oynanır. İhtiyaca göre değiştirebilirsin.
-                </div>
-            </div>
-
-            <!-- 5. Oyuncu İstatistikleri butonu -->
-            <button class="stats-launch-btn" onclick="openStatsModal()">
-                <span class="stats-l-icon">📊</span>
-                <span class="stats-l-text">
-                    Oyuncu İstatistikleri
-                    <small>Galibiyet, mağlubiyet ve başarı oranı</small>
-                </span>
-                <span class="stats-l-arrow">›</span>
-            </button>
-
-            <button class="action-btn save-btn" onclick="saveSettings()">AYARLARI UYGULA</button>
-            <button class="action-btn" style="background:var(--danger-color)" onclick="resetGame()">OYUNU SIFIRLA</button>
-            <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
-        </div>
-    </div>
-
-    <!-- OYUNCU HAVUZU MODALİ (ayrı buton ile açılır) -->
-    <div id="pool-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="text-align:center; margin: 0 0 6px;">Oyuncu Havuzu</h3>
-            <p style="color: var(--text-muted); font-size: 12.5px; margin: 0 0 16px; line-height: 1.5; text-align:center;">
-                İsim ekle, düzenle veya sil. En az 4 oyuncu olmalı.
-            </p>
-            <div id="pool-list"></div>
-            <button class="pool-add-btn" onclick="addPoolName()">+ Yeni oyuncu ekle</button>
-            <button class="action-btn save-btn" onclick="closePoolModal()">TAMAMLA</button>
-        </div>
-    </div>
-
-    <!-- OYUNCU İSTATİSTİK MODALİ -->
-    <div id="stats-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="text-align:center; margin: 0 0 6px;">Oyuncu İstatistikleri</h3>
-            <p style="color: var(--text-muted); font-size: 12.5px; margin: 0 0 14px; line-height: 1.5; text-align:center;">
-                Tamamlanan oyunlardaki galibiyet/mağlubiyet kayıtları.
-            </p>
-            <div class="stats-info-banner">
-                Bir oyun ancak <b id="stats-rounds-info">11</b> el dolduğunda istatistiğe işlenir.
-            </div>
-            <div class="stat-row header">
-                <div>OYUNCU</div>
-                <div style="text-align:center;">OYUN</div>
-                <div style="text-align:center;">G</div>
-                <div style="text-align:center;">M</div>
-                <div style="text-align:center;">ORAN</div>
-            </div>
-            <div id="stats-list"></div>
-            <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
-            <button class="action-btn" style="background:rgba(255, 107, 129, 0.2); color: var(--danger-color); border: 1px solid rgba(255, 107, 129, 0.45);"
-                    onclick="resetStats()">İstatistikleri Sıfırla</button>
-        </div>
-    </div>
-
-    <!-- CEZA MODALİ -->
-    <div id="penalty-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="text-align:center; margin-top:0;">Ceza Ekle</h3>
-            <div style="display:flex; gap:8px; margin-bottom:14px;">
-                <button class="calc-btn active" id="btn-tek" onclick="setPMode('tek')">TEK (×10)</button>
-                <button class="calc-btn" id="btn-cift" onclick="setPMode('cift')">ÇİFT (×20)</button>
-            </div>
-            <div id="num-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;"></div>
-            <div id="penalty-list" style="display:flex; flex-wrap:wrap; gap:4px; margin-top:14px;"></div>
-            <button class="action-btn" style="background:#333" onclick="closeModals()">Kapat</button>
-        </div>
-    </div>
-
-    <script>
-        // === DATA MODELİ ===
-        // Pool: tüm bilinen oyuncu isimleri (≥ 4)
-        let playerPool = ["Sefa", "Fatih", "Halil", "İlker"];
-        // BİZ takımı: pool indeksleri (2 oyuncu)
-        let bizPair = [0, 2];
-        // SİZ takımı: pool indeksleri (2 oyuncu) — havuz > 4 olduğunda manuel seçim
-        let sizPair = [1, 3];
-        // Dağıtıcı seçimleri (pool indeksleri). 3. ve 4. otomatik hesaplanır.
-        let dealer1Idx = 0;  // 1. dağıtıcı (havuz indeksi)
-        let dealer2Idx = 1;  // 2. dağıtıcı (havuz indeksi)
-        // Oyun ayarları
-        let totalRounds = 11;
-        // Oyun bittiğinde istatistik kaydedildi mi?
-        let gameRecorded = false;
-        // Oyuncu istatistikleri: { "Sefa": { games, wins, losses } }
-        let playerStats = {};
-
-        let gameData = [];
-        let activeR = 0, activeC = '', m1 = 1, m2 = 1, tSiler = 0, curPMode = 'tek';
-        let timerInt = null, tStart = null;
-
-        const canv = document.getElementById('scratch-canvas');
-        const ctx = canv.getContext('2d');
-
-        window.onload = () => {
-            initData(); loadAll(); render();
-            const grid = document.getElementById('num-grid');
-            for (let i = 1; i <= 13; i++) {
-                let b = document.createElement('button');
-                b.className = 'calc-btn'; b.innerText = i;
-                b.onclick = () => {
-                    gameData[activeR][activeC].push({ val: i * (curPMode === 'tek' ? 10 : 20), mode: curPMode });
-                    render(); renderPL();
-                };
-                grid.appendChild(b);
-            }
-            initScratch();
-        };
-
-        function initData() {
-            const empty = () => ({ bizScore: { val: 0, siler: 0 }, sizScore: { val: 0, siler: 0 }, bizCeza: [], sizCeza: [] });
-            gameData = Array.from({ length: totalRounds || 11 }, empty);
-        }
-        // gameData uzunluğunu totalRounds'a göre ayarla (mevcut verileri koru)
-        function resizeGameData() {
-            const empty = () => ({ bizScore: { val: 0, siler: 0 }, sizScore: { val: 0, siler: 0 }, bizCeza: [], sizCeza: [] });
-            if (gameData.length < totalRounds) {
-                while (gameData.length < totalRounds) gameData.push(empty());
-            } else if (gameData.length > totalRounds) {
-                gameData = gameData.slice(0, totalRounds);
-            }
-        }
-
-        // === TEAM HELPERS ===
-        // SİZ pair artık manuel seçilir (havuz > 4 olabilir).
-        // Eğer SİZ pair geçersizse (BİZ ile çakışıyor) yedekle: BİZ olmayan ilk 2 havuz indeksi
-        function fallbackSizPair() {
-            const others = playerPool.map((_, i) => i).filter(i => !bizPair.includes(i));
-            return others.slice(0, 2);
-        }
-        function ensureValidPairs() {
-            // BİZ pair sağlama
-            bizPair = bizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
-            if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % Math.max(playerPool.length, 2);
-            // SİZ pair sağlama
-            if (!Array.isArray(sizPair) || sizPair.length !== 2 ||
-                sizPair[0] === sizPair[1] ||
-                sizPair.some(i => bizPair.includes(i))) {
-                sizPair = fallbackSizPair();
-            }
-            sizPair = sizPair.map(i => (typeof i === 'number' && i < playerPool.length) ? i : 0);
-        }
-        function getTeammate(idx) {
-            if (bizPair.includes(idx)) return bizPair.find(i => i !== idx);
-            if (sizPair.includes(idx)) return sizPair.find(i => i !== idx);
-            return idx;
-        }
-        function isBizMember(idx) { return bizPair.includes(idx); }
-
-        // Dağıtıcı sırası: [d1, d2, teammate(d1), teammate(d2)]
-        function getDealerOrder() {
-            const t1 = getTeammate(dealer1Idx);
-            const t2 = getTeammate(dealer2Idx);
-            return [dealer1Idx, dealer2Idx, t1, t2];
-        }
-
-        // Aktif 4 oyuncuyu (BİZ + SİZ pair) getir, dağıtıcı sırasına göre
-        function getActivePlayers() {
-            return getDealerOrder().map(i => playerPool[i] || `Oyu ${i + 1}`);
-        }
-        function getActivePoolIndices() {
-            return [...bizPair, ...sizPair];
-        }
-
-        // === SETTINGS MODAL ===
-        function openSettings() {
-            ensureValidPairs();
-            renderTeamSelectors();
-            renderDealerSelectors();
-            updatePoolCount();
-            document.getElementById('rounds-input').value = totalRounds;
-            document.getElementById('settings-modal').style.display = 'flex';
-        }
-
-        function updatePoolCount() {
-            document.getElementById('pool-count').textContent = playerPool.length;
-        }
-
-        // BİZ ve SİZ takımı dropdown'larını doldur
-        function renderTeamSelectors() {
-            ['sel-biz1', 'sel-biz2', 'sel-siz1', 'sel-siz2'].forEach(id => {
-                const sel = document.getElementById(id);
-                sel.innerHTML = '';
-                playerPool.forEach((name, i) => sel.add(new Option(name, i)));
-            });
-            document.getElementById('sel-biz1').value = bizPair[0];
-            document.getElementById('sel-biz2').value = bizPair[1];
-            document.getElementById('sel-siz1').value = sizPair[0];
-            document.getElementById('sel-siz2').value = sizPair[1];
-        }
-
-        // BİZ veya SİZ takımı değişti → çakışma kontrolü, dealer dropdown yenile
-        function onTeamChange() {
-            const b1 = parseInt(document.getElementById('sel-biz1').value);
-            const b2 = parseInt(document.getElementById('sel-biz2').value);
-            const s1 = parseInt(document.getElementById('sel-siz1').value);
-            const s2 = parseInt(document.getElementById('sel-siz2').value);
-            const arr = [b1, b2, s1, s2];
-            const unique = new Set(arr);
-            if (b1 === b2) { alert('BİZ takımının iki üyesi aynı kişi olamaz.'); document.getElementById('sel-biz2').value = bizPair[1]; return; }
-            if (s1 === s2) { alert('SİZ takımının iki üyesi aynı kişi olamaz.'); document.getElementById('sel-siz2').value = sizPair[1]; return; }
-            if (unique.size !== 4) {
-                alert('BİZ ve SİZ takımlarındaki 4 oyuncu birbirinden farklı olmalı.');
-                // Geri al — son geçerli durumu yansıt
-                document.getElementById('sel-biz1').value = bizPair[0];
-                document.getElementById('sel-biz2').value = bizPair[1];
-                document.getElementById('sel-siz1').value = sizPair[0];
-                document.getElementById('sel-siz2').value = sizPair[1];
-                return;
-            }
-            bizPair = [b1, b2];
-            sizPair = [s1, s2];
-            const active = getActivePoolIndices();
-            // Dealer seçimleri aktif 4 içinde değilse düzelt
-            if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
-            if (!active.includes(dealer2Idx) || isBizMember(dealer2Idx) === isBizMember(dealer1Idx)) {
-                dealer2Idx = active.find(i => isBizMember(i) !== isBizMember(dealer1Idx)) || active[1];
-            }
-            renderDealerSelectors();
-        }
-
-        // Dağıtıcı dropdown'larını doldur (sadece aktif 4 oyuncu)
-        function renderDealerSelectors() {
-            const active = getActivePoolIndices();
-            const d1 = document.getElementById('dealer-1st');
-            d1.innerHTML = '';
-            active.forEach(i => {
-                const team = isBizMember(i) ? 'BİZ' : 'SİZ';
-                d1.add(new Option(`${playerPool[i]}  (${team})`, i));
-            });
-            if (!active.includes(dealer1Idx)) dealer1Idx = active[0];
-            d1.value = dealer1Idx;
-
-            refresh2ndDealerOptions();
-            updateAutoDealers();
-        }
-
-        function refresh2ndDealerOptions() {
-            // Sadece 1. dağıtıcının karşı takımı — yine aktif 4'ten
-            const otherTeam = isBizMember(dealer1Idx) ? sizPair : bizPair;
-            const d2 = document.getElementById('dealer-2nd');
-            const cur = parseInt(d2.value);
-            d2.innerHTML = '';
-            otherTeam.forEach(i => {
-                const team = isBizMember(i) ? 'BİZ' : 'SİZ';
-                d2.add(new Option(`${playerPool[i]}  (${team})`, i));
-            });
-            if (otherTeam.includes(cur)) dealer2Idx = cur;
-            else if (!otherTeam.includes(dealer2Idx)) dealer2Idx = otherTeam[0];
-            d2.value = dealer2Idx;
-        }
-
-        function updateAutoDealers() {
-            const t1 = getTeammate(dealer1Idx);
-            const t2 = getTeammate(dealer2Idx);
-            document.getElementById('dealer-3rd-name').textContent = playerPool[t1] || '—';
-            document.getElementById('dealer-4th-name').textContent = playerPool[t2] || '—';
-        }
-
-        function onDealer1Change() {
-            dealer1Idx = parseInt(document.getElementById('dealer-1st').value);
-            refresh2ndDealerOptions();
-            updateAutoDealers();
-        }
-        function onDealer2Change() {
-            dealer2Idx = parseInt(document.getElementById('dealer-2nd').value);
-            updateAutoDealers();
-        }
-
-        // Oyun sayısı kontrolleri
-        function adjRounds(d) {
-            const inp = document.getElementById('rounds-input');
-            const v = Math.max(1, Math.min(50, (parseInt(inp.value) || 11) + d));
-            inp.value = v;
-            onRoundsChange();
-        }
-        function onRoundsChange() {
-            const inp = document.getElementById('rounds-input');
-            let v = parseInt(inp.value) || 11;
-            v = Math.max(1, Math.min(50, v));
-            inp.value = v;
-            totalRounds = v;
-        }
-
-        function saveSettings() {
-            const b1 = parseInt(document.getElementById('sel-biz1').value);
-            const b2 = parseInt(document.getElementById('sel-biz2').value);
-            const s1 = parseInt(document.getElementById('sel-siz1').value);
-            const s2 = parseInt(document.getElementById('sel-siz2').value);
-            const unique = new Set([b1, b2, s1, s2]);
-            if (b1 === b2 || s1 === s2 || unique.size !== 4) {
-                alert('BİZ ve SİZ takımlarında 4 farklı oyuncu olmalı.');
-                return;
-            }
-            bizPair = [b1, b2];
-            sizPair = [s1, s2];
-            dealer1Idx = parseInt(document.getElementById('dealer-1st').value);
-            dealer2Idx = parseInt(document.getElementById('dealer-2nd').value);
-            const newRounds = Math.max(1, Math.min(50, parseInt(document.getElementById('rounds-input').value) || 11));
-            if (newRounds !== totalRounds) {
-                totalRounds = newRounds;
-                resizeGameData();
-                gameRecorded = false; // yeni el sayısıyla baştan değerlendirilir
-            }
-            closeModals(); render();
-        }
-
-        // === OYUNCU HAVUZU MODALİ (ayrı) ===
-        function openPoolModal() {
-            renderPlayerPool();
-            document.getElementById('pool-modal').style.display = 'flex';
-        }
-        function closePoolModal() {
-            // Havuz değişimini settings dropdown'larına yansıt
-            renderTeamSelectors();
-            renderDealerSelectors();
-            updatePoolCount();
-            document.getElementById('pool-modal').style.display = 'none';
-        }
-
-        function renderPlayerPool() {
-            const c = document.getElementById('pool-list');
-            c.innerHTML = '';
-            playerPool.forEach((name, i) => {
-                const row = document.createElement('div');
-                row.className = 'pool-row';
-                row.innerHTML = `
-                    <input type="text" value="${escapeAttr(name)}" placeholder="Oyuncu ${i + 1}"
-                           oninput="updatePoolName(${i}, this.value)">
-                    ${playerPool.length > 4
-                      ? `<button class="pool-del-btn" onclick="removePoolName(${i})" aria-label="Sil">×</button>`
-                      : ''}
-                `;
-                c.appendChild(row);
-            });
-        }
-        function updatePoolName(i, val) { playerPool[i] = val; }
-        function addPoolName() {
-            playerPool.push(`Yeni Oyuncu ${playerPool.length + 1}`);
-            renderPlayerPool();
-        }
-        function removePoolName(i) {
-            if (playerPool.length <= 4) return;
-            playerPool.splice(i, 1);
-            // BİZ pair'i sağlamlaştır
-            bizPair = bizPair.map(idx => idx >= playerPool.length ? 0 : idx);
-            if (bizPair[0] === bizPair[1]) bizPair[1] = (bizPair[0] + 1) % playerPool.length;
-            // Dealer indekslerini sağlamlaştır
-            if (dealer1Idx >= playerPool.length) dealer1Idx = bizPair[0];
-            if (dealer2Idx >= playerPool.length) dealer2Idx = computeSizPair()[0];
-            renderPlayerPool();
-        }
-
-        // === SKOR MODALİ ===
-        function openScoreModal(r, c) {
-            activeR = r; activeC = c;
-            const isBiz = c === 'bizScore';
-            const dealerOrder = getDealerOrder();
-            // BİZ pozisyonları: dealerOrder içinde isBizMember olanların indeksleri
-            const teamPos = dealerOrder
-                .map((idx, pos) => ({ idx, pos }))
-                .filter(o => isBizMember(o.idx) === isBiz)
-                .map(o => o.pos);
-            const active = getActivePlayers();
-
-            const card1 = document.getElementById('player-card-1');
-            const card2 = document.getElementById('player-card-2');
-            card1.className = 'score-player-card ' + (isBiz ? 'team-biz' : 'team-siz');
-            card2.className = 'score-player-card ' + (isBiz ? 'team-biz' : 'team-siz');
-            document.getElementById('p1-name').textContent = active[teamPos[0]] || '—';
-            document.getElementById('p2-name').textContent = active[teamPos[1]] || '—';
-
-            // Başlığı temalandır
-            const titleEl = document.getElementById('sc-title');
-            const teamText = document.getElementById('sc-team-text');
-            titleEl.className = 'sc-modal-title ' + (isBiz ? 'team-biz' : 'team-siz');
-            teamText.textContent = isBiz ? 'BİZ' : 'SİZ';
-
-            document.getElementById('sc1-val').value = '';
-            document.getElementById('sc2-val').value = '';
-            m1 = 1; m2 = 1; tSiler = gameData[r][c].siler;
-            updateScoreUI();
-            document.getElementById('score-modal').style.display = 'flex';
-        }
-        function setM(p, m) { if (p === 1) m1 = m; else m2 = m; updateScoreUI(); }
-        function changeSiler(v) { tSiler = Math.max(0, tSiler + v); updateScoreUI(); }
-        function updateScoreUI() {
-            document.getElementById('m1-1').className = m1 === 1 ? 'calc-btn active' : 'calc-btn';
-            document.getElementById('m1-2').className = m1 === 2 ? 'calc-btn active cift' : 'calc-btn';
-            document.getElementById('m2-1').className = m2 === 1 ? 'calc-btn active' : 'calc-btn';
-            document.getElementById('m2-2').className = m2 === 2 ? 'calc-btn active cift' : 'calc-btn';
-            document.getElementById('modal-siler-icons').textContent = tSiler > 0 ? '∞ '.repeat(tSiler) : '—';
-        }
-        function applyScore() {
-            const v1 = parseInt(document.getElementById('sc1-val').value) || 0;
-            const v2 = parseInt(document.getElementById('sc2-val').value) || 0;
-            gameData[activeR][activeC].val = (v1 * m1) + (v2 * m2);
-            gameData[activeR][activeC].siler = tSiler;
-            if (!timerInt) { tStart = Date.now(); timerInt = setInterval(updateT, 1000); }
-            closeModals(); render();
-        }
-
-        // === RENDER ===
-        // Ceza modali için: gerçek okey-taşı görünümü (sayı + nokta)
-        function makePenaltyCardHtml(c) {
-            const num = c.mode === 'tek' ? c.val / 10 : c.val / 20;
-            const dots = c.mode === 'tek' ? '<i></i>' : '<i></i><i></i>';
-            return `<span class="penalty-card ${c.mode}"><span class="pc-num">${num}</span><span class="pc-dots">${dots}</span></span>`;
-        }
-        // Tabela hücresi için: sade renkli sayı rozeti
-        function makeCezaNumHtml(c) {
-            const num = c.mode === 'tek' ? c.val / 10 : c.val / 20;
-            return `<span class="ceza-num ${c.mode}">${num}</span>`;
-        }
-
-        function render() {
-            const container = document.getElementById('game-rows');
-            container.innerHTML = '';
-            const active = getActivePlayers();
-            let bT = 0, sT = 0, count = 0;
-            gameData.forEach((row, i) => {
-                const bS = row.bizScore.val + (row.bizScore.siler * -100) + row.bizCeza.reduce((a, b) => a + b.val, 0);
-                const sS = row.sizScore.val + (row.sizScore.siler * -100) + row.sizCeza.reduce((a, b) => a + b.val, 0);
-                bT += bS; sT += sS;
-                if (row.bizScore.val !== 0 || row.sizScore.val !== 0 || row.bizCeza.length > 0 || row.sizCeza.length > 0) count++;
-
-                const dealerName = active[i % 4];
-                const isDealer = (count === i);
-                const diff = bS - sS;
-                let diffHtml = '<span style="opacity:0.2">-</span>';
-                if (bS !== 0 || sS !== 0) {
-                    if (diff < 0) diffHtml = `<span style="color:var(--biz-color)" class="diff-text">BİZ +${Math.abs(diff)}</span>`;
-                    else if (diff > 0) diffHtml = `<span style="color:var(--siz-color)" class="diff-text">SİZ +${Math.abs(diff)}</span>`;
-                    else diffHtml = "EŞİT";
-                }
-                // Tabelada SADE sayı (taş yok)
-                const bizCezaHtml = row.bizCeza.map(makeCezaNumHtml).join('');
-                const sizCezaHtml = row.sizCeza.map(makeCezaNumHtml).join('');
-
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="game-row">
-                        <div class="cell" onclick="openScoreModal(${i},'bizScore')">
-                            <span class="score-val">${row.bizScore.val || '-'}</span>
-                            <div class="siler-icons">${'∞'.repeat(row.bizScore.siler)}</div>
-                        </div>
-                        <div class="cell" onclick="openScoreModal(${i},'sizScore')">
-                            <span class="score-val">${row.sizScore.val || '-'}</span>
-                            <div class="siler-icons">${'∞'.repeat(row.sizScore.siler)}</div>
-                        </div>
-                        <div class="cell" onclick="openPenaltyModal(${i},'bizCeza')">${bizCezaHtml}</div>
-                        <div class="cell" onclick="openPenaltyModal(${i},'sizCeza')">${sizCezaHtml}</div>
-                        <div class="cell ${isDealer ? 'dealer-active' : ''}" style="font-size:11px; opacity:0.6">${escapeHtml(dealerName)}</div>
-                        <div class="cell">${diffHtml}</div>
-                    </div>
-                `);
-            });
-            document.getElementById('total-biz').innerText = bT;
-            document.getElementById('total-siz').innerText = sT;
-            document.getElementById('kalan-oyun').innerText = Math.max(0, totalRounds - count);
-            updateStatus(bT, sT);
-            // Oyun bittiyse istatistik kaydet
-            if (count >= totalRounds) checkGameComplete(bT, sT);
-            saveAll();
-        }
-
-        function updateStatus(b, s) {
-            const res = document.getElementById('result-content');
-            const diff = Math.abs(b - s);
-            if (b < s) {
-                res.innerHTML = `<div class="res-team" style="color:var(--biz-color)">BİZ</div><div class="res-diff" style="color:white">${diff}</div><div class="res-label" style="color:var(--biz-color)">ÖNDE</div>`;
-            } else if (s < b) {
-                res.innerHTML = `<div class="res-team" style="color:var(--siz-color)">SİZ</div><div class="res-diff" style="color:white">${diff}</div><div class="res-label" style="color:var(--siz-color)">ÖNDE</div>`;
-            } else {
-                res.innerHTML = `<div class="res-team">DURUM</div><div class="res-diff">0</div><div class="res-label">EŞİT</div>`;
-            }
-            initScratch();
-        }
-
-        function updateT() {
-            const d = Math.floor((Date.now() - tStart) / 1000);
-            document.getElementById('game-timer').innerText = `${Math.floor(d / 60).toString().padStart(2, '0')}:${(d % 60).toString().padStart(2, '0')}`;
-        }
-
-        function setPMode(m) {
-            curPMode = m;
-            document.getElementById('btn-tek').className = m === 'tek' ? 'calc-btn active' : 'calc-btn';
-            document.getElementById('btn-cift').className = m === 'cift' ? 'calc-btn active cift' : 'calc-btn';
-        }
-        function openPenaltyModal(r, c) { activeR = r; activeC = c; renderPL(); document.getElementById('penalty-modal').style.display = 'flex'; }
-        function renderPL() {
-            const c = document.getElementById('penalty-list');
-            c.innerHTML = '';
-            gameData[activeR][activeC].forEach((p, i) => {
-                const wrap = document.createElement('span');
-                wrap.innerHTML = makePenaltyCardHtml(p).replace('penalty-card', 'penalty-card big');
-                const cardEl = wrap.firstChild;
-                cardEl.title = 'Silmek için tıkla';
-                cardEl.onclick = () => { gameData[activeR][activeC].splice(i, 1); render(); renderPL(); };
-                c.appendChild(cardEl);
-            });
-        }
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
-
-        // Reset: SADECE oyun puanlarını sıfırla. Pool, takımlar, dağıtıcı, oyun sayısı, istatistikler korunur.
-        function resetGame() {
-            if (!confirm("Tüm oyun puanları sıfırlansın mı?\n(Oyuncu havuzu, takımlar, ayarlar ve istatistikler korunacak.)")) return;
-            initData();
-            gameRecorded = false;
-            // Süreyi sıfırla
-            if (timerInt) { clearInterval(timerInt); timerInt = null; }
-            tStart = null;
-            document.getElementById('game-timer').innerText = '00:00';
-            saveAll();
-            render();
-            closeModals();
-        }
-        // İsteğe bağlı: istatistikleri ayrıca sıfırlamak için
-        function resetStats() {
-            if (!confirm("Tüm oyuncu istatistikleri sıfırlansın mı?")) return;
-            playerStats = {};
-            saveAll();
-            renderStats();
-        }
-
-        // === İSTATİSTİK SİSTEMİ ===
-        function ensureStat(name) {
-            if (!playerStats[name]) playerStats[name] = { games: 0, wins: 0, losses: 0 };
-            return playerStats[name];
-        }
-        function recordGameResult(winnerNames, loserNames) {
-            winnerNames.forEach(n => { const s = ensureStat(n); s.games++; s.wins++; });
-            loserNames.forEach(n => { const s = ensureStat(n); s.games++; s.losses++; });
-            saveAll();
-        }
-        function recordGameDraw(allNames) {
-            allNames.forEach(n => { const s = ensureStat(n); s.games++; });
-            saveAll();
-        }
-
-        // Oyun bittiğinde (count === totalRounds) bir kez stats'a yaz ve banner göster
-        function checkGameComplete(bT, sT) {
-            if (gameRecorded) return;
-            const bizNames = bizPair.map(i => playerPool[i] || `Oyu ${i+1}`);
-            const sizNames = sizPair.map(i => playerPool[i] || `Oyu ${i+1}`);
-            let teamLabel = 'BERABERE', cls = 'draw';
-            if (bT < sT) {
-                recordGameResult(bizNames, sizNames);
-                teamLabel = 'BİZ KAZANDI'; cls = '';
-            } else if (sT < bT) {
-                recordGameResult(sizNames, bizNames);
-                teamLabel = 'SİZ KAZANDI'; cls = 'siz';
-            } else {
-                recordGameDraw([...bizNames, ...sizNames]);
-            }
-            gameRecorded = true;
-            showGameEndBanner(teamLabel, cls);
-        }
-        function showGameEndBanner(text, cls) {
-            // Eski banner varsa kaldır
-            document.querySelectorAll('.game-end-banner').forEach(el => el.remove());
-            const b = document.createElement('div');
-            b.className = 'game-end-banner ' + (cls || '');
-            b.textContent = `🏆 ${text} · İSTATİSTİĞE EKLENDİ`;
-            document.body.appendChild(b);
-            setTimeout(() => b.remove(), 4000);
-        }
-
-        function openStatsModal() {
-            document.getElementById('stats-rounds-info').textContent = totalRounds;
-            renderStats();
-            document.getElementById('stats-modal').style.display = 'flex';
-        }
-        function renderStats() {
-            const list = document.getElementById('stats-list');
-            list.innerHTML = '';
-            // Havuzdaki tüm oyuncuları göster (kayıtsız olanlar 0/0/0)
-            const rows = playerPool.map(name => {
-                const s = playerStats[name] || { games: 0, wins: 0, losses: 0 };
-                const rate = s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0;
-                return { name, ...s, rate };
-            });
-            // Önce galibiyet oranına göre sırala (yüksekten düşüğe)
-            rows.sort((a, b) => (b.rate - a.rate) || (b.wins - a.wins) || (b.games - a.games));
-            if (rows.every(r => r.games === 0)) {
-                list.innerHTML = '<div class="stats-empty">Henüz tamamlanmış bir oyun yok.<br>Oyun bittiğinde takım sonuçları otomatik olarak buraya yansır.</div>';
-                return;
-            }
-            rows.forEach(r => {
-                const row = document.createElement('div');
-                row.className = 'stat-row';
-                row.innerHTML = `
-                    <div class="stat-name">${escapeHtml(r.name)}</div>
-                    <div class="stat-cell">${r.games}</div>
-                    <div class="stat-cell win">${r.wins}</div>
-                    <div class="stat-cell lose">${r.losses}</div>
-                    <div class="stat-rate-bar">
-                        <div class="stat-rate-fill" style="width: ${r.rate}%;"></div>
-                        <div class="stat-rate-text">%${r.rate}</div>
-                    </div>
-                `;
-                list.appendChild(row);
-            });
-        }
-
-        // === STORAGE ===
-        function saveAll() {
-            localStorage.setItem('101_v4_data', JSON.stringify(gameData));
-            localStorage.setItem('101_v6_pool', JSON.stringify(playerPool));
-            localStorage.setItem('101_v6_biz', JSON.stringify(bizPair));
-            localStorage.setItem('101_v7_siz', JSON.stringify(sizPair));
-            localStorage.setItem('101_v6_d1', String(dealer1Idx));
-            localStorage.setItem('101_v6_d2', String(dealer2Idx));
-            localStorage.setItem('101_v7_rounds', String(totalRounds));
-            localStorage.setItem('101_v7_stats', JSON.stringify(playerStats));
-            localStorage.setItem('101_v7_rec', gameRecorded ? '1' : '0');
-        }
-        function loadAll() {
-            try {
-                const d = localStorage.getItem('101_v4_data');
-                if (d) gameData = JSON.parse(d);
-
-                const pool = localStorage.getItem('101_v6_pool');
-                const bz = localStorage.getItem('101_v6_biz');
-                const sz = localStorage.getItem('101_v7_siz');
-                const d1 = localStorage.getItem('101_v6_d1');
-                const d2 = localStorage.getItem('101_v6_d2');
-                const rs = localStorage.getItem('101_v7_rounds');
-                const st = localStorage.getItem('101_v7_stats');
-                const rc = localStorage.getItem('101_v7_rec');
-
-                if (pool && bz && d1 && d2) {
-                    playerPool = JSON.parse(pool);
-                    bizPair = JSON.parse(bz);
-                    if (sz) sizPair = JSON.parse(sz);
-                    dealer1Idx = parseInt(d1);
-                    dealer2Idx = parseInt(d2);
-                } else {
-                    // v5 → v7 migrate
-                    const oldPool = localStorage.getItem('101_v5_pool');
-                    const oldOrder = localStorage.getItem('101_v5_order');
-                    const oldBpos = localStorage.getItem('101_v5_bpos');
-                    if (oldPool && oldOrder && oldBpos) {
-                        playerPool = JSON.parse(oldPool);
-                        const order = JSON.parse(oldOrder);
-                        const bpos = JSON.parse(oldBpos);
-                        bizPair = bpos.map(p => order[p]);
-                        dealer1Idx = order[0];
-                        dealer2Idx = order[1];
-                    } else {
-                        const oldP = localStorage.getItem('101_v4_p');
-                        const oldB = localStorage.getItem('101_v4_biz');
-                        if (oldP) playerPool = JSON.parse(oldP);
-                        if (oldB) bizPair = JSON.parse(oldB);
-                        dealer1Idx = bizPair[0];
-                        dealer2Idx = (bizPair[0] === 0) ? 1 : 0;
-                    }
-                }
-                if (rs) totalRounds = Math.max(1, Math.min(50, parseInt(rs) || 11));
-                if (st) playerStats = JSON.parse(st);
-                gameRecorded = rc === '1';
-
-                // Sağlamlık
-                while (playerPool.length < 4) playerPool.push(`Oyu ${playerPool.length + 1}`);
-                ensureValidPairs();
-                if (dealer1Idx >= playerPool.length || dealer1Idx < 0) dealer1Idx = bizPair[0];
-                if (dealer2Idx >= playerPool.length || dealer2Idx < 0) dealer2Idx = sizPair[0];
-                resizeGameData();
-            } catch (e) {
-                console.warn('Veri yükleme hatası:', e);
-            }
-        }
-
-        // === KAZI-KAZAN ===
-        function initScratch() {
-            canv.width = canv.parentNode.offsetWidth; canv.height = canv.parentNode.offsetHeight;
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = '#95a5a6'; ctx.fillRect(0, 0, canv.width, canv.height);
-            ctx.fillStyle = '#2c3e50'; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("KAZI", canv.width / 2, canv.height / 2 + 5);
-            ctx.globalCompositeOperation = 'destination-out';
-        }
-        canv.addEventListener('touchstart', e => { e.preventDefault(); scratch(e); });
-        canv.addEventListener('touchmove', e => { e.preventDefault(); scratch(e); });
-        function scratch(e) {
-            const r = canv.getBoundingClientRect(); const t = e.touches[0];
-            ctx.beginPath(); ctx.arc(t.clientX - r.left, t.clientY - r.top, 18, 0, Math.PI * 2); ctx.fill();
         }
 
         // === HELPERLAR ===
