@@ -1,29 +1,3 @@
-// ============================================================================
-//  db-sync.js — localStorage ↔ Firestore canlı senkron katmanı
-//
-//  Sayfa entegrasyonu (örnek namaz.html için):
-//
-//     <script>
-//       window.SYNC_KEYS = ['namazTakipData_v2'];   // tam eşleşen anahtarlar
-//       // window.SYNC_PREFIXES = ['eng_day_'];      // prefix'le eşleşen
-//       window.addEventListener('dbsynced', () => {
-//         // Bulutdan veri geldiğinde sayfanın UI'sını yenile
-//         if (typeof loadDay === 'function' && typeof currentActiveDate !== 'undefined')
-//           loadDay(currentActiveDate);
-//       });
-//     </script>
-//     <script type="module" src="./db-sync.js"></script>
-//
-//  Mimari:
-//   - Anonim auth ile her cihaza kalıcı bir uid verilir.
-//   - Firestore yapısı: users/{uid}/store/{key} → { v: <JSON string>, u: timestamp }
-//   - Sayfa yüklenince:
-//       1) localStorage hemen okunur (UI eski-cache ile çabuk açılır)
-//       2) Bulut verisi gelir → localStorage güncellenir → 'dbsynced' eventi
-//       3) onSnapshot dinleyici: başka cihazdan gelen değişiklikleri canlı uygular
-//   - localStorage.setItem / removeItem proxy'lendiği için sayfa kodu değişmeden
-//     yapılan her yerel kayıt 600ms debounce ile buluta yazılır.
-// ============================================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import {
