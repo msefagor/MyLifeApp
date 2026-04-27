@@ -609,6 +609,7 @@ window.dbAuth = {
         if (!u || u.isAnonymous) throw new Error('Önce Google ile giriş yapın.');
         const provider = new GoogleAuthProvider();
         provider.addScope('https://www.googleapis.com/auth/drive.file');
+        // refresh için prompt verme — kullanıcı zaten giriş yapmış
         const result = await signInWithPopup(auth, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential && credential.accessToken) {
@@ -616,5 +617,452 @@ window.dbAuth = {
             _googleAccessTokenExp = Date.now() + 3500_000;
         }
         return _googleAccessToken;
+    },
+
+    /**
+     * Drive'a istek atmadan önce çağrılır.
+     * Token varsa döner, yoksa popup ile yeniden alır.
+     * Bu sayede sayfa yenilendikten sonra ilk yedekte popup açılır.
+     */
+    async ensureGoogleToken() {
+        const u = auth.currentUser;
+        if (!u) throw new Error('Auth henüz hazır değil.');
+        if (u.isAnonymous) throw new Error('Önce Google ile bağlanın.');
+        if (_googleAccessToken && Date.now() < _googleAccessTokenExp) {
+            return _googleAccessToken;
+        }
+        // Token yok veya süresi dolmuş — popup ile al
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (!credential || !credential.accessToken) {
+            throw new Error('Google Drive yetkisi alınamadı.');
+        }
+        _googleAccessToken = credential.accessToken;
+        _googleAccessTokenExp = Date.now() + 3500_000;
+        return _googleAccessToken;
+    }
+};
+
+// ============================================================================
+//  DRIVE API + YEDEKLEME
+// ============================================================================
+const DRIVE_FOLDER_NAME = 'MyLifeApp Yedekleri';
+const DRIVE_FOLDER_KEY = '_dbsync_drive_folder_id';
+const LAST_BACKUP_KEY = '_dbsync_last_backup';
+const BACKUP_KEEP_DAYS = 60;
+let _driveFolderId = null;
+let _backupRunning = false;
+
+async function driveFetch(path, options = {}, _retried = false) {
+    // Token yoksa veya süresi dolmuşsa popup ile al
+    let token;
+    try {
+        token = await window.dbAuth.ensureGoogleToken();
+    } catch (e) {
+        throw new Error('Drive yetkisi alınamadı: ' + e.message);
+    }
+    const url = path.startsWith('http')
+        ? path
+        : `https://www.googleapis.com/drive/v3${path}`;
+    const headers = {
+        Authorization: 'Bearer ' + token,
+        ...(options.headers || {})
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401 && !_retried) {
+        // Token expired — bir kez yenile ve tekrar dene
+        console.warn('[db-sync] Drive 401, token tazeleniyor...');
+        try { await window.dbAuth.refreshGoogleAccessToken(); }
+        catch (e) { throw new Error('Drive yetkisi tazelenemedi: ' + e.message); }
+        return driveFetch(path, options, true);
+    }
+    if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.text()).slice(0, 300); } catch (_) {}
+        throw new Error(`Drive ${res.status}: ${detail || res.statusText}`);
+    }
+    return res;
+}
+
+async function ensureBackupFolder() {
+    if (_driveFolderId) return _driveFolderId;
+    const cached = window.localStorage.getItem(DRIVE_FOLDER_KEY);
+    if (cached) {
+        try {
+            const r = await driveFetch(`/files/${cached}?fields=id,trashed`);
+            const j = await r.json();
+            if (!j.trashed) {
+                _driveFolderId = cached;
+                return cached;
+            }
+        } catch (_) {
+            window.localStorage.removeItem(DRIVE_FOLDER_KEY);
+        }
+    }
+    // Klasörü ara
+    const q = encodeURIComponent(
+        `name='${DRIVE_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    );
+    const searchRes = await driveFetch(`/files?q=${q}&fields=files(id,name)`);
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+        _driveFolderId = searchData.files[0].id;
+        window.localStorage.setItem(DRIVE_FOLDER_KEY, _driveFolderId);
+        return _driveFolderId;
+    }
+    // Yoksa oluştur
+    const createRes = await driveFetch('/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: DRIVE_FOLDER_NAME,
+            mimeType: 'application/vnd.google-apps.folder'
+        })
+    });
+    const created = await createRes.json();
+    _driveFolderId = created.id;
+    window.localStorage.setItem(DRIVE_FOLDER_KEY, _driveFolderId);
+    return _driveFolderId;
+}
+
+async function uploadBackupFile(jsonStr, filename) {
+    const folderId = await ensureBackupFolder();
+    const metadata = {
+        name: filename,
+        parents: [folderId],
+        mimeType: 'application/json'
+    };
+    const boundary = '----mlb' + Math.random().toString(36).slice(2);
+    const body =
+        '--' + boundary + '\r\n' +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) + '\r\n' +
+        '--' + boundary + '\r\n' +
+        'Content-Type: application/json\r\n\r\n' +
+        jsonStr + '\r\n' +
+        '--' + boundary + '--';
+    const res = await driveFetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size',
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+            body
+        }
+    );
+    return await res.json();
+}
+
+async function listBackupFiles() {
+    const folderId = await ensureBackupFolder();
+    const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    const res = await driveFetch(
+        `/files?q=${q}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=100`
+    );
+    const data = await res.json();
+    return data.files || [];
+}
+
+async function downloadBackupFile(fileId) {
+    const res = await driveFetch(`/files/${fileId}?alt=media`);
+    return await res.json();
+}
+
+async function deleteBackupFile(fileId) {
+    await driveFetch(`/files/${fileId}`, { method: 'DELETE' });
+}
+
+// === Yedek için Firestore'dan tüm veriyi topla ===
+async function collectBackupData() {
+    if (!_currentUid) throw new Error('Auth hazır değil.');
+    const uid = _currentUid;
+    const [storeSnap, booksSnap, histSnap] = await Promise.all([
+        getDocs(collection(db, 'users', uid, 'store')),
+        getDocs(collection(db, 'users', uid, 'books')),
+        getDocs(collection(db, 'users', uid, 'history'))
+    ]);
+    const store = {};
+    storeSnap.forEach(d => {
+        const data = d.data();
+        if (data && typeof data.v === 'string') store[d.id] = data.v;
+    });
+    const books = booksSnap.docs.map(d => stripMeta(d.data()));
+    const history = histSnap.docs.map(d => stripMeta(d.data()));
+    return {
+        version: 2,
+        timestamp: new Date().toISOString(),
+        uid,
+        device: navigator.userAgent.slice(0, 120),
+        counts: {
+            store: Object.keys(store).length,
+            books: books.length,
+            history: history.length
+        },
+        store, books, history
+    };
+}
+
+async function performBackup() {
+    if (_backupRunning) throw new Error('Yedekleme zaten sürüyor.');
+    if (!window.dbAuth || !window.dbAuth.snapshot()) {
+        throw new Error('Henüz auth hazır değil.');
+    }
+    if (!window.dbAuth.snapshot().isGoogleLinked) {
+        throw new Error('Önce Google hesabınla bağlan.');
+    }
+    _backupRunning = true;
+    setStatus('syncing');
+    try {
+        const data = await collectBackupData();
+        const json = JSON.stringify(data);
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
+        const filename = `mylifeapp-${dateStr}-${timeStr}.json`;
+        const result = await uploadBackupFile(json, filename);
+        window.localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
+        // Eskileri temizle (arka planda)
+        cleanupOldBackups().catch(e => console.warn('[db-sync] cleanup:', e.message));
+        setStatus('ok');
+        return {
+            fileId: result.id, filename,
+            size: json.length,
+            counts: data.counts
+        };
+    } catch (e) {
+        setStatus('error');
+        throw e;
+    } finally {
+        _backupRunning = false;
+    }
+}
+
+async function cleanupOldBackups() {
+    const files = await listBackupFiles();
+    const cutoff = Date.now() - BACKUP_KEEP_DAYS * 24 * 3600 * 1000;
+    for (const f of files) {
+        const t = new Date(f.modifiedTime).getTime();
+        if (t < cutoff) {
+            try { await deleteBackupFile(f.id); }
+            catch (_) {}
+        }
+    }
+}
+
+// === Geri yükleme ===
+async function performRestore(fileId, options = {}) {
+    if (!_currentUid) throw new Error('Auth hazır değil');
+    const data = await downloadBackupFile(fileId);
+    if (!data || data.version !== 2) {
+        throw new Error('Geçersiz yedek formatı (v2 değil).');
+    }
+    const uid = _currentUid;
+    setStatus('syncing');
+
+    try {
+        // Mevcut books/history'yi sil (replace mode)
+        const [oldBooksSnap, oldHistSnap] = await Promise.all([
+            getDocs(collection(db, 'users', uid, 'books')),
+            getDocs(collection(db, 'users', uid, 'history'))
+        ]);
+        const ops = [];
+        oldBooksSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+        oldHistSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+
+        // Store key'lerini yaz
+        if (data.store && typeof data.store === 'object') {
+            for (const [k, v] of Object.entries(data.store)) {
+                if (typeof v !== 'string') continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'store', k),
+                    data: { v, u: serverTimestamp() }
+                });
+            }
+        }
+        // Books
+        if (Array.isArray(data.books)) {
+            for (const book of data.books) {
+                if (!book || typeof book !== 'object' || !book.id) continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'books', String(book.id)),
+                    data: { ...book, u: serverTimestamp() }
+                });
+            }
+        }
+        // History
+        if (Array.isArray(data.history)) {
+            for (const h of data.history) {
+                if (!h || typeof h !== 'object' || !h.id) continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'history', String(h.id)),
+                    data: { ...h, u: serverTimestamp() }
+                });
+            }
+        }
+
+        const CHUNK = 480;
+        for (let i = 0; i < ops.length; i += CHUNK) {
+            const batch = writeBatch(db);
+            for (const w of ops.slice(i, i + CHUNK)) {
+                if (w.type === 'set') batch.set(w.ref, w.data);
+                else batch.delete(w.ref);
+            }
+            await batch.commit();
+        }
+        setStatus('ok');
+        return { restored: true, counts: data.counts };
+    } catch (e) {
+        setStatus('error');
+        throw e;
+    }
+}
+
+// === Günlük zamanlayıcı ===
+let _dailyTimer = null;
+function scheduleDailyBackup() {
+    if (_dailyTimer) clearTimeout(_dailyTimer);
+
+    const last = window.localStorage.getItem(LAST_BACKUP_KEY);
+    const lastDate = last ? new Date(last) : null;
+    const now = new Date();
+
+    // Bugün için yedek alındı mı?
+    const todayDone = lastDate &&
+        lastDate.toDateString() === now.toDateString();
+
+    // 23:55 hedefi (bugün için)
+    const target = new Date(now);
+    target.setHours(23, 55, 0, 0);
+
+    if (!todayDone) {
+        if (now >= target) {
+            // 23:55 geçmiş, hemen al
+            setTimeout(() => tryAutoBackup(), 4000);
+        } else {
+            // 23:55'e zamanla (tarayıcı açık kalırsa)
+            const ms = target.getTime() - now.getTime();
+            _dailyTimer = setTimeout(() => tryAutoBackup(), ms);
+            console.log(`[db-sync] otomatik yedek için ${Math.round(ms/60000)}dk zamanlandı (23:55)`);
+        }
+    }
+    // Hiç yedek yoksa ilk açılışta hemen al
+    if (!last) {
+        setTimeout(() => tryAutoBackup(), 8000);
+    }
+}
+
+async function tryAutoBackup() {
+    try {
+        const u = window.dbAuth && window.dbAuth.snapshot();
+        if (!u || !u.isGoogleLinked) return;
+        // Çift yedek olmasın diye son 2 saat içinde yedek varsa atla
+        const last = window.localStorage.getItem(LAST_BACKUP_KEY);
+        if (last) {
+            const ms = Date.now() - new Date(last).getTime();
+            if (ms < 2 * 3600 * 1000) {
+                console.log('[db-sync] son yedek 2 saat içinde alınmış, otomatik atlanıyor');
+                return;
+            }
+        }
+        await performBackup();
+        console.log('[db-sync] otomatik yedek tamam');
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { source: 'auto' } }));
+        // Bir sonraki güne tekrar zamanla
+        scheduleDailyBackup();
+    } catch (e) {
+        console.warn('[db-sync] otomatik yedek başarısız:', e.message);
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { error: e.message } }));
+    }
+}
+
+// Auth bağlandıktan sonra zamanlayıcıyı başlat
+window.addEventListener('dbauthstate', (e) => {
+    if (e.detail && e.detail.isGoogleLinked && _currentUid) {
+        scheduleDailyBackup();
+        claimSessionLock(_currentUid);
+    }
+});
+
+// ============================================================================
+//  TEK CİHAZ OTURUM KİLİDİ
+//  Aynı Google hesabıyla başka bir cihaz giriş yaparsa bu cihaz otomatik çıkar.
+//  Sadece Google'a bağlı kullanıcılar için aktif (anonim hesaplar zaten cihaza özel).
+// ============================================================================
+const SESSION_LOCAL_KEY = '_dbsync_session_id';
+let _sessionUnsub = null;
+let _selfClaiming = false;
+
+function generateSid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+
+async function claimSessionLock(uid) {
+    if (!uid) return;
+    if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
+
+    const sid = generateSid();
+    window.localStorage.setItem(SESSION_LOCAL_KEY, sid);
+    const ref = doc(db, 'users', uid, '_session', 'current');
+
+    // Bu cihazı aktif yap (cloud'a kendi sid'imizi yaz)
+    _selfClaiming = true;
+    try {
+        await setDoc(ref, {
+            sid,
+            device: navigator.userAgent.slice(0, 120),
+            ts: serverTimestamp()
+        });
+    } catch (e) {
+        console.warn('[db-sync] session claim failed:', e);
+        _selfClaiming = false;
+        return;
+    }
+    setTimeout(() => { _selfClaiming = false; }, 2000); // kendi yazımıza tepki vermeyiz
+
+    // Başka cihaz girdiğinde tepki ver
+    _sessionUnsub = onSnapshot(ref, (snap) => {
+        if (_selfClaiming) return;
+        if (!snap.exists()) return;
+        const cloudSid = snap.data().sid;
+        const localSid = window.localStorage.getItem(SESSION_LOCAL_KEY);
+        if (cloudSid && localSid && cloudSid !== localSid) {
+            // Başka cihaz aktif olmuş
+            handleAutoSignOut(snap.data().device);
+        }
+    }, e => console.warn('[db-sync] session watch:', e));
+}
+
+async function handleAutoSignOut(otherDevice) {
+    console.warn('[db-sync] başka bir cihazda giriş tespit edildi, çıkış yapılıyor...');
+    // İkili çıkışı engelle
+    if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
+    try {
+        const desc = otherDevice ? otherDevice.slice(0, 60) : 'başka bir cihaz';
+        alert(`⚠ Hesabın "${desc}" üzerinden açıldı.\nBu cihazdan otomatik çıkış yapılıyor.`);
+    } catch (_) {}
+    try {
+        await fbSignOut(auth);
+    } catch (_) {}
+    setTimeout(() => location.reload(), 500);
+}
+
+// === dbBackup global API ===
+window.dbBackup = {
+    async runNow() {
+        const r = await performBackup();
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { source: 'manual', ...r } }));
+        return r;
+    },
+    async list() { return await listBackupFiles(); },
+    async restore(fileId) { return await performRestore(fileId); },
+    async deleteOne(fileId) { return await deleteBackupFile(fileId); },
+    lastTime() {
+        const v = window.localStorage.getItem(LAST_BACKUP_KEY);
+        return v ? new Date(v) : null;
     }
 };
