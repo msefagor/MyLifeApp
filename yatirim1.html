@@ -11,7 +11,7 @@
 
     <!-- Cloud sync -->
     <script>window.SYNC_KEYS = ['liquid_trader_db_v3', 'liquid_trader_settings_v3'];</script>
-    <script type="module" src="./db-sync.js?v=15"></script>
+    <script type="module" src="./drive-sync.js?v=1"></script>
 
     <style>
         /* --- Temel Ayarlar & Değişkenler --- */
@@ -559,7 +559,7 @@
             if (pc) pc.value = settings.targetPercent;
         }
 
-        // db-sync.js bulutdan veri getirdiğinde
+        // drive-sync.js bulutdan veri getirdiğinde
         window.addEventListener('dbsynced', () => {
             reloadFromStorage();
             if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay();

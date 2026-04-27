@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>English Day</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cloud sync -->
+    <script>
+        // İngilizce sayfası birden çok dinamik anahtar kullanır (her tarihe bir kayıt)
+        window.SYNC_PREFIXES = ['eng_day_', 'eng_done_'];
+        window.addEventListener('dbsynced', () => {
+            try {
+                if (typeof renderCalendar === 'function') renderCalendar();
+                if (typeof updateSelectedDateCard === 'function') updateSelectedDateCard();
+            } catch (e) { console.warn('ingilizce refresh after sync:', e); }
+        });
+    </script>
+    <script type="module" src="./drive-sync.js?v=1"></script>
+    <style>
+        :root {
+            --bg-body: #07091a;
+            --glass-bg: rgba(18, 22, 38, 0.55);
+            --glass-bg-strong: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --glass-stroke: rgba(255, 255, 255, 0.16);
+            --primary: #4cc9f0;
+            --primary-deep: #4361ee;
+            --primary-gradient: linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%);
+            --accent: #06d6a0;
+            --accent-gradient: linear-gradient(135deg, #06d6a0 0%, #1b9aaa 100%);
+            --warm: #f72585;
+            --warm-gradient: linear-gradient(135deg, #f72585 0%, #b5179e 100%);
+            --gold: #ffd166;
+            --gold-gradient: linear-gradient(135deg, #ffd166 0%, #ef8354 100%);
+            --violet: #b388ff;
+            --violet-gradient: linear-gradient(135deg, #b388ff 0%, #7209b7 100%);
+            --danger: #ff5f6d;
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.62);
+            --text-muted: rgba(255, 255, 255, 0.42);
+            --shadow-sm: 0 2px 10px rgba(0,0,0,0.18);
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.32);
+            --shadow-lg: 0 22px 60px rgba(0,0,0,0.5);
+        }
+
+        html { height: -webkit-fill-available; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0;
+            color: var(--text);
+            background:
+                radial-gradient(120% 90% at 0% 0%, #1a103a 0%, transparent 55%),
+                radial-gradient(120% 90% at 100% 100%, #0d2b50 0%, transparent 55%),
+                var(--bg-body);
+            min-height: 100vh;
+            padding-bottom: calc(60px + env(safe-area-inset-bottom));
+            padding-top: env(safe-area-inset-top);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .blob {
+            position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.45; z-index: -1;
+        }
+        .blob-1 { top: -12%; left: -20%; width: 320px; height: 320px; background: #4361ee; animation: float 10s infinite ease-in-out; }
+        .blob-2 { bottom: -10%; right: -22%; width: 360px; height: 360px; background: #f72585; animation: float 11s infinite ease-in-out reverse; }
+        .blob-3 { top: 38%; left: 30%; width: 200px; height: 200px; background: #4cc9f0; opacity: 0.3; }
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+
+        .container { max-width: 100%; padding: 12px 20px 24px; }
+
+        /* --- BAŞLIK --- */
+        .header-wrapper {
+            margin: 6px 0 22px; text-align: center; position: relative;
+        }
+        .liquid-title {
+            font-size: 2.4rem; font-weight: 800; margin: 0; letter-spacing: -0.8px;
+            background: linear-gradient(135deg, #ffffff 0%, #b6c8ff 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            line-height: 1.05;
+        }
+        .liquid-subtitle {
+            font-size: 0.78rem; font-weight: 600; color: var(--primary);
+            margin-top: 8px; letter-spacing: 2.4px; text-transform: uppercase;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .liquid-subtitle::before, .liquid-subtitle::after {
+            content: ''; display: block; width: 22px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+
+        /* --- SEÇİLİ TARİH KARTI (ÜST) --- */
+        .selected-date-card {
+            position: relative;
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; margin-bottom: 16px;
+            background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+            border: 1px solid var(--glass-stroke); border-radius: 22px;
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .selected-date-card::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0) 35%);
+        }
+        .sd-day-block {
+            flex-shrink: 0; width: 58px; height: 58px; border-radius: 16px;
+            background: var(--primary-gradient);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 12px 26px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .sd-day-num { font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
+        .sd-day-month { font-size: 9.5px; font-weight: 700; letter-spacing: 1.1px; opacity: 0.9; margin-top: 3px; text-transform: uppercase; }
+        .sd-info { flex: 1; min-width: 0; }
+        .sd-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 3px; }
+        .sd-display { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; line-height: 1.2; }
+        .sd-weekday { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+        .sd-status {
+            flex-shrink: 0;
+            padding: 6px 10px; border-radius: 999px;
+            font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px;
+            border: 1px solid var(--glass-border);
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .sd-status.has-content { color: var(--accent); background: rgba(6, 214, 160, 0.10); border-color: rgba(6, 214, 160, 0.32); }
+        .sd-status.no-content { color: var(--text-muted); background: rgba(255,255,255,0.04); }
+        .sd-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+
+        /* --- TAKVİM --- */
+        .calendar-wrapper {
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px; padding: 18px 16px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .calendar-wrapper::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 30%);
+        }
+        .cal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px; color: white; position: relative; z-index: 1;
+        }
+        .cal-month-name { font-size: 1rem; font-weight: 700; letter-spacing: 0.3px; }
+        .cal-nav-btn {
+            background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: white;
+            width: 34px; height: 34px; border-radius: 11px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s ease, background 0.2s ease;
+            padding: 0;
+            font-size: 0.85rem;
+            margin: 0;
+            box-shadow: none;
+        }
+        .cal-nav-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.14); }
+        .cal-nav-btn svg { width: 14px; height: 14px; }
+
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+            text-align: center; position: relative; z-index: 1;
+        }
+        .cal-day-name {
+            font-size: 0.66rem; color: var(--text-muted); font-weight: 700;
+            letter-spacing: 0.8px; text-transform: uppercase; padding-bottom: 6px;
+        }
+        .cal-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; border-radius: 12px; cursor: pointer;
+            transition: 0.2s; border: 1px solid transparent; position: relative;
+            color: var(--text); font-weight: 500;
+        }
+        .cal-day:active { transform: scale(0.92); background: rgba(255,255,255,0.08); }
+        .cal-day.empty { pointer-events: none; }
+        .cal-day.today {
+            color: var(--primary); font-weight: 800;
+        }
+        .cal-day.today::before {
+            content: ''; position: absolute; inset: auto auto 4px 50%;
+            transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%;
+            background: var(--primary); box-shadow: 0 0 8px var(--primary);
+        }
+        .cal-day.has-data {
+            background: rgba(6, 214, 160, 0.10);
+            border-color: rgba(6, 214, 160, 0.30);
+            color: #c8ffea;
+        }
+        .cal-day.has-data::after {
+            content: ''; position: absolute; inset: auto 0 4px 0; margin: auto;
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 8px var(--accent);
+        }
+        .cal-day.selected {
+            background: var(--primary-gradient); color: white; font-weight: 800;
+            border-color: rgba(255,255,255,0.18);
+            box-shadow: 0 8px 22px rgba(67,97,238,0.42);
+        }
+        .cal-day.selected::before, .cal-day.selected::after { display: none; }
+
+        /* --- BUTONLAR --- */
+        button {
+            width: 100%; padding: 15px 18px; border-radius: 16px; border: none;
+            font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+            color: white; font-family: inherit; letter-spacing: 0.2px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button svg { width: 18px; height: 18px; }
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: 0 10px 24px rgba(67, 97, 238, 0.38);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+        .btn-secondary:active { background: rgba(255,255,255,0.12); }
+        .btn-accent {
+            background: var(--accent-gradient); color: white;
+            box-shadow: 0 10px 24px rgba(6, 214, 160, 0.32);
+        }
+        .btn-warm {
+            background: var(--warm-gradient); color: white;
+            box-shadow: 0 10px 24px rgba(247, 37, 133, 0.32);
+        }
+
+        /* Editor */
+        textarea {
+            width: 100%; height: 46vh;
+            background: rgba(255,255,255,0.04); color: #fff;
+            border: 1px solid var(--glass-border); border-radius: 16px; padding: 16px;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+            box-sizing: border-box; margin-bottom: 14px;
+            resize: vertical;
+            line-height: 1.5;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        textarea:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.18);
+        }
+
+        /* --- DERS KARTLARI --- */
+        .lesson-toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; gap: 10px;
+        }
+        #lesson-date {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 999px;
+            background: rgba(76, 201, 240, 0.10); color: var(--primary);
+            border: 1px solid rgba(76, 201, 240, 0.32);
+            font-size: 12.5px; font-weight: 700; letter-spacing: 0.4px;
+        }
+        #lesson-date svg { width: 14px; height: 14px; }
+        .lesson-toolbar button {
+            width: auto; margin: 0; padding: 9px 16px;
+            border-radius: 12px; font-size: 0.82rem; font-weight: 700;
+            background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
+            box-shadow: none;
+        }
+        .lesson-toolbar button:active { background: rgba(255,255,255,0.14); }
+
+        .lesson-progress {
+            display: flex; gap: 6px; margin-bottom: 16px;
+        }
+        .lesson-progress .step {
+            flex: 1; height: 4px; border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            transition: background 0.3s ease;
+        }
+        .lesson-progress .step.active { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+        .lesson-progress .step.done { background: var(--accent); }
+
+        .card {
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid var(--glass-border); border-radius: 22px;
+            padding: 22px 20px; margin-bottom: 20px;
+            display: none; opacity: 0; transform: translateY(20px);
+            transition: opacity 0.45s ease, transform 0.45s ease;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .card.visible { display: block; opacity: 1; transform: translateY(0); }
+        .card::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 30%);
+        }
+
+        .section-header {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 1.1rem; font-weight: 800; color: #fff;
+            padding-bottom: 14px; margin-bottom: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: relative; z-index: 1;
+        }
+        .section-icon {
+            width: 38px; height: 38px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        .section-icon svg { width: 19px; height: 19px; color: white; }
+        .section-title-text { line-height: 1.2; }
+        .section-title-text small {
+            display: block; font-size: 10.5px; color: var(--text-muted);
+            font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; margin-top: 2px;
+        }
+
+        /* Tema vurguları */
+        .card.theme-day .section-icon { background: var(--gold-gradient); }
+        .card.theme-vocab .section-icon { background: var(--primary-gradient); }
+        .card.theme-phrase .section-icon { background: var(--violet-gradient); }
+        .card.theme-read .section-icon { background: var(--accent-gradient); }
+        .card.theme-dialog .section-icon { background: var(--warm-gradient); }
+        .card.theme-pron .section-icon { background: linear-gradient(135deg, #ffafbd, #ffc3a0); }
+        .card.theme-hw .section-icon { background: var(--gold-gradient); }
+
+        /* Tema kartı (1. başlık) */
+        .topic-block {
+            display: flex; flex-direction: column; gap: 8px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 14px 16px;
+        }
+        .topic-row { display: flex; gap: 8px; align-items: baseline; line-height: 1.5; }
+        .topic-row .topic-tag {
+            font-size: 10px; color: var(--gold); font-weight: 800;
+            letter-spacing: 1.4px; text-transform: uppercase; flex-shrink: 0;
+            padding-top: 3px;
+        }
+        .topic-text { font-size: 0.95rem; color: var(--text); }
+        .topic-text small { display: block; color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+
+        /* Vocabulary */
+        .vocab-grid { display: grid; gap: 10px; position: relative; z-index: 1; }
+        .vocab-item {
+            background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border-radius: 16px; padding: 14px 16px;
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--primary);
+            position: relative;
+        }
+        .v-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .v-word { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.2px; }
+        .v-pron {
+            font-size: 0.78rem; color: var(--primary);
+            background: rgba(76,201,240,0.12); padding: 3px 9px; border-radius: 999px;
+            font-family: ui-monospace, "SF Mono", Menlo, monospace;
+            white-space: nowrap;
+        }
+        .v-mean { color: var(--accent); font-weight: 700; display: block; margin: 6px 0 8px; font-size: 0.95rem; }
+        .v-ex { font-size: 0.86rem; color: var(--text); line-height: 1.5; }
+        .v-ex small { color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 3px; }
+
+        /* Phrases */
+        .phrase-unit {
+            position: relative;
+            background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            border-radius: 18px; padding: 16px 18px; margin-bottom: 14px;
+            border: 1px solid var(--glass-border); overflow: hidden;
+        }
+        .phrase-unit::before {
+            content:''; position: absolute; left:0; top:0; bottom:0; width:4px;
+            background: var(--violet-gradient);
+        }
+        .ph-title {
+            font-size: 1.05rem; font-weight: 800; color: #fff;
+            margin-bottom: 12px; display: block; line-height: 1.35; letter-spacing: -0.2px;
+        }
+        .ph-meta {
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;
+            background: rgba(0,0,0,0.18); padding: 12px 14px; border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+        .ph-row { font-size: 0.92rem; color: var(--text); display: flex; flex-direction: column; }
+        .ph-tag {
+            color: var(--violet); font-size: 9.5px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 3px;
+        }
+        .ph-dialogue {
+            background: rgba(255,255,255,0.05); border-radius: 12px;
+            padding: 12px 14px; font-size: 0.92rem; line-height: 1.65;
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--warm);
+        }
+        .ph-dialogue .speaker-a, .ph-dialogue .speaker-b {
+            display: inline-block; min-width: 22px; font-weight: 800; margin-right: 4px;
+        }
+        .ph-dialogue .speaker-a { color: var(--primary); }
+        .ph-dialogue .speaker-b { color: var(--warm); }
+
+        /* Reading */
+        .reading-container { display: flex; flex-direction: column; gap: 12px; }
+        .scenario-box {
+            background: linear-gradient(160deg, rgba(76,201,240,0.12), rgba(76,201,240,0.04));
+            border: 1px solid rgba(76,201,240,0.32);
+            padding: 12px 14px; border-radius: 14px; color: #fff; font-size: 0.92rem; line-height: 1.5;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .scenario-box .icon { color: var(--primary); flex-shrink: 0; padding-top: 2px; }
+        .eng-text-box {
+            font-size: 0.99rem; line-height: 1.7; color: #fff;
+            padding: 14px 16px; border-radius: 14px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--primary);
+        }
+        .tr-text-box {
+            background: rgba(255,255,255,0.03); padding: 14px 16px; border-radius: 14px;
+            font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65;
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--accent);
+        }
+        .tr-text-box b { color: var(--accent); display: inline-block; margin-bottom: 4px; }
+        .questions-box {
+            margin-top: 6px; background: rgba(255, 209, 102, 0.06);
+            border: 1px solid rgba(255, 209, 102, 0.22);
+            border-radius: 14px; padding: 14px 16px;
+        }
+        .q-title { color: var(--gold); font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; letter-spacing: 0.4px; }
+        .q-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+        .q-item {
+            display: flex; gap: 10px; align-items: flex-start;
+            font-size: 0.92rem; line-height: 1.5;
+        }
+        .q-num {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            background: var(--gold-gradient); color: #2a1503;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 800;
+        }
+        .q-text small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+
+        /* Chat / Dialogue */
+        .chat-container { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+        .chat-row { display: flex; align-items: flex-end; gap: 8px; max-width: 92%; }
+        .chat-row.left { align-self: flex-start; }
+        .chat-row.right { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-avatar {
+            flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12.5px; font-weight: 800; color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.32);
+        }
+        .chat-row.left .chat-avatar { background: var(--violet-gradient); }
+        .chat-row.right .chat-avatar { background: var(--primary-gradient); }
+        .chat-bubble {
+            padding: 11px 14px; border-radius: 18px;
+            font-size: 0.97rem; line-height: 1.4;
+            display: flex; flex-direction: column; word-break: break-word;
+            border: 1px solid var(--glass-border);
+        }
+        .chat-row.left .chat-bubble { background: rgba(255,255,255,0.06); color: #fff; border-bottom-left-radius: 6px; }
+        .chat-row.right .chat-bubble { background: var(--primary-gradient); color: white; border-bottom-right-radius: 6px; border-color: rgba(255,255,255,0.16); }
+        .chat-tr {
+            font-size: 0.8rem; opacity: 0.78; margin-top: 6px;
+            padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.18); font-weight: 400;
+        }
+
+        /* Pronunciation tips */
+        .tip-list { display: flex; flex-direction: column; gap: 10px; }
+        .tip-item {
+            display: flex; gap: 12px; padding: 12px 14px;
+            background: linear-gradient(160deg, rgba(255,175,189,0.08), rgba(255,195,160,0.02));
+            border: 1px solid rgba(255,175,189,0.22);
+            border-radius: 14px; line-height: 1.5; font-size: 0.93rem;
+        }
+        .tip-bullet {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            background: linear-gradient(135deg, #ffafbd, #ffc3a0); color: #4a1f24;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 800;
+        }
+
+        /* Homework */
+        .hw-block {
+            margin-bottom: 14px; padding: 14px 16px;
+            background: linear-gradient(160deg, rgba(255,209,102,0.08), rgba(239,131,84,0.02));
+            border: 1px solid rgba(255,209,102,0.22);
+            border-radius: 14px;
+        }
+        .hw-block:last-child { margin-bottom: 0; }
+        .hw-title { color: var(--gold); font-weight: 800; display: block; margin-bottom: 6px; font-size: 0.95rem; letter-spacing: 0.3px; }
+        .hw-description {
+            color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55;
+            margin: 4px 0 12px;
+        }
+        .hw-content { line-height: 1.7; font-size: 0.95rem; color: var(--text); }
+        .hw-content ol { padding-left: 22px; margin: 0; }
+        .hw-content ol li { margin-bottom: 6px; }
+
+        /* Sıradaki / Bitir butonları */
+        .nav-btn {
+            background: var(--primary-gradient); color: white;
+            box-shadow: 0 10px 24px rgba(67, 97, 238, 0.38);
+            margin-top: 18px;
+        }
+        .finish-btn {
+            background: var(--accent-gradient); color: white;
+            box-shadow: 0 10px 24px rgba(6, 214, 160, 0.32);
+            margin-top: 22px;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.35s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- TOAST BİLDİRİM --- */
+        #toast-container {
+            position: fixed; top: max(env(safe-area-inset-top), 12px); left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+            width: 100%; max-width: 340px;
+            padding: 0 16px;
+        }
+        .toast {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 14px;
+            background: linear-gradient(180deg, rgba(28, 32, 56, 0.92) 0%, rgba(20, 24, 44, 0.92) 100%);
+            border: 1px solid var(--glass-stroke);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            opacity: 0; transform: translateY(-12px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: auto; position: relative; overflow: hidden;
+        }
+        .toast.visible { opacity: 1; transform: translateY(0); }
+        .toast::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--primary);
+        }
+        .toast.success::before { background: var(--accent); }
+        .toast.warn::before { background: var(--gold); }
+        .toast.error::before { background: var(--danger); }
+        .toast-icon {
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        .toast-icon svg { width: 16px; height: 16px; }
+        .toast.info .toast-icon { background: var(--primary-gradient); }
+        .toast.success .toast-icon { background: var(--accent-gradient); }
+        .toast.warn .toast-icon { background: var(--gold-gradient); }
+        .toast.error .toast-icon { background: linear-gradient(135deg, #ff5f6d, #d62828); }
+        .toast-body { flex: 1; min-width: 0; padding-top: 2px; }
+        .toast-title { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+        .toast-msg { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+
+        /* --- YILLIK ANALİZ EKRANI --- */
+        .analiz-hero {
+            position: relative;
+            background: linear-gradient(160deg, rgba(76,201,240,0.16), rgba(67,97,238,0.08));
+            border: 1px solid rgba(76,201,240,0.32);
+            border-radius: 22px;
+            padding: 22px 20px;
+            margin-bottom: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .analiz-hero::before {
+            content: ''; position: absolute; right: -40px; top: -40px;
+            width: 160px; height: 160px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(76,201,240,0.35), transparent 70%);
+            filter: blur(20px);
+        }
+        .analiz-year-tag {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-radius: 999px;
+            background: rgba(76,201,240,0.16); color: var(--primary);
+            font-size: 11px; font-weight: 800; letter-spacing: 1.4px;
+            text-transform: uppercase; margin-bottom: 10px;
+            border: 1px solid rgba(76,201,240,0.32);
+        }
+        .analiz-year-tag svg { width: 13px; height: 13px; }
+        .analiz-hero h2 {
+            font-size: 1.4rem; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #fff 0%, #b6c8ff 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .analiz-hero p { margin: 0; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; }
+
+        .analiz-grid {
+            display: grid; grid-template-columns: 1fr; gap: 12px;
+            margin-bottom: 16px;
+        }
+        @media (min-width: 480px) { .analiz-grid { grid-template-columns: 1fr 1fr; } }
+
+        .analiz-card {
+            position: relative;
+            padding: 18px 18px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .analiz-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        }
+        .analiz-card.tone-blue::before  { background: var(--primary-gradient); }
+        .analiz-card.tone-green::before { background: var(--accent-gradient); }
+        .analiz-card.tone-violet::before{ background: var(--violet-gradient); }
+        .analiz-card.tone-gold::before  { background: var(--gold-gradient); }
+
+        .analiz-card .ac-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            margin-bottom: 12px;
+        }
+        .analiz-card.tone-blue   .ac-icon { background: var(--primary-gradient); }
+        .analiz-card.tone-green  .ac-icon { background: var(--accent-gradient); }
+        .analiz-card.tone-violet .ac-icon { background: var(--violet-gradient); }
+        .analiz-card.tone-gold   .ac-icon { background: var(--gold-gradient); }
+        .analiz-card .ac-icon svg { width: 20px; height: 20px; }
+
+        .ac-value {
+            font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; line-height: 1;
+            background: linear-gradient(135deg, #fff 0%, #b6c8ff 100%);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .ac-value-suffix { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+        .ac-label {
+            font-size: 11px; color: var(--text-muted); letter-spacing: 1.4px;
+            text-transform: uppercase; margin-top: 6px; font-weight: 700;
+        }
+        .ac-sublabel { font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.4; }
+
+        .analiz-empty {
+            text-align: center; padding: 28px 18px;
+            color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;
+        }
+
+        /* --- ONAY MODALI (özel confirm yerine) --- */
+        .conf-modal {
+            position: fixed; inset: 0; background: rgba(5, 7, 18, 0.7);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 9998; display: none; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .conf-modal.open { display: flex; animation: fadeIn 0.25s ease; }
+        .conf-content {
+            width: 100%; max-width: 360px; padding: 24px 22px 18px;
+            background: linear-gradient(180deg, #1a1f3a 0%, #131628 100%);
+            border: 1px solid var(--glass-stroke); border-radius: 24px;
+            text-align: center; box-shadow: var(--shadow-lg);
+        }
+        .conf-icon {
+            width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--primary-gradient); color: white;
+            box-shadow: 0 12px 26px rgba(67,97,238,0.42), inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .conf-icon svg { width: 24px; height: 24px; }
+        .conf-content h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.2px; }
+        .conf-content p { color: var(--text-secondary); font-size: 13.5px; margin: 0 0 18px; line-height: 1.5; }
+        .conf-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .conf-actions button { width: 100%; margin: 0; padding: 13px 14px; font-size: 0.92rem; }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div id="toast-container" aria-live="polite"></div>
+
+    <!-- Onay Modali (özel) -->
+    <div id="conf-modal" class="conf-modal">
+        <div class="conf-content">
+            <div class="conf-icon" id="confIcon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 110-20 10 10 0 010 20z"/></svg>
+            </div>
+            <h3 id="confTitle">Emin misiniz?</h3>
+            <p id="confMessage">İşleme devam etmek istiyor musunuz?</p>
+            <div class="conf-actions">
+                <button class="btn-secondary" onclick="confResolve(false)">Vazgeç</button>
+                <button class="btn-primary" onclick="confResolve(true)">Devam Et</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="home-screen" class="screen active">
+
+            <div class="header-wrapper">
+                <h1 class="liquid-title">English Day</h1>
+                <div class="liquid-subtitle">Bugün ne çalışıyoruz?</div>
+            </div>
+
+            <input type="date" id="date-picker" style="display:none;">
+
+            <!-- Seçili Tarih Kartı -->
+            <div class="selected-date-card">
+                <div class="sd-day-block">
+                    <div class="sd-day-num" id="sdDayNum">--</div>
+                    <div class="sd-day-month" id="sdDayMonth">---</div>
+                </div>
+                <div class="sd-info">
+                    <div class="sd-label">Seçili Tarih</div>
+                    <div class="sd-display" id="sdDisplay">—</div>
+                    <div class="sd-weekday" id="sdWeekday">—</div>
+                </div>
+                <div class="sd-status no-content" id="sdStatus">
+                    <span class="sd-dot"></span>
+                    <span id="sdStatusText">İçerik yok</span>
+                </div>
+            </div>
+
+            <div class="calendar-wrapper">
+                <div class="cal-header">
+                    <button class="cal-nav-btn" onclick="changeMonth(-1)" aria-label="Önceki ay">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <div class="cal-month-name" id="calMonthName">Ocak 2026</div>
+                    <button class="cal-nav-btn" onclick="changeMonth(1)" aria-label="Sonraki ay">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <div class="cal-grid">
+                    <div class="cal-day-name">Pzt</div>
+                    <div class="cal-day-name">Sal</div>
+                    <div class="cal-day-name">Çar</div>
+                    <div class="cal-day-name">Per</div>
+                    <div class="cal-day-name">Cum</div>
+                    <div class="cal-day-name">Cmt</div>
+                    <div class="cal-day-name">Paz</div>
+                </div>
+
+                <div id="calendarDays" class="cal-grid" style="margin-top: 8px;"></div>
+            </div>
+
+            <button class="btn-primary" onclick="startLesson()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Dersi Başlat
+            </button>
+            <button class="btn-secondary" onclick="openEditor()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Metni Yapıştır / Düzenle
+            </button>
+            <button class="btn-secondary" onclick="openAnaliz()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Yıllık Analiz
+            </button>
+        </div>
+
+        <div id="analiz-screen" class="screen">
+            <div class="lesson-toolbar">
+                <span id="lesson-date">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Yıllık İlerleme
+                </span>
+                <button onclick="goHome()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    Çıkış
+                </button>
+            </div>
+            <div id="analiz-content"></div>
+        </div>
+
+        <div id="editor-screen" class="screen">
+            <div class="header-wrapper" style="margin-bottom:14px;">
+                <h1 class="liquid-title" style="font-size:1.6rem;">İçerik Editörü</h1>
+                <div class="liquid-subtitle">Yapıştır ve kaydet</div>
+            </div>
+            <p style="color:var(--text-secondary); font-size:0.88rem; margin: 0 0 12px; line-height: 1.5;">
+                ChatGPT veya başka bir kaynaktan kopyaladığın günün dersini buraya yapıştır.
+                Bölümler (1., 2., 3., …) emoji başlığa göre otomatik olarak ayrılır.
+            </p>
+            <textarea id="content-input" placeholder="Örn: 1. 📅 GÜNÜN TEMASI..."></textarea>
+            <button class="btn-accent" onclick="saveContent()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                Kaydet
+            </button>
+            <button class="btn-secondary" onclick="goHome()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                İptal
+            </button>
+        </div>
+
+        <div id="lesson-screen" class="screen">
+            <div class="lesson-toolbar">
+                <span id="lesson-date">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span id="lesson-date-text">—</span>
+                </span>
+                <button onclick="goHome()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    Çıkış
+                </button>
+            </div>
+            <div class="lesson-progress" id="lesson-progress"></div>
+            <div id="lesson-content"></div>
+            <div style="height: 80px;"></div>
+        </div>
+    </div>
+
+    <script>
+        /* ===========================================================
+         *  YARDIMCI: TOAST BİLDİRİMLER
+         * =========================================================== */
+        const TOAST_ICONS = {
+            info:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v-5"/><path d="M12 8h.01"/><circle cx="12" cy="12" r="9"/></svg>',
+            success:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+            warn:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>',
+            error:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>'
+        };
+        function showToast(message, opts = {}) {
+            const type = opts.type || 'info';
+            const title = opts.title || ({info:'Bilgi', success:'Başarılı', warn:'Uyarı', error:'Hata'})[type];
+            const duration = opts.duration || 2400;
+            const container = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = `
+                <div class="toast-icon">${TOAST_ICONS[type] || TOAST_ICONS.info}</div>
+                <div class="toast-body">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-msg">${message}</div>
+                </div>`;
+            container.appendChild(t);
+            // Animate in
+            requestAnimationFrame(() => t.classList.add('visible'));
+            // Auto remove
+            setTimeout(() => {
+                t.classList.remove('visible');
+                setTimeout(() => t.remove(), 350);
+            }, duration);
+        }
+        // Eski API ile uyumluluk
+        function showAlert(msg) { showToast(msg, { type: 'info' }); }
+
+        /* ===========================================================
+         *  YARDIMCI: ÖZEL ONAY MODALI (confirm yerine)
+         * =========================================================== */
+        let _confResolve = null;
+        function customConfirm({ title = 'Emin misiniz?', message = '', confirmText = 'Devam Et', cancelText = 'Vazgeç' } = {}) {
+            return new Promise(resolve => {
+                document.getElementById('confTitle').textContent = title;
+                document.getElementById('confMessage').textContent = message;
+                const modal = document.getElementById('conf-modal');
+                modal.classList.add('open');
+                const buttons = modal.querySelectorAll('.conf-actions button');
+                buttons[0].textContent = cancelText;
+                buttons[1].textContent = confirmText;
+                _confResolve = resolve;
+            });
+        }
+        function confResolve(val) {
+            document.getElementById('conf-modal').classList.remove('open');
+            if (_confResolve) { _confResolve(val); _confResolve = null; }
+        }
+
+        /* ===========================================================
+         *  TARİH & TAKVİM
+         * =========================================================== */
+        const TR_MONTHS_LONG  = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+        const TR_MONTHS_SHORT = ["OCA","ŞUB","MAR","NİS","MAY","HAZ","TEM","AĞU","EYL","EKİ","KAS","ARA"];
+        const TR_WEEKDAYS     = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+
+        const datePicker = document.getElementById('date-picker');
+        let currentCalDate = new Date();
+
+        // Başlangıçta bugünü seç
+        (function initToday(){
+            const t = new Date();
+            const off = t.getTimezoneOffset() * 60000;
+            datePicker.value = new Date(t.getTime() - off).toISOString().split('T')[0];
+        })();
+
+        function changeMonth(dir) {
+            currentCalDate.setMonth(currentCalDate.getMonth() + dir);
+            renderCalendar();
+        }
+        function getMarkedDates() {
+            const marked = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('eng_day_')) marked.push(key.replace('eng_day_', ''));
+            }
+            return marked;
+        }
+
+        function updateSelectedDateCard() {
+            const v = datePicker.value;
+            if (!v) return;
+            const [y,m,d] = v.split('-').map(Number);
+            const obj = new Date(y, m-1, d);
+            const today = new Date(); today.setHours(0,0,0,0);
+            const isToday = obj.getTime() === today.getTime();
+
+            document.getElementById('sdDayNum').textContent = String(d).padStart(2,'0');
+            document.getElementById('sdDayMonth').textContent = TR_MONTHS_SHORT[m-1];
+            document.getElementById('sdDisplay').textContent =
+                isToday ? 'Bugün' : `${d} ${TR_MONTHS_LONG[m-1]} ${y}`;
+            document.getElementById('sdWeekday').textContent =
+                isToday
+                    ? `${d} ${TR_MONTHS_LONG[m-1]} · ${TR_WEEKDAYS[obj.getDay()]}`
+                    : TR_WEEKDAYS[obj.getDay()];
+
+            // İçerik var mı?
+            const hasContent = !!localStorage.getItem('eng_day_' + v);
+            const status = document.getElementById('sdStatus');
+            const statusText = document.getElementById('sdStatusText');
+            if (hasContent) {
+                status.className = 'sd-status has-content';
+                statusText.textContent = 'İçerik hazır';
+            } else {
+                status.className = 'sd-status no-content';
+                statusText.textContent = 'İçerik yok';
+            }
+        }
+
+        function renderCalendar() {
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+            document.getElementById('calMonthName').innerText = `${TR_MONTHS_LONG[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const startCol = firstDay === 0 ? 6 : firstDay - 1;
+
+            const grid = document.getElementById('calendarDays');
+            grid.innerHTML = '';
+
+            const markedDates = getMarkedDates();
+            const selectedDateVal = datePicker.value;
+
+            for (let i = 0; i < startCol; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-day empty';
+                grid.appendChild(empty);
+            }
+
+            const now = new Date();
+            for (let d = 1; d <= daysInMonth; d++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-day';
+                cell.innerText = d;
+                const currentDayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                if (d === now.getDate() && month === now.getMonth() && year === now.getFullYear()) cell.classList.add('today');
+                if (currentDayStr === selectedDateVal) cell.classList.add('selected');
+                if (markedDates.includes(currentDayStr)) cell.classList.add('has-data');
+                cell.onclick = () => {
+                    datePicker.value = currentDayStr;
+                    renderCalendar();
+                    updateSelectedDateCard();
+                };
+                grid.appendChild(cell);
+            }
+            updateSelectedDateCard();
+        }
+
+        /* ===========================================================
+         *  EKRAN GEÇİŞLERİ
+         * =========================================================== */
+        function goHome() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('home-screen').classList.add('active');
+            window.scrollTo(0, 0);
+            renderCalendar();
+        }
+        function openEditor() {
+            const date = datePicker.value;
+            if (!date) { showToast('Lütfen takvimden bir tarih seçin.', { type: 'warn', title: 'Tarih gerekli' }); return; }
+            const saved = localStorage.getItem('eng_day_' + date);
+            document.getElementById('content-input').value = saved || "";
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('editor-screen').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+        function saveContent() {
+            const date = datePicker.value;
+            const content = document.getElementById('content-input').value;
+            if (!content.trim()) {
+                showToast('Yapıştırılacak metin boş.', { type: 'warn', title: 'Boş içerik' });
+                return;
+            }
+            localStorage.setItem('eng_day_' + date, content);
+            showToast('Ders içeriği kaydedildi.', { type: 'success', title: 'Kaydedildi' });
+            setTimeout(goHome, 700);
+        }
+        async function startLesson() {
+            const date = datePicker.value;
+            if (!date) { showToast('Lütfen takvimden bir tarih seçin.', { type: 'warn' }); return; }
+            const content = localStorage.getItem('eng_day_' + date);
+            if (!content) {
+                const ok = await customConfirm({
+                    title: 'İçerik bulunamadı',
+                    message: 'Bu tarih için kayıtlı bir ders yok. Şimdi eklemek ister misin?',
+                    confirmText: 'Şimdi Ekle',
+                    cancelText: 'Vazgeç'
+                });
+                if (ok) openEditor();
+                return;
+            }
+            renderLesson(content, date);
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('lesson-screen').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        /* ===========================================================
+         *  PARSER — Etap etap ders ayrıştırıcı
+         * =========================================================== */
+        function escapeHtml(s) {
+            return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+        function normalizeSpaces(s) {
+            return (s || '').replace(/\u00A0/g, ' ').replace(/[ \t]+/g, ' ').trim();
+        }
+        // Bir satır numaralı emoji başlığı mı? (1. 📅 ..., 2. 🔑 ...)
+        function isNumberedSectionHeader(line) {
+            return /^\s*\d+\.\s+\S/.test(line) && /^\s*\d+\.\s+([\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}])/u.test(line);
+        }
+
+        // Metni numaralı bölümlere ayır. Yoksa ⸻ veya --- ile dener.
+        function splitSections(text) {
+            const lines = text.replace(/\r/g,'').split('\n');
+            const sections = [];
+            let buffer = [];
+            let foundHeader = false;
+            for (const line of lines) {
+                if (isNumberedSectionHeader(line)) {
+                    if (buffer.length) sections.push(buffer.join('\n'));
+                    buffer = [line];
+                    foundHeader = true;
+                } else {
+                    buffer.push(line);
+                }
+            }
+            if (buffer.length) sections.push(buffer.join('\n'));
+            if (foundHeader) return sections.filter(s => s.trim());
+            // Fallback: eski format
+            return text.split(/⸻|---/).filter(s => s.trim());
+        }
+
+        // Başlık parçalarını ayır: ana satır + altyazı
+        // "📅 GÜNÜN TEMASI (Tarih: 25 Nisan 2026)" → { main: "📅 GÜNÜN TEMASI", paren: "Tarih: 25 Nisan 2026" }
+        // "📖 KISA OKUMA METNİ (Reading)" → { main: "📖 KISA OKUMA METNİ", paren: "Reading" }
+        function splitTitleParen(rawTitle) {
+            const title = (rawTitle || '').replace(/^\s*\d+\.\s*/, '').trim();
+            const m = title.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+            if (!m) return { main: title, paren: '' };
+            return { main: m[1].trim(), paren: m[2].trim() };
+        }
+
+        // Başlık → tema bilgisi
+        function detectSectionTheme(title) {
+            const t = title.toLowerCase();
+            if (t.includes('tema') || t.includes('konu')) return { key:'day', label:'Günün Teması', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>' };
+            if (t.includes('kelime') || t.includes('vocab')) return { key:'vocab', label:'Vocabulary', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h.01M3 7h12M3 12h18M3 17h12"/><path d="M19 14l-3 3 3 3"/></svg>' };
+            if (t.includes('kalıp') || t.includes('phrase') || t.includes('expression')) return { key:'phrase', label:'Phrases', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>' };
+            if (t.includes('okuma') || t.includes('reading')) return { key:'read', label:'Reading', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/><path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/></svg>' };
+            if (t.includes('diyalog') || t.includes('dialog')) return { key:'dialog', label:'Dialogue', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-3.5-7l3 .5-.5 3"/></svg>' };
+            if (t.includes('telaffuz') || t.includes('pronun')) return { key:'pron', label:'Pronunciation', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>' };
+            if (t.includes('ödev') || t.includes('homework') || t.includes('pratik')) return { key:'hw', label:'Homework', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 13l2.3 2.3L15.5 11"/></svg>' };
+            return { key:'day', label:'Bölüm', icon:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' };
+        }
+
+        /* ----- Vocabulary ----- */
+        const VOCAB_HEADER_KEYWORDS = ['kelime', 'okunuş', 'okunusu', 'türkçe anlamı', 'turkce anlami', 'örnek cümle', 'ornek cumle', 'çevirisi', 'cevirisi', 'vocabulary', 'pronunciation', 'meaning', 'example', 'translation'];
+        function isVocabHeaderLine(line) {
+            const lo = line.toLowerCase();
+            return VOCAB_HEADER_KEYWORDS.some(k => lo.includes(k));
+        }
+        function parseVocab(contentLines) {
+            // Önce başlık-satırlarını ve parantezli açıklamaları temizle
+            let lines = contentLines.map(l => l.trim()).filter(Boolean);
+            // Üstteki ardışık 5 başlık satırını atla
+            let headerCount = 0;
+            for (let i = 0; i < Math.min(6, lines.length); i++) {
+                if (isVocabHeaderLine(lines[i])) headerCount++;
+                else break;
+            }
+            if (headerCount >= 3) lines = lines.slice(headerCount);
+
+            // Tablo (sütun) modu mu?
+            const colMode = lines.some(l => /\t/.test(l) || /\s{2,}/.test(l));
+            const items = [];
+            if (colMode) {
+                for (const line of lines) {
+                    if (isVocabHeaderLine(line)) continue;
+                    const cols = line.split(/\t|\s{2,}/).map(c => c.trim()).filter(Boolean);
+                    if (cols.length >= 3) {
+                        items.push({ word: cols[0], pron: cols[1] || '', meaning: cols[2] || '', exEn: cols[3] || '', exTr: cols[4] || '' });
+                    }
+                }
+            } else {
+                // Dikey 5'li format
+                for (let i = 0; i + 4 < lines.length; i += 5) {
+                    const chunk = lines.slice(i, i + 5);
+                    if (chunk.some(isVocabHeaderLine)) continue;
+                    items.push({ word: chunk[0], pron: chunk[1], meaning: chunk[2], exEn: chunk[3], exTr: chunk[4] });
+                }
+            }
+            return items;
+        }
+
+        /* ----- Phrases ----- */
+        function parsePhrases(contentLines) {
+            const phrases = [];
+            let current = null;
+            for (const raw of contentLines) {
+                const cleanLine = raw.replace(/^[\s•*\-–]+/, '').trim();
+                if (!cleanLine || cleanLine.startsWith('(')) continue;
+                const isProp =
+                    /^anlam[ıi]\s*:/i.test(cleanLine) ||
+                    /^kullan[ıi]m[ıi]?\s*:/i.test(cleanLine) ||
+                    /^örnek\s*:/i.test(cleanLine) ||
+                    /^ornek\s*:/i.test(cleanLine);
+                if (!isProp) {
+                    if (current && current.text) phrases.push(current);
+                    current = { text: cleanLine, mean: '', use: '', ex: '' };
+                } else if (current) {
+                    if (/^anlam/i.test(cleanLine)) current.mean = cleanLine.replace(/^anlam[ıi]\s*:\s*/i, '').trim();
+                    else if (/^kullan/i.test(cleanLine)) current.use = cleanLine.replace(/^kullan[ıi]m[ıi]?\s*:\s*/i, '').trim();
+                    else if (/^(örnek|ornek)/i.test(cleanLine)) current.ex = cleanLine.replace(/^(örnek|ornek)\s*:\s*/i, '').trim();
+                }
+            }
+            if (current && current.text) phrases.push(current);
+            // Defansif: yalnızca text'i olan ve EN AZ bir alanı dolu olanlar kalsın
+            return phrases.filter(p => p.text && p.text.length > 1 && (p.mean || p.use || p.ex));
+        }
+
+        /* ----- Dialogue ----- */
+        function parseDialogues(contentLines) {
+            const skipKeys = ['kişi', 'i̇ngilizce', 'ingilizce', 'türkçe', 'turkce'];
+            // Her hücreyi temizle, başlık satırlarını at
+            const lines = contentLines
+                .map(l => l.replace(/\r/g,'').trim())
+                .filter(l => l && !skipKeys.includes(l.toLowerCase()));
+
+            const items = [];
+            let i = 0;
+            while (i < lines.length) {
+                const line = lines[i];
+                // "A: text" / "B: text" inline format
+                const inline = line.match(/^([AB])\s*[:.]\s*(.+)$/i);
+                if (inline) {
+                    const speaker = inline[1].toUpperCase();
+                    let rest = inline[2].trim();
+                    let en = rest, tr = '';
+                    if (rest.includes('\t')) {
+                        const p = rest.split('\t').map(s => s.trim()).filter(Boolean);
+                        if (p.length >= 2) { en = p[0]; tr = p.slice(1).join(' '); }
+                    } else {
+                        const p = rest.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+                        if (p.length >= 2) { en = p[0]; tr = p.slice(1).join(' '); }
+                    }
+                    items.push({ speaker, en, tr });
+                    i++;
+                    continue;
+                }
+                // "A:" tek satır + sonraki satırlar EN, TR
+                const aloneSpeaker = line.match(/^([AB])\s*[:.]?\s*$/i);
+                if (aloneSpeaker && i + 1 < lines.length) {
+                    const speaker = aloneSpeaker[1].toUpperCase();
+                    const en = lines[i + 1] || '';
+                    let tr = '';
+                    if (i + 2 < lines.length && !/^[AB]\s*[:.]?\s*$/i.test(lines[i + 2])) {
+                        tr = lines[i + 2];
+                        i += 3;
+                    } else {
+                        i += 2;
+                    }
+                    items.push({ speaker, en, tr });
+                    continue;
+                }
+                i++;
+            }
+            return items;
+        }
+
+        /* ----- Reading ----- */
+        function parseReading(contentLines) {
+            const text = contentLines.join('\n');
+            const out = { scenario: '', english: '', turkish: '', questions: [] };
+            // Senaryo: ... (tek satır)
+            const senMatch = text.match(/Senaryo\s*:\s*([^\n]+)/i);
+            if (senMatch) out.scenario = senMatch[1].trim();
+            // Tam Türkçe Çevirisi: ...
+            const trIdx = text.search(/Tam Türkçe Çevirisi\s*:/i);
+            const qIdx = text.search(/Anlama Soruları\s*:/i);
+            // İngilizce paragraf: senaryo sonrası → çeviri başlangıcı
+            let engSection = '';
+            if (senMatch) {
+                const senEnd = text.indexOf(senMatch[0]) + senMatch[0].length;
+                engSection = text.slice(senEnd, trIdx > 0 ? trIdx : (qIdx > 0 ? qIdx : text.length));
+            } else {
+                engSection = text.slice(0, trIdx > 0 ? trIdx : (qIdx > 0 ? qIdx : text.length));
+            }
+            out.english = engSection.replace(/^[\s\n]+/, '').replace(/[\s\n]+$/, '');
+
+            if (trIdx >= 0) {
+                let trSection = text.slice(trIdx).replace(/^Tam Türkçe Çevirisi\s*:\s*/i, '');
+                if (qIdx > trIdx) {
+                    trSection = trSection.slice(0, qIdx - trIdx - (text.slice(trIdx).indexOf(':') + 1));
+                }
+                if (qIdx > trIdx) {
+                    const qStartInTr = trSection.search(/Anlama Soruları\s*:/i);
+                    if (qStartInTr >= 0) trSection = trSection.slice(0, qStartInTr);
+                }
+                out.turkish = trSection.trim();
+            }
+
+            if (qIdx >= 0) {
+                let qBlock = text.slice(qIdx).replace(/^Anlama Soruları\s*:\s*/i, '');
+                qBlock = qBlock.split('\n').map(l => l.trim()).filter(Boolean);
+                qBlock.forEach(line => {
+                    const m = line.match(/^\d+\.\s*(.+)$/);
+                    if (!m) return;
+                    let q = m[1];
+                    let trH = '';
+                    const trSplit = q.match(/^(.+?)\s*\(\s*Türkçesi\s*:\s*([^)]+)\s*\)\s*$/i);
+                    if (trSplit) { q = trSplit[1].trim(); trH = trSplit[2].trim(); }
+                    out.questions.push({ q, tr: trH });
+                });
+            }
+            return out;
+        }
+
+        /* ----- Pronunciation Tips ----- */
+        function parsePronunciation(contentLines) {
+            const items = [];
+            for (const raw of contentLines) {
+                const cleanLine = raw.replace(/^[\s•*\-–]+/, '').trim();
+                if (!cleanLine || cleanLine.startsWith('(')) continue;
+                if (cleanLine.length < 2) continue;
+                items.push(cleanLine);
+            }
+            // Boş veya tek karakter girdileri at
+            return items.filter(s => s && s.trim().length > 1);
+        }
+
+        /* ----- Homework ----- */
+        function parseHomework(contentLines) {
+            const blocks = []; // [{ title, description, items: string[] }]
+            let cur = null;
+            for (const raw of contentLines) {
+                const line = raw.trim();
+                if (!line) continue;
+                const head = line.match(/^([A-Z])\.\s+(.+)$/);
+                if (head) {
+                    if (cur) blocks.push(cur);
+                    // İlk iki nokta üst üsteden sonrasını açıklama olarak ayır
+                    const colonIdx = line.indexOf(':');
+                    let title = line, description = '';
+                    if (colonIdx >= 0) {
+                        title = line.slice(0, colonIdx + 1).trim();
+                        description = line.slice(colonIdx + 1).trim();
+                    }
+                    cur = { title, description, items: [] };
+                    continue;
+                }
+                const num = line.match(/^\d+\.\s*(.+)$/);
+                if (num && cur) {
+                    cur.items.push(num[1]);
+                } else if (cur) {
+                    // Sayı ile başlamayan satırlar açıklamaya / önceki maddeye eklenir
+                    if (cur.items.length) cur.items[cur.items.length-1] += ' ' + line;
+                    else if (cur.description) cur.description += ' ' + line;
+                    else cur.description = line;
+                }
+            }
+            if (cur) blocks.push(cur);
+            return blocks;
+        }
+
+        /* ----- Topic (Section 1) ----- */
+        function parseTopic(contentLines) {
+            const items = []; // { tag, text }
+            for (const raw of contentLines) {
+                const line = raw.trim();
+                if (!line) continue;
+                const m = line.match(/^([A-Za-zÇĞİÖŞÜçğıöşü ]+?)\s*:\s*(.+)$/);
+                if (m) items.push({ tag: m[1].trim(), text: m[2].trim() });
+                else items.push({ tag: '', text: line });
+            }
+            return items;
+        }
+
+        /* ===========================================================
+         *  RENDERER
+         * =========================================================== */
+        function renderLesson(text, date) {
+            const container = document.getElementById('lesson-content');
+            container.innerHTML = '';
+            const [yy, mm, dd] = date.split('-');
+            document.getElementById('lesson-date-text').textContent = `${dd}.${mm}.${yy}`;
+
+            const sections = splitSections(text);
+
+            // Progress steps
+            const prog = document.getElementById('lesson-progress');
+            prog.innerHTML = '';
+            sections.forEach((_, i) => {
+                const sp = document.createElement('div');
+                sp.className = 'step' + (i === 0 ? ' active' : '');
+                sp.id = `step-${i}`;
+                prog.appendChild(sp);
+            });
+
+            sections.forEach((sectionRaw, index) => {
+                const lines = sectionRaw.replace(/\r/g,'').split('\n');
+                const firstNonEmpty = lines.findIndex(l => l.trim() !== '');
+                if (firstNonEmpty < 0) return;
+                const titleRaw = lines[firstNonEmpty];
+                const titleClean = titleRaw.replace(/^\s*\d+\.\s*/, '').trim();
+                const contentLines = lines.slice(firstNonEmpty + 1).filter(l => l.trim() !== '');
+
+                const theme = detectSectionTheme(titleClean);
+                const card = document.createElement('div');
+                card.className = `card theme-${theme.key}`;
+                card.id = `card-${index}`;
+                if (index === 0) card.classList.add('visible');
+
+                // Header — parantez içeriğini ana başlıktan ayır
+                const tParts = splitTitleParen(titleRaw);
+                let subtitle = '';
+                if (tParts.paren && !/[\d:]/.test(tParts.paren)) {
+                    // Parantez sadece İngilizce etiket gibi görünüyor → onu kullan
+                    subtitle = tParts.paren.toUpperCase();
+                } else {
+                    // Tarih, sayı vs. içeriyor → tema etiketini kullan
+                    subtitle = theme.label.toUpperCase();
+                }
+                const head = document.createElement('div');
+                head.className = 'section-header';
+                head.innerHTML = `
+                    <div class="section-icon">${theme.icon}</div>
+                    <div class="section-title-text">
+                        ${escapeHtml(tParts.main)}
+                        <small>${escapeHtml(subtitle)}</small>
+                    </div>`;
+                card.appendChild(head);
+
+                // Body by theme
+                if (theme.key === 'vocab') {
+                    const grid = document.createElement('div');
+                    grid.className = 'vocab-grid';
+                    const items = parseVocab(contentLines);
+                    if (!items.length) {
+                        grid.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">Kelime bulunamadı.</div>';
+                    } else {
+                        items.forEach(it => {
+                            const el = document.createElement('div');
+                            el.className = 'vocab-item';
+                            el.innerHTML = `
+                                <div class="v-top">
+                                    <span class="v-word">${escapeHtml(it.word)}</span>
+                                    ${it.pron ? `<span class="v-pron">${escapeHtml(it.pron)}</span>` : ''}
+                                </div>
+                                <span class="v-mean">${escapeHtml(it.meaning || '')}</span>
+                                <div class="v-ex">${escapeHtml(it.exEn || '')}<small>${escapeHtml(it.exTr || '')}</small></div>`;
+                            grid.appendChild(el);
+                        });
+                    }
+                    card.appendChild(grid);
+                } else if (theme.key === 'phrase') {
+                    const wrap = document.createElement('div');
+                    parsePhrases(contentLines).forEach(p => {
+                        const el = document.createElement('div');
+                        el.className = 'phrase-unit';
+                        // Önce HTML kaçışı, sonra B: öncesine satır kırma, sonra A:/B: vurgu
+                        const colored = escapeHtml(p.ex || '')
+                            .replace(/\s+B:/g, '<br>B:')      // B: yeni satıra
+                            .replace(/^A:/,    '<span class="speaker-a">A:</span>')
+                            .replace(/<br>B:/, '<br><span class="speaker-b">B:</span>');
+                        el.innerHTML = `
+                            <span class="ph-title">${escapeHtml(p.text)}</span>
+                            ${(p.mean || p.use) ? `
+                                <div class="ph-meta">
+                                    ${p.mean ? `<div class="ph-row"><span class="ph-tag">Anlam</span> ${escapeHtml(p.mean)}</div>` : ''}
+                                    ${p.use ? `<div class="ph-row"><span class="ph-tag">Kullanım</span> ${escapeHtml(p.use)}</div>` : ''}
+                                </div>` : ''}
+                            ${p.ex ? `<div class="ph-dialogue">${colored}</div>` : ''}
+                        `;
+                        wrap.appendChild(el);
+                    });
+                    card.appendChild(wrap);
+                } else if (theme.key === 'read') {
+                    const r = parseReading(contentLines);
+                    const wrap = document.createElement('div');
+                    wrap.className = 'reading-container';
+                    let html = '';
+                    if (r.scenario) {
+                        html += `<div class="scenario-box">
+                            <span class="icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l3 5-3 5h6l3-5-3-5H3z"/><path d="M14 7h7v10h-7"/></svg></span>
+                            <div><b>Senaryo:</b> ${escapeHtml(r.scenario)}</div>
+                        </div>`;
+                    }
+                    if (r.english) html += `<div class="eng-text-box">${escapeHtml(r.english).replace(/\n/g,'<br>')}</div>`;
+                    if (r.turkish) html += `<div class="tr-text-box"><b>Türkçe Çeviri</b><br>${escapeHtml(r.turkish).replace(/\n/g,'<br>')}</div>`;
+                    if (r.questions.length) {
+                        html += `<div class="questions-box">
+                            <span class="q-title"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg> Anlama Soruları</span>
+                            <ol class="q-list">${r.questions.map((q,i) => `
+                                <li class="q-item">
+                                    <span class="q-num">${i+1}</span>
+                                    <span class="q-text">${escapeHtml(q.q)}${q.tr ? `<small>${escapeHtml(q.tr)}</small>` : ''}</span>
+                                </li>`).join('')}
+                            </ol>
+                        </div>`;
+                    }
+                    wrap.innerHTML = html;
+                    card.appendChild(wrap);
+                } else if (theme.key === 'dialog') {
+                    const box = document.createElement('div');
+                    box.className = 'chat-container';
+                    const items = parseDialogues(contentLines);
+                    if (!items.length) {
+                        box.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">Diyalog satırları ayrıştırılamadı.</div>';
+                    } else {
+                        items.forEach(d => {
+                            const isA = d.speaker === 'A';
+                            const row = document.createElement('div');
+                            row.className = 'chat-row ' + (isA ? 'left' : 'right');
+                            row.innerHTML = `
+                                <div class="chat-avatar">${d.speaker}</div>
+                                <div class="chat-bubble">
+                                    <div>${escapeHtml(d.en)}</div>
+                                    ${d.tr ? `<div class="chat-tr">${escapeHtml(d.tr)}</div>` : ''}
+                                </div>`;
+                            box.appendChild(row);
+                        });
+                    }
+                    card.appendChild(box);
+                } else if (theme.key === 'pron') {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'tip-list';
+                    parsePronunciation(contentLines).forEach((tip, i) => {
+                        const el = document.createElement('div');
+                        el.className = 'tip-item';
+                        el.innerHTML = `<div class="tip-bullet">${i+1}</div><div>${escapeHtml(tip)}</div>`;
+                        wrap.appendChild(el);
+                    });
+                    card.appendChild(wrap);
+                } else if (theme.key === 'hw') {
+                    const wrap = document.createElement('div');
+                    parseHomework(contentLines).forEach(b => {
+                        const el = document.createElement('div');
+                        el.className = 'hw-block';
+                        const list = b.items.length
+                            ? `<ol>${b.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}</ol>`
+                            : '';
+                        const desc = b.description
+                            ? `<div class="hw-description">${escapeHtml(b.description)}</div>`
+                            : '';
+                        el.innerHTML = `<span class="hw-title">${escapeHtml(b.title)}</span>${desc}<div class="hw-content">${list}</div>`;
+                        wrap.appendChild(el);
+                    });
+                    card.appendChild(wrap);
+                } else if (theme.key === 'day') {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'topic-block';
+                    parseTopic(contentLines).forEach(it => {
+                        const row = document.createElement('div');
+                        row.className = 'topic-row';
+                        if (it.tag) {
+                            row.innerHTML = `<span class="topic-tag">${escapeHtml(it.tag)}</span>
+                                             <span class="topic-text">${escapeHtml(it.text)}</span>`;
+                        } else {
+                            row.innerHTML = `<span class="topic-text">${escapeHtml(it.text)}</span>`;
+                        }
+                        wrap.appendChild(row);
+                    });
+                    card.appendChild(wrap);
+                } else {
+                    const div = document.createElement('div');
+                    div.style.lineHeight = "1.6";
+                    div.innerHTML = contentLines.map(escapeHtml).join('<br>');
+                    card.appendChild(div);
+                }
+
+                // Adım butonu / bitiş
+                if (index < sections.length - 1) {
+                    const btn = document.createElement('button');
+                    btn.className = 'nav-btn';
+                    btn.innerHTML = `Bu bölümü tamamladım, sıradaki <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+                    btn.onclick = function() {
+                        this.disabled = true;
+                        this.style.opacity = '0.6';
+                        const cur = document.getElementById(`step-${index}`);
+                        const nxt = document.getElementById(`step-${index+1}`);
+                        if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
+                        if (nxt) nxt.classList.add('active');
+                        const next = document.getElementById(`card-${index+1}`);
+                        next.classList.add('visible');
+                        setTimeout(() => next.scrollIntoView({behavior:'smooth', block:'start'}), 120);
+                    };
+                    card.appendChild(btn);
+                } else {
+                    const btn = document.createElement('button');
+                    btn.className = 'finish-btn';
+                    btn.innerHTML = `Dersi Bitir <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
+                    btn.onclick = () => {
+                        const cur = document.getElementById(`step-${index}`);
+                        if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
+                        // Tamamlandı işareti — yıllık analizde sayım için
+                        try { localStorage.setItem('eng_done_' + date, '1'); } catch (e) {}
+                        showToast('Bugünün dersini başarıyla tamamladın.', { type: 'success', title: 'Tebrikler!' });
+                        setTimeout(goHome, 1300);
+                    };
+                    card.appendChild(btn);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        /* ===========================================================
+         *  YILLIK ANALİZ
+         * =========================================================== */
+        function getYearStats() {
+            const year = String(new Date().getFullYear());
+            const stats = {
+                year,
+                completedDays: 0,
+                addedDays: 0,
+                vocabCount: 0,
+                phraseCount: 0
+            };
+            const seenDays = new Set();
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (!key) continue;
+
+                if (key.startsWith('eng_done_')) {
+                    const d = key.replace('eng_done_', '');
+                    if (d.startsWith(year)) stats.completedDays++;
+                    continue;
+                }
+                if (key.startsWith('eng_day_')) {
+                    const d = key.replace('eng_day_', '');
+                    if (!d.startsWith(year)) continue;
+                    if (seenDays.has(d)) continue;
+                    seenDays.add(d);
+                    stats.addedDays++;
+                    const content = localStorage.getItem(key) || '';
+                    const sections = splitSections(content);
+                    sections.forEach(s => {
+                        const lines = s.replace(/\r/g,'').split('\n');
+                        const fnIdx = lines.findIndex(l => l.trim() !== '');
+                        if (fnIdx < 0) return;
+                        const titleClean = lines[fnIdx].replace(/^\s*\d+\.\s*/, '').trim();
+                        const theme = detectSectionTheme(titleClean);
+                        const cl = lines.slice(fnIdx + 1).filter(l => l.trim() !== '');
+                        if (theme.key === 'vocab') stats.vocabCount += parseVocab(cl).length;
+                        else if (theme.key === 'phrase') stats.phraseCount += parsePhrases(cl).length;
+                    });
+                }
+            }
+            return stats;
+        }
+
+        const ANALIZ_ICONS = {
+            check:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>',
+            flame:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s4 5 4 9a4 4 0 11-8 0c0-2 1-3 1-3-1 4-5 5-5 9a8 8 0 0016 0c0-5-4-7-4-12-1 1-2 3-4 3-2 0-2-2 0-6z"/></svg>',
+            book:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/><path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/></svg>',
+            chat:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>'
+        };
+
+        function openAnaliz() {
+            const s = getYearStats();
+            const container = document.getElementById('analiz-content');
+            const hasAny = s.addedDays + s.completedDays + s.vocabCount + s.phraseCount > 0;
+
+            container.innerHTML = `
+                <div class="analiz-hero">
+                    <div class="analiz-year-tag">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        ${escapeHtml(s.year)} özeti
+                    </div>
+                    <h2>İngilizce Yolculuğun</h2>
+                    <p>Bu yıl içinde tamamladığın dersler ve öğrendiğin kelimeler/kalıplar — tek bakışta görüyorsun.</p>
+                </div>
+
+                <div class="analiz-grid">
+                    <div class="analiz-card tone-green">
+                        <div class="ac-icon">${ANALIZ_ICONS.check}</div>
+                        <div><span class="ac-value">${s.completedDays}</span><span class="ac-value-suffix">gün</span></div>
+                        <div class="ac-label">Tamamlanan Ders</div>
+                        <div class="ac-sublabel">Başarıyla bitirip "Bitir" dediğin gün sayısı.</div>
+                    </div>
+                    <div class="analiz-card tone-blue">
+                        <div class="ac-icon">${ANALIZ_ICONS.book}</div>
+                        <div><span class="ac-value">${s.vocabCount}</span><span class="ac-value-suffix">kelime</span></div>
+                        <div class="ac-label">Ezberlenen Kelime</div>
+                        <div class="ac-sublabel">Tüm derslerdeki Vocabulary bölümlerinin toplamı.</div>
+                    </div>
+                    <div class="analiz-card tone-violet">
+                        <div class="ac-icon">${ANALIZ_ICONS.chat}</div>
+                        <div><span class="ac-value">${s.phraseCount}</span><span class="ac-value-suffix">kalıp</span></div>
+                        <div class="ac-label">Günlük Kalıp</div>
+                        <div class="ac-sublabel">Phrases bölümlerinde öğrendiğin ifade sayısı.</div>
+                    </div>
+                    <div class="analiz-card tone-gold">
+                        <div class="ac-icon">${ANALIZ_ICONS.flame}</div>
+                        <div><span class="ac-value">${s.addedDays}</span><span class="ac-value-suffix">gün</span></div>
+                        <div class="ac-label">İçerik Eklenen Gün</div>
+                        <div class="ac-sublabel">Bu yıl içerik kaydettiğin toplam gün sayısı.</div>
+                    </div>
+                </div>
+
+                ${!hasAny ? '<div class="analiz-empty">Bu yıl için henüz veri yok.<br>İlk dersini ekleyip başlatınca burada istatistikler oluşmaya başlayacak.</div>' : ''}
+            `;
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('analiz-screen').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // İlk yükleme
+        renderCalendar();
+        updateSelectedDateCard();
+    </script>
+    
+    <script>
+        (function syncDateFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const externalDate = urlParams.get('date');
+                if (externalDate) {
+                    const picker = document.getElementById('date-picker');
+                    if (picker) {
+                        picker.value = externalDate;
+                        // Takvimi de o tarihe götür
+                        currentCalDate = new Date(externalDate);
+                        renderCalendar();
+                    }
+                }
+            } catch (e) { console.log("Tarih senk. hatası:", e); }
+        })();
+    </script>
+</body>
+</html>
