@@ -8,6 +8,21 @@
     <title>Namaz Takibi - MSEFAGOR</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cloud sync -->
+    <script>
+        window.SYNC_KEYS = ['namazTakipData_v2'];
+        window.addEventListener('dbsynced', () => {
+            try {
+                if (typeof loadDay === 'function' && typeof currentActiveDate === 'string' && currentActiveDate) {
+                    loadDay(currentActiveDate);
+                }
+                if (typeof calculateStats === 'function') calculateStats();
+                if (typeof renderMissedList === 'function') renderMissedList();
+            } catch (e) { console.warn('namaz refresh after sync:', e); }
+        });
+    </script>
+    <script type="module" src="./db-sync.js"></script>
     
     <style>
         :root {
