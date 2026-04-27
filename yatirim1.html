@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>MSEFAGOR Plan</title>
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/bullish.png">
+
+    <!-- Cloud sync -->
+    <script>window.SYNC_KEYS = ['liquid_trader_db_v3', 'liquid_trader_settings_v3'];</script>
+    <script type="module" src="./db-sync.js?v=15"></script>
+
+    <style>
+        /* --- Temel Ayarlar & Değişkenler --- */
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.2);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6; /* Mavi */
+            --success: #10b981; /* Yeşil */
+            --danger: #ef4444; /* Kırmızı */
+            --card-radius: 24px;
+            --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Arkaplan Efektleri --- */
+        .background-fx {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            overflow: hidden;
+        }
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6;
+            animation: float 10s infinite ease-in-out;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 300px; height: 300px; background: #4c1d95; animation-delay: 0s; }
+        .blob-2 { bottom: 10%; right: -10%; width: 350px; height: 350px; background: #0e7490; animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 30%; width: 200px; height: 200px; background: #be123c; opacity: 0.3; animation-delay: -2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+
+        /* --- Layout --- */
+        .app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: max(env(safe-area-inset-top), 20px) 20px max(env(safe-area-inset-bottom), 100px) 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            border-radius: var(--card-radius);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- Header Tasarımı (Liquid Style) --- */
+        .app-header {
+            margin-top: 20px; 
+            margin-bottom: 25px;
+            text-align: right; 
+            padding-right: 5px;
+        }
+
+        .liquid-brand {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #94a3b8, #e2e8f0); 
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .liquid-title {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ffffff 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.3));
+        }
+
+        /* --- Buttons & Inputs --- */
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 16px;
+            border-radius: 18px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%;
+        }
+        .btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.2); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-primary { background: var(--accent); border-color: var(--accent); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        .btn-success { background: var(--success); border-color: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); border-color: var(--danger); color: #fca5a5; }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 18px;
+            outline: none;
+            margin-bottom: 15px;
+            font-family: var(--font-family);
+        }
+        input:focus { border-color: var(--accent); }
+        
+        input[type="date"] {
+            -webkit-appearance: none;
+            display: block;
+            width: 100%;
+            min-width: 0;
+            text-align: center;
+        }
+
+        h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.5px; }
+        .label { color: var(--text-muted); font-size: 13px; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hidden { display: none !important; }
+        .mt-4 { margin-top: 20px; }
+        .mb-4 { margin-bottom: 20px; }
+
+        /* --- Pages --- */
+        .page { display: none; animation: fadeIn 0.3s ease; height: 100%; }
+        .page.active { display: flex; flex-direction: column; gap: 20px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Flash Card (Giriş Kısmı - Büyük Fontlar) --- */
+        .flash-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 5px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+        }
+        
+        .balance-section {
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        .big-balance { 
+            font-size: 48px; /* Daha büyük font */
+            font-weight: 800; 
+            letter-spacing: -1px;
+            color: white;
+            text-shadow: 0 0 25px rgba(59, 130, 246, 0.6); /* Neon parlama */
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+        
+        .big-tl { 
+            font-size: 22px; 
+            color: rgba(255,255,255,0.7); 
+            font-weight: 500; 
+        }
+
+        /* --- Projection Card --- */
+        .projection-card {
+            padding: 15px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .proj-item { 
+            display: flex; flex-direction: column; gap: 4px; 
+            flex: 1; text-align: center;
+        }
+        .proj-item.clickable { cursor: pointer; position: relative; }
+        .proj-item.clickable:active { transform: scale(0.95); opacity: 0.8; }
+        
+        .proj-val { font-size: 16px; font-weight: 700; color: white; }
+        .proj-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .proj-sep { width: 1px; height: 30px; background: var(--glass-border); }
+
+        /* --- Stats --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-box { padding: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .stat-val { font-size: 22px; font-weight: 700; }
+        .stat-val.up { color: var(--success); }
+        .stat-val.down { color: var(--danger); }
+        .stat-val.neutral { color: var(--text-muted); }
+        
+        .history-list { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-item:last-child { border-bottom: none; }
+        .h-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* --- Table in Modal --- */
+        .detail-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        .detail-table th { text-align: left; color: var(--text-muted); padding: 8px; border-bottom: 1px solid var(--glass-border); font-size: 12px; }
+        .detail-table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); color: white; }
+        .detail-table tr:last-child td { border-bottom: none; }
+
+        /* --- Modern Nav Bar (Liquid Glass) --- */
+        .nav-bar {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 380px;
+            height: 70px;
+            background: rgba(25, 25, 35, 0.7);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 40px;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            padding: 0 10px;
+        }
+        .nav-item {
+            color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 600;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+            background: none; border: none; 
+            padding: 0; width: 60px; height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-item.active { 
+            color: white; 
+            transform: translateY(-5px);
+        }
+        
+        .nav-item.active .nav-icon-bg {
+            background: linear-gradient(135deg, var(--accent), #60a5fa);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
+            opacity: 1;
+        }
+
+        .nav-icon-bg {
+            width: 40px; height: 40px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .nav-icon { width: 22px; height: 22px; fill: white; }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            z-index: 200; display: none; align-items: flex-end;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-content {
+            background: #111; border-top-left-radius: 25px; border-top-right-radius: 25px;
+            width: 100%; padding: 30px 20px 50px 20px;
+            border-top: 1px solid var(--glass-highlight);
+            animation: slideUp 0.3s ease;
+            max-height: 85vh; /* Çok uzun listeler için */
+            display: flex; flex-direction: column;
+        }
+        .modal-body-scroll { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="background-fx">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        
+        <div id="page-home" class="page active">
+            <div class="app-header">
+                <div class="liquid-brand">MSEFAGOR Bütçe Planı</div>
+                <div class="liquid-title">Bugünün Durumu</div>
+            </div>
+
+            <div class="glass-panel flash-card">
+                <div id="step-date" style="width:100%;">
+                    <div class="label" style="text-align:left; margin-left:5px;">İşlem Tarihi</div>
+                    <div style="width: 100%;">
+                        <input type="date" id="input-date" style="font-weight:bold; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+                    </div>
+
+                    <div class="balance-section">
+                        <div class="balance-label">SON BAKİYE</div>
+                        <div class="big-balance" id="last-balance-val">0.00</div>
+                        <div class="big-tl" id="last-balance-tl">₺0.00</div>
+                    </div>
+                    
+                    <div style="width:100%">
+                        <button id="btn-start" class="btn btn-primary" onclick="goToStep2()">İşleme Başla</button>
+                    </div>
+                </div>
+
+                <div id="step-question" class="hidden" style="width:100%;">
+                    <h2 class="mb-4">Kâr elde ettin mi?</h2>
+                    <p style="color:var(--text-muted); margin-bottom:30px;">Bugün bakiyende bir artış veya işlem gerçekleşti mi?</p>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-danger" onclick="resetFlow()">Hayır, Değişim Yok</button>
+                        <button class="btn btn-success" onclick="goToStep3()">Evet, Giriş Yap</button>
+                    </div>
+                </div>
+
+                <div id="step-input" class="hidden" style="width:100%;">
+                    <h2 class="mb-2">Güncel Bakiye</h2>
+                    
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:10px; background:rgba(255,255,255,0.05); padding:6px 12px; border-radius:8px; display:inline-block;">
+                        Önceki Bakiye: <span id="ref-prev-balance" style="color:white; font-weight:bold;">$0.00</span>
+                    </div>
+
+                    <p class="label mb-4" style="margin-top:10px;">Hesabındaki yeni toplam tutarı gir (USD)</p>
+                    
+                    <input type="number" id="input-new-balance" placeholder="Yeni toplam tutar..." step="0.01" inputmode="decimal">
+                    
+                    <div id="profit-preview" style="margin-bottom:20px; font-size:15px; color:var(--success);"></div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="width:30%" onclick="resetFlow()">İptal</button>
+                        <button class="btn btn-primary" onclick="saveTransaction()">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="projection-card" class="glass-panel projection-card">
+                <div class="proj-item">
+                    <span class="proj-lbl">Sonraki Hedef</span>
+                    <span class="proj-val" id="proj-next-target" style="color:var(--accent)">--</span>
+                </div>
+                
+                <div class="proj-sep"></div>
+                
+                <div class="proj-item">
+                    <span class="proj-lbl">Gereken Fark</span>
+                    <span class="proj-val" id="proj-diff" style="color:var(--text-main)">--</span>
+                </div>
+                
+                <div class="proj-sep"></div>
+                
+                <div class="proj-item clickable" onclick="openProjectionDetails()">
+                    <span class="proj-lbl">Kalan İşlem ⓘ</span>
+                    <span class="proj-val" id="proj-steps-left" style="color:var(--text-muted);">--</span>
+                </div>
+            </div>
+            
+            <div style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:-10px;">
+                *Her işlemde <span id="proj-percent-display">%7</span> kâr varsayımıyla.
+            </div>
+
+        </div>
+
+        <div id="page-stats" class="page">
+            <div class="app-header">
+                <div class="liquid-brand">İstatistikler</div>
+                <div class="liquid-title">Performans Analizi</div>
+            </div>
+            
+            <div class="glass-panel mb-4" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="label">Toplam Hedef Durumu</div>
+                    <div id="stat-percent-text" style="font-size:14px; color:var(--success); font-weight:700;">%0</div>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:end; margin-top:5px;">
+                    <div style="font-size:24px; font-weight:bold;" id="stat-current-tl">₺0</div>
+                    <div style="color:var(--text-muted); font-size:14px;" id="stat-target-tl">/ ₺0</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; margin-top:10px; overflow:hidden;">
+                    <div id="target-progress" style="background:var(--success); height:100%; width:0%;"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid mb-4">
+                <div class="glass-panel stat-box">
+                    <div class="label">Önceki Gün</div>
+                    <div class="stat-val" id="stat-yesterday">--</div>
+                </div>
+                <div class="glass-panel stat-box">
+                    <div class="label">Bu Hafta</div>
+                    <div class="stat-val" id="stat-week">--</div>
+                </div>
+                <div class="glass-panel stat-box" style="grid-column: span 2;">
+                    <div class="label">Bu Ay (Mevcut Yıl)</div>
+                    <div class="stat-val" id="stat-month">--</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">Toplam Bakiye Farkı</div>
+                </div>
+            </div>
+
+            <h3 class="mb-2">Son İşlemler</h3>
+            <div class="glass-panel history-list" id="history-container"></div>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="switchTab('home')">
+            <div class="nav-icon-bg">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            </div>
+            <span>Giriş</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('stats')">
+            <div class="nav-icon-bg">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+            </div>
+            <span>Analiz</span>
+        </button>
+        <button class="nav-item" onclick="openSettings()">
+            <div class="nav-icon-bg">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </div>
+            <span>Ayarlar</span>
+        </button>
+    </nav>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="mb-4">Ayarlar</h2>
+            
+            <div class="label">Hedef Kâr Yüzdesi (%)</div>
+            <input type="number" id="set-percent" placeholder="Örn: 7" step="0.1">
+
+            <div class="label">Dolar Kuru (TL)</div>
+            <input type="number" id="set-fx" placeholder="Örn: 32.50" step="0.01">
+
+            <div class="label">Hedef Tutar (TL)</div>
+            <input type="number" id="set-target" placeholder="Örn: 1000000">
+
+            <div class="label">Başlangıç Bakiyesi (Sıfırlama için)</div>
+            <input type="number" id="set-start-bal" placeholder="Örn: 1000">
+
+            <button class="btn btn-primary mb-2" onclick="saveSettings()">Ayarları Kaydet</button>
+            <button class="btn btn-danger" onclick="clearAllData()">Tüm Verileri Sıfırla</button>
+            <button class="btn mt-4" onclick="closeModal('settings-modal')">Kapat</button>
+        </div>
+    </div>
+
+    <div id="projection-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="font-size:20px;">Hedef Planı</h2>
+                <button class="btn" style="width:auto; padding:8px 15px;" onclick="closeModal('projection-modal')">✕</button>
+            </div>
+            
+            <div class="modal-body-scroll">
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:15px;">
+                    Mevcut bakiyen üzerinden, her işlemde <b id="detail-percent"></b> büyüme ile hedefe ulaşma tablosu:
+                </p>
+                
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>Adım</th>
+                            <th>Bakiye (USD)</th>
+                            <th>Kâr</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projection-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Veri Yönetimi ---
+        const DB_KEY = 'liquid_trader_db_v3';
+        const SETTINGS_KEY = 'liquid_trader_settings_v3';
+
+        let transactions = [];
+        let settings = {
+            fxRate: 34.00,
+            targetTL: 500000,
+            targetPercent: 7.0, 
+            initialBalance: 0
+        };
+
+        // --- Başlangıç ---
+        function init() {
+            reloadFromStorage();
+
+            // Tarih (Bugünü ayarla)
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('input-date');
+            dateInput.value = today;
+
+            // Ekranları güncelle
+            updateBalanceDisplay();
+            calculateProjections();
+            checkDateAllowed(); // İlk açılış kontrolü
+
+            // Event Listeners (sadece ilk açılışta bağlanır)
+            document.getElementById('input-new-balance').addEventListener('input', previewProfit);
+            document.getElementById('input-date').addEventListener('change', checkDateAllowed);
+        }
+
+        // Yerel state'i localStorage'dan yenile (cloud sync sonrası kullanılır)
+        function reloadFromStorage() {
+            const savedData = localStorage.getItem(DB_KEY);
+            if (savedData) transactions = JSON.parse(savedData);
+
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if (savedSettings) settings = JSON.parse(savedSettings);
+
+            const fx = document.getElementById('set-fx');
+            const tg = document.getElementById('set-target');
+            const pc = document.getElementById('set-percent');
+            if (fx) fx.value = settings.fxRate;
+            if (tg) tg.value = settings.targetTL;
+            if (pc) pc.value = settings.targetPercent;
+        }
+
+        // db-sync.js bulutdan veri getirdiğinde
+        window.addEventListener('dbsynced', () => {
+            reloadFromStorage();
+            if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay();
+            if (typeof calculateProjections === 'function') calculateProjections();
+        });
+
+        // --- Tarih Kontrolü (Geçmişe işlem yok) ---
+        function checkDateAllowed() {
+            const inputDate = new Date(document.getElementById('input-date').value);
+            const today = new Date();
+            // Saatleri sıfırla ki sadece gün kıyaslansın
+            inputDate.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+
+            const btn = document.getElementById('btn-start');
+            
+            if (inputDate < today) {
+                btn.disabled = true;
+                btn.innerText = "Geçmiş - İşlem Kapalı";
+                btn.classList.remove('btn-primary');
+            } else {
+                btn.disabled = false;
+                btn.innerText = "İşleme Başla";
+                btn.classList.add('btn-primary');
+            }
+        }
+
+        // --- Navigasyon ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`page-${tabName}`).classList.add('active');
+            
+            const index = tabName === 'home' ? 0 : 1;
+            document.querySelectorAll('.nav-item')[index].classList.add('active');
+
+            if(tabName === 'home') {
+                resetFlow();
+                calculateProjections();
+            } else if (tabName === 'stats') {
+                calculateStats();
+            }
+        }
+
+        function getLatestBalance() {
+            if (transactions.length === 0) return settings.initialBalance || 0;
+            return transactions[transactions.length - 1].balance;
+        }
+
+        function updateBalanceDisplay() {
+            const bal = getLatestBalance();
+            const tl = bal * settings.fxRate;
+            
+            document.getElementById('last-balance-val').innerText = formatNumber(bal);
+            document.getElementById('last-balance-tl').innerText = formatTL(tl);
+            document.getElementById('ref-prev-balance').innerText = formatUSD(bal);
+        }
+
+        // --- PROJEKSİYON ---
+        function calculateProjections() {
+            const currentUSD = getLatestBalance();
+            const targetUSD = settings.targetTL / settings.fxRate;
+            const rate = settings.targetPercent / 100;
+
+            document.getElementById('proj-percent-display').innerText = `%${settings.targetPercent}`;
+
+            // 1. Sonraki Hedef
+            const nextTarget = currentUSD * (1 + rate);
+            document.getElementById('proj-next-target').innerText = formatUSD(nextTarget);
+
+            // 2. Gereken Fark
+            const diff = nextTarget - currentUSD;
+            const diffEl = document.getElementById('proj-diff');
+            diffEl.innerText = "+" + formatNumber(diff);
+
+            // 3. Kalan İşlem
+            const stepsEl = document.getElementById('proj-steps-left');
+            if (currentUSD >= targetUSD) {
+                stepsEl.innerText = "Tamamlandı!";
+                stepsEl.style.color = "var(--success)";
+            } else if (currentUSD <= 0) {
+                stepsEl.innerText = "--";
+            } else {
+                const steps = Math.ceil(Math.log(targetUSD / currentUSD) / Math.log(1 + rate));
+                stepsEl.innerText = `${steps} İşlem >`;
+                stepsEl.style.color = "var(--text-main)";
+            }
+        }
+
+        function openProjectionDetails() {
+            const currentUSD = getLatestBalance();
+            const targetUSD = settings.targetTL / settings.fxRate;
+            const rate = settings.targetPercent / 100;
+
+            if(currentUSD <= 0 || currentUSD >= targetUSD) return;
+
+            const tbody = document.getElementById('projection-table-body');
+            tbody.innerHTML = '';
+            document.getElementById('detail-percent').innerText = `%${settings.targetPercent}`;
+
+            let tempBal = currentUSD;
+            let step = 1;
+            // Max 1000 işlem sınırı koyalım tarayıcı donmasın
+            while(tempBal < targetUSD && step <= 1000) {
+                let nextBal = tempBal * (1 + rate);
+                let profit = nextBal - tempBal;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${step}. İşlem</td>
+                    <td>${formatNumber(nextBal)}</td>
+                    <td style="color:var(--success)">+${formatNumber(profit)}</td>
+                `;
+                tbody.appendChild(tr);
+
+                tempBal = nextBal;
+                step++;
+            }
+
+            document.getElementById('projection-modal').classList.add('open');
+        }
+
+        // --- Akış Kontrol ---
+        function goToStep2() {
+            document.getElementById('step-date').classList.add('hidden');
+            document.getElementById('projection-card').classList.add('hidden'); 
+            document.getElementById('step-question').classList.remove('hidden');
+        }
+
+        function goToStep3() {
+            document.getElementById('step-question').classList.add('hidden');
+            document.getElementById('step-input').classList.remove('hidden');
+            const el = document.getElementById('input-new-balance');
+            el.value = ''; el.focus();
+            document.getElementById('ref-prev-balance').innerText = formatUSD(getLatestBalance());
+            document.getElementById('profit-preview').innerText = '';
+        }
+
+        function resetFlow() {
+            document.getElementById('step-input').classList.add('hidden');
+            document.getElementById('step-question').classList.add('hidden');
+            document.getElementById('step-date').classList.remove('hidden');
+            document.getElementById('projection-card').classList.remove('hidden');
+            updateBalanceDisplay();
+            calculateProjections();
+            checkDateAllowed(); // Tarihe göre buton durumu tekrar kontrol
+        }
+
+        function previewProfit() {
+            const current = getLatestBalance();
+            const inputVal = parseFloat(document.getElementById('input-new-balance').value);
+            if (isNaN(inputVal)) return;
+
+            const diff = inputVal - current;
+            const el = document.getElementById('profit-preview');
+            
+            if (diff > 0) {
+                el.innerText = `Kâr: +${formatUSD(diff)} (+${formatTL(diff * settings.fxRate)})`;
+                el.style.color = 'var(--success)';
+            } else if (diff < 0) {
+                el.innerText = `Zarar: ${formatUSD(diff)} (${formatTL(diff * settings.fxRate)})`;
+                el.style.color = 'var(--danger)';
+            } else {
+                el.innerText = 'Değişim yok';
+                el.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function saveTransaction() {
+            const dateVal = document.getElementById('input-date').value;
+            const newBal = parseFloat(document.getElementById('input-new-balance').value);
+
+            if (isNaN(newBal)) {
+                alert("Lütfen geçerli bir tutar gir.");
+                return;
+            }
+
+            const oldBal = getLatestBalance();
+            const profit = newBal - oldBal;
+
+            const tx = {
+                id: Date.now(),
+                date: dateVal,
+                balance: newBal,
+                profit: profit,
+                fxRateSnapshot: settings.fxRate
+            };
+
+            transactions.push(tx);
+            localStorage.setItem(DB_KEY, JSON.stringify(transactions));
+
+            alert("İşlem başarıyla kaydedildi!");
+            resetFlow();
+        }
+
+        // --- İstatistik ---
+        function calculateStats() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const listContainer = document.getElementById('history-container');
+            listContainer.innerHTML = '';
+            
+            const reversedTx = [...transactions].reverse();
+
+            reversedTx.forEach(tx => {
+                // Saati id (timestamp)'den çekiyoruz
+                const dateObj = new Date(tx.id);
+                const timeStr = dateObj.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+                
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                const isProfit = tx.profit >= 0;
+                item.innerHTML = `
+                    <div>
+                        <div class="h-date">
+                            ${new Date(tx.date).toLocaleDateString('tr-TR')} 
+                            <span style="opacity:0.6; margin-left:4px;">${timeStr}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted)">Bakiye: ${formatUSD(tx.balance)}</div>
+                    </div>
+                    <div class="h-amount" style="color:${isProfit ? 'var(--success)' : 'var(--danger)'}">
+                        ${isProfit ? '+' : ''}${formatUSD(tx.profit)}
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            // Basit istatistik hesaplamaları
+            const thisYearTx = transactions.filter(t => new Date(t.date).getFullYear() === currentYear);
+            
+            // Dün
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yStr = yesterdayDate.toISOString().split('T')[0];
+            const yesterdayTx = thisYearTx.filter(t => t.date === yStr);
+            const yesterdayProfit = yesterdayTx.reduce((sum, t) => sum + t.profit, 0);
+
+            // Hafta ve Ay
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - 7);
+            const weekProfit = thisYearTx
+                .filter(t => new Date(t.date) >= weekStart)
+                .reduce((sum, t) => sum + t.profit, 0);
+
+            const thisMonth = today.getMonth();
+            const monthProfit = thisYearTx
+                .filter(t => new Date(t.date).getMonth() === thisMonth)
+                .reduce((sum, t) => sum + t.profit, 0);
+
+            renderStat('stat-yesterday', yesterdayProfit);
+            renderStat('stat-week', weekProfit);
+            renderStat('stat-month', monthProfit);
+
+            const currentBal = getLatestBalance();
+            const currentTL = currentBal * settings.fxRate;
+            
+            document.getElementById('stat-current-tl').innerText = formatTL(currentTL);
+            document.getElementById('stat-target-tl').innerText = "/ " + formatTL(settings.targetTL);
+            
+            const pct = Math.min(100, (currentTL / settings.targetTL) * 100);
+            
+            document.getElementById('target-progress').style.width = `${pct}%`;
+            document.getElementById('stat-percent-text').innerText = `%${pct.toFixed(1)} Tamamlandı`;
+        }
+
+        function renderStat(elementId, val) {
+            const el = document.getElementById(elementId);
+            el.innerText = formatUSD(val);
+            el.className = 'stat-val ' + (val > 0 ? 'up' : (val < 0 ? 'down' : 'neutral'));
+        }
+
+        // --- Ortak Modal Kapatma ---
+        function openSettings() { document.getElementById('settings-modal').classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+        
+        function saveSettings() {
+            settings.fxRate = parseFloat(document.getElementById('set-fx').value) || 34.00;
+            settings.targetTL = parseFloat(document.getElementById('set-target').value) || 500000;
+            settings.targetPercent = parseFloat(document.getElementById('set-percent').value) || 7.0;
+            
+            const startBal = parseFloat(document.getElementById('set-start-bal').value);
+            if(!isNaN(startBal)) settings.initialBalance = startBal;
+
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            updateBalanceDisplay();
+            calculateProjections();
+            closeModal('settings-modal');
+        }
+        function clearAllData() {
+            if(confirm('Tüm kayıtlar silinecek. Emin misin?')) {
+                transactions = [];
+                localStorage.removeItem(DB_KEY);
+                updateBalanceDisplay();
+                closeModal('settings-modal');
+                resetFlow();
+            }
+        }
+
+        // --- Formatlayıcılar ---
+        const formatUSD = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+        const formatNumber = (num) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        const formatTL = (num) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(num);
+
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+    
+    <script>
+        (function syncDateFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const externalDate = urlParams.get('date');
+                
+                if (externalDate) {
+                    const dateInputs = [
+                        'datePicker',      
+                        'date-picker',     
+                        'input-date'       
+                    ];
+
+                    let targetInput = null;
+                    for (let id of dateInputs) {
+                        targetInput = document.getElementById(id);
+                        if (targetInput) break;
+                    }
+
+                    if (targetInput) {
+                        targetInput.value = externalDate;
+                        targetInput.dispatchEvent(new Event('change'));
+                        targetInput.dispatchEvent(new Event('input'));
+                        
+                        if(typeof openSelectedDate === 'function') {
+                             setTimeout(() => openSelectedDate(), 100);
+                        }
+                        if(typeof checkDateAllowed === 'function') {
+                            checkDateAllowed();
+                        }
+                    }
+                }
+            } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+        })();
+    </script>
+    <a href="index.html" style="
+        position: fixed;
+        top: max(env(safe-area-inset-top), 20px);
+        left: 20px;
+        z-index: 10000;
+        width: 44px;
+        height: 44px;
+        background: rgba(40, 40, 40, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        font-size: 18px;
+        transition: transform 0.2s;
+    " onclick="this.style.transform='scale(0.9)'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+    </a>
+</body>
+</html>
