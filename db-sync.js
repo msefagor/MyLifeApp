@@ -549,24 +549,13 @@ window.dbAuth = {
                 return result.user;
             } catch (e) {
                 if (e.code === 'auth/credential-already-in-use') {
-                    // Bu Google hesabı zaten Firebase'de başka bir uid'e bağlanmış.
-                    // Otomatik fallback: anonim çıkış + Google ile direkt giriş
-                    // Eski uid'in TÜM verileri (Firestore'da kalan) o anda geri gelir.
-                    const accept = confirm(
-                        'Bu Google hesabı daha önce uygulamaya bağlanmış (başka cihazdan veya bir önceki kurulumdan).\n\n' +
-                        'Eski Google hesabınla giriş yapayım mı?\n' +
-                        '• EVET → eski uygulamadan kaldığın TÜM veriler anında gelir.\n' +
-                        '• HAYIR → mevcut anonim hesabınla devam edersin (verilerinin Drive yedeği yok).'
-                    );
-                    if (!accept) {
-                        throw new Error('Bağlama iptal edildi. Mevcut anonim hesapla devam ediyorsunuz.');
-                    }
-
+                    // Sessiz otomatik fallback: anonim'ten çık, doğrudan Google ile gir.
+                    // Eski Google uid'in TÜM verileri (Firestore'da duran) anında geri gelir.
+                    // Hangi cihazdan girilirse aynı veri gelir.
+                    console.log('[db-sync] Google hesabı zaten kayıtlı, mevcut hesap geri yükleniyor...');
                     _skipAutoAnon = true;
                     try {
                         await fbSignOut(auth);
-                        // signOut sonrası onAuthStateChanged user=null olur
-                        // _skipAutoAnon = true olduğundan yeni anonim açılmaz
                         const result2 = await signInWithPopup(auth, provider);
                         const credential2 = GoogleAuthProvider.credentialFromResult(result2);
                         if (credential2 && credential2.accessToken) {
@@ -1020,14 +1009,14 @@ window.addEventListener('dbauthstate', (e) => {
 // ============================================================================
 const SESSION_LOCAL_KEY = '_dbsync_session_id';
 let _sessionUnsub = null;
-let _selfClaiming = false;
+let _autoSignOutInProgress = false;
 
 function generateSid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return Date.now() + '-' + Math.random().toString(36).slice(2);
 }
 
-async function claimSessionLock(uid) {
+function claimSessionLock(uid) {
     if (!uid) return;
     if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
 
@@ -1035,46 +1024,42 @@ async function claimSessionLock(uid) {
     window.localStorage.setItem(SESSION_LOCAL_KEY, sid);
     const ref = doc(db, 'users', uid, '_session', 'current');
 
-    // Bu cihazı aktif yap (cloud'a kendi sid'imizi yaz)
-    _selfClaiming = true;
-    try {
-        await setDoc(ref, {
-            sid,
-            device: navigator.userAgent.slice(0, 120),
-            ts: serverTimestamp()
-        });
-    } catch (e) {
-        console.warn('[db-sync] session claim failed:', e);
-        _selfClaiming = false;
-        return;
-    }
-    setTimeout(() => { _selfClaiming = false; }, 2000); // kendi yazımıza tepki vermeyiz
+    // Cloud'a kendi sid'imizi yaz (fire-and-forget; onSnapshot zaten gözlüyor)
+    setDoc(ref, {
+        sid,
+        device: navigator.userAgent.slice(0, 120),
+        ts: serverTimestamp()
+    }).catch(e => console.warn('[db-sync] session claim:', e));
 
-    // Başka cihaz girdiğinde tepki ver
+    // Belge değişimlerini gözle. Mantık çok sade:
+    //   cloud.sid == local.sid  → kendi yazımız, no-op
+    //   cloud.sid != local.sid  → başka cihaz aktif olmuş, çıkış
     _sessionUnsub = onSnapshot(ref, (snap) => {
-        if (_selfClaiming) return;
+        if (_autoSignOutInProgress) return;
         if (!snap.exists()) return;
         const cloudSid = snap.data().sid;
         const localSid = window.localStorage.getItem(SESSION_LOCAL_KEY);
         if (cloudSid && localSid && cloudSid !== localSid) {
-            // Başka cihaz aktif olmuş
             handleAutoSignOut(snap.data().device);
         }
     }, e => console.warn('[db-sync] session watch:', e));
 }
 
 async function handleAutoSignOut(otherDevice) {
+    if (_autoSignOutInProgress) return;
+    _autoSignOutInProgress = true;
     console.warn('[db-sync] başka bir cihazda giriş tespit edildi, çıkış yapılıyor...');
-    // İkili çıkışı engelle
     if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
     try {
         const desc = otherDevice ? otherDevice.slice(0, 60) : 'başka bir cihaz';
         alert(`⚠ Hesabın "${desc}" üzerinden açıldı.\nBu cihazdan otomatik çıkış yapılıyor.`);
     } catch (_) {}
-    try {
-        await fbSignOut(auth);
-    } catch (_) {}
-    setTimeout(() => location.reload(), 500);
+    // signOut sonrası anonim açılmasın — kullanıcı bu cihazda artık çıkmış olsun
+    _skipAutoAnon = true;
+    try { await fbSignOut(auth); } catch (_) {}
+    // Local session id'yi temizle
+    window.localStorage.removeItem(SESSION_LOCAL_KEY);
+    setTimeout(() => location.reload(), 800);
 }
 
 // === dbBackup global API ===
