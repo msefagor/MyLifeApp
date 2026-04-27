@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Namaz Takibi - MSEFAGOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cloud sync -->
+    <script>
+        window.SYNC_KEYS = ['namazTakipData_v2'];
+        window.addEventListener('dbsynced', () => {
+            try {
+                if (typeof loadDay === 'function' && typeof currentActiveDate === 'string' && currentActiveDate) {
+                    loadDay(currentActiveDate);
+                }
+                if (typeof calculateStats === 'function') calculateStats();
+                if (typeof renderMissedList === 'function') renderMissedList();
+            } catch (e) { console.warn('namaz refresh after sync:', e); }
+        });
+    </script>
+    <script type="module" src="./db-sync.js?v=15"></script>
+    
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            --vakit-color: #00f2fe;
+            --kaza-color: #f7b733;
+            --missed-color: #ff4b1f;
+            --accent-green: #32d74b;
+
+            --vakit-gradient: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            --kaza-gradient: linear-gradient(45deg, #fc4a1a 0%, #f7b733 100%);
+            
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --text-color: #ffffff;
+            --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0; font-family: var(--font-family);
+            background: var(--bg-gradient); color: var(--text-color);
+            min-height: 100vh; display: flex; justify-content: center;
+            align-items: flex-start; overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(90px + env(safe-area-inset-bottom));
+        }
+
+        .blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: move 10s infinite alternate; }
+        .blob-1 { top: 10%; left: 10%; width: 300px; height: 300px; background: #7b2cbf; border-radius: 40% 60% 70% 30%; }
+        .blob-2 { bottom: 10%; right: 10%; width: 350px; height: 350px; background: #4361ee; border-radius: 60% 40% 30% 70%; animation-delay: -5s; }
+        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(20px, 40px) rotate(20deg); } }
+
+        .container {
+            width: 100%; max-width: 600px; padding: 14px 22px;
+            display: flex; flex-direction: column; gap: 16px;
+            position: relative; /* Badge için relative */
+        }
+
+        .tab-content { display: none; flex-direction: column; gap: 14px; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Header & Date Badge */
+        .header-wrapper {
+            display: flex; justify-content: center; align-items: center;
+            position: relative; margin-top: 4px; margin-bottom: 6px;
+        }
+
+        .app-header { text-align: center; }
+        .liquid-brand {
+            font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2.5px;
+            background: linear-gradient(90deg, #a1c4fd, #c2e9fb);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 2px; opacity: 0.9; text-shadow: 0 2px 10px rgba(161, 196, 253, 0.3);
+        }
+        .liquid-title {
+            font-size: 26px; font-weight: 800; letter-spacing: -0.4px;
+            background: linear-gradient(135deg, #fff 0%, #4facfe 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 16px rgba(79, 172, 254, 0.45)); margin: 0;
+        }
+
+        /* TARIH ROZETİ (SAĞ ÜST) */
+        .date-badge {
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            width: 48px; height: 48px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: #fff; line-height: 1.1;
+        }
+        .date-day { font-size: 16px; font-weight: 700; color: var(--vakit-color); }
+        .date-month { font-size: 10.5px; font-weight: 500; opacity: 0.8; }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 18px 16px; box-shadow: var(--glass-shadow);
+        }
+
+        h3 { font-size: 17px; margin: 0 0 14px 0; font-weight: 700; letter-spacing: 0.4px; }
+        
+        /* Inputs & Buttons */
+        input[type="text"], textarea, input[type="url"] {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; padding: 16px; border-radius: 18px; font-size: 16px; font-family: var(--font-family);
+            outline: none; width: 100%; margin-bottom: 15px;
+        }
+        textarea { height: 100px; resize: none; }
+        
+        .btn-primary {
+            width: 100%; padding: 16px; border-radius: 18px; border: none;
+            background: var(--vakit-gradient); color: white; font-size: 16px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-batch { background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%); margin-bottom: 20px; }
+
+        /* Prayer List — KOMPAKT + RENKLİ VAKİTLER */
+        .prayer-list { display: flex; flex-direction: column; gap: 8px; }
+        .prayer-item {
+            padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 16px;
+            display: grid; grid-template-columns: 1fr auto; align-items: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative; overflow: hidden;
+        }
+        .prayer-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: linear-gradient(180deg, var(--p-from, #fff), var(--p-to, #ccc));
+            opacity: 0.85;
+        }
+        .prayer-item.status-vakit { background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.4); }
+        .prayer-item.status-kaza { background: rgba(247, 183, 51, 0.15); border-color: rgba(247, 183, 51, 0.4); }
+
+        .prayer-info {
+            display: flex; flex-direction: column; gap: 4px; min-width: 0;
+            padding-left: 4px; /* Sol şeritle nefes alacak boşluk */
+        }
+        .prayer-name-row { display: flex; align-items: center; gap: 8px; }
+        .prayer-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--p-from, #fff); flex-shrink: 0;
+            box-shadow: 0 0 10px var(--p-from, transparent);
+        }
+        .prayer-name {
+            font-size: 17px; font-weight: 800; line-height: 1.1; letter-spacing: -0.2px;
+            background: linear-gradient(135deg, var(--p-from, #fff), var(--p-to, #ccc));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .prayer-rekat {
+            font-size: 10.5px; font-weight: 700; letter-spacing: 1.4px;
+            text-transform: uppercase; color: rgba(255,255,255,0.55);
+        }
+
+        /* Günün saatlerine göre vakit renkleri */
+        .prayer-time-sabah  { --p-from: #4cc9f0; --p-to: #4361ee; }   /* şafak — soğuk mavi */
+        .prayer-time-ogle   { --p-from: #ffd166; --p-to: #fcbf49; }   /* öğle — altın güneş */
+        .prayer-time-ikindi { --p-from: #ff8c42; --p-to: #ff5e62; }   /* ikindi — turuncu */
+        .prayer-time-aksam  { --p-from: #f72585; --p-to: #b5179e; }   /* akşam — gün batımı */
+        .prayer-time-yatsi  { --p-from: #b388ff; --p-to: #7209b7; }   /* yatsı — gece moru */
+
+        /* Controls */
+        .controls { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+        .toggle-wrapper { display: flex; align-items: center; gap: 8px; }
+        .toggle-label { font-size: 11.5px; opacity: 0.9; font-weight: 500; }
+        .toggle {
+            position: relative; width: 46px; height: 26px; background: rgba(255,255,255,0.2);
+            border-radius: 30px; cursor: pointer; transition: 0.3s;
+        }
+        .toggle::after {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+            background: #fff; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .prayer-item.status-vakit .toggle { background: var(--vakit-gradient); }
+        .prayer-item.status-vakit .toggle::after { left: 23px; }
+        .kaza-btn {
+            background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8);
+            padding: 5px 10px; border-radius: 9px; font-size: 11px; cursor: pointer; white-space: nowrap;
+        }
+        .prayer-item.status-kaza .kaza-btn { background: var(--kaza-gradient); color: #fff; border-color: transparent; font-weight: bold; }
+
+        /* Stats & Progress */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+        .stat-box { background: rgba(0,0,0,0.2); padding: 14px 12px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-value { font-size: 24px; font-weight: 800; color: var(--missed-color); margin-top: 6px; }
+        .stat-label { font-size: 11.5px; opacity: 0.8; font-weight: 500; }
+        .progress-container { margin-top: 16px; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+        .progress-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--vakit-gradient); width: 0%; border-radius: 10px; transition: width 0.5s ease-in-out; }
+        .missed-list-container { max-height: 350px; overflow-y: auto; }
+        .missed-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
+        .missed-date { font-weight: 700; color: var(--missed-color); display: block; margin-bottom: 5px; }
+
+        /* Sure List Item */
+        .surah-list-item {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .surah-list-item:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .surah-list-title { font-size: 18px; font-weight: 700; color: #fff; }
+        .surah-delete-btn {
+            background: rgba(255, 75, 31, 0.2); border: 1px solid var(--missed-color); color: var(--missed-color);
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Detail Card */
+        .surah-detail-card {
+            background: linear-gradient(180deg, rgba(30,30,40,0.9) 0%, rgba(20,20,30,0.95) 100%);
+            backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 30px; padding: 30px 25px; 
+            display: flex; flex-direction: column; gap: 25px;
+            min-height: 450px; justify-content: center; position: relative;
+            animation: fadeIn 0.4s ease;
+        }
+        .verse-no {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; color: var(--accent-green);
+        }
+        .verse-arabic {
+            font-family: 'Amiri', serif; font-size: 36px; line-height: 2.2;
+            text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2);
+            padding: 10px;
+        }
+        .verse-reading {
+            font-size: 24px; font-weight: 700; color: #ffffff; line-height: 1.6; text-align: center; 
+            background: rgba(0, 242, 254, 0.1); padding: 20px; border-radius: 20px;
+            border-left: 5px solid var(--vakit-color); box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .verse-meaning {
+            font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.6; text-align: center; 
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;
+        }
+
+        .verse-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .nav-arrow-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white; width: 50px; height: 50px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; transition: 0.2s;
+        }
+        .nav-arrow-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+        .nav-arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 12px 20px; border-radius: 15px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px; width: fit-content; margin-bottom: 15px; cursor: pointer;
+        }
+
+        /* FAB & Modal */
+        .fab {
+            position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); right: 20px;
+            width: 60px; height: 60px; border-radius: 50%; background: var(--vakit-gradient);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 242, 254, 0.4); color: #fff; font-size: 30px; border: none; cursor: pointer;
+            z-index: 90;
+        }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: flex-end; }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: #151520; width: 100%; border-radius: 30px 30px 0 0; padding: 30px 25px 50px 25px;
+            border-top: 1px solid var(--glass-border); animation: slideUpModal 0.3s ease;
+            max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+        }
+        @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Nav Bar */
+        .nav-bar {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 380px; height: 70px;
+            background: rgba(25, 25, 35, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 40px;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.6); padding: 0 10px;
+        }
+        .nav-item {
+            color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 600;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+            background: none; border: none; padding: 0; width: 80px; height: 100%; transition: all 0.3s ease;
+        }
+        .nav-item.active { color: white; transform: translateY(-5px); }
+        .nav-item.active .nav-icon-bg {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4); opacity: 1;
+        }
+        .nav-icon-bg {
+            width: 40px; height: 40px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); transition: all 0.3s ease;
+        }
+        .nav-icon { width: 22px; height: 22px; fill: white; }
+
+        .hidden { display: none !important; }
+        
+        .btn-reload {
+            width: 100%; padding: 16px; border-radius: 18px; border: none;
+            background: linear-gradient(45deg, #FF512F 0%, #DD2476 100%);
+            color: white; font-size: 16px; font-weight: 700;
+            cursor: pointer; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="header-wrapper">
+            <div class="app-header">
+                <div class="liquid-brand">MSEFAGOR</div>
+                <h1 class="liquid-title">Namaz Takibi</h1>
+            </div>
+            <div id="displayDateBadge" class="date-badge">
+                <div id="badgeDay" class="date-day">--</div>
+                <div id="badgeMonth" class="date-month">--</div>
+            </div>
+        </div>
+
+        <div id="tab-tracking" class="tab-content active">
+            <div class="glass-card" id="prayerPanel">
+                <div class="prayer-list" id="prayerListContainer"></div>
+            </div>
+
+            <div class="glass-card">
+                <h3>Yıllık İstatistik</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Eksik Namaz</div>
+                        <div class="stat-value" id="missedCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Eksik Rekat</div>
+                        <div class="stat-value" id="missedRakat">0</div>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>Başarı Oranı</span>
+                        <span id="percentText">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3>Eksik Namaz Listesi</h3>
+                <div class="missed-list-container" id="missedListLog">
+                    <div style="padding:10px; opacity:0.5; text-align:center;">Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-surahs" class="tab-content">
+            
+            <button class="btn-reload" onclick="forceReloadSurahs()">
+                <i class="fas fa-sync-alt"></i> Veritabanını Güncelle
+            </button>
+
+            <div id="surahListView">
+                <div class="surah-list" id="surahListContainer" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="text-align:center; padding:20px;">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Yükleniyor...
+                    </div>
+                </div>
+                <div style="height: 80px;"></div>
+            </div>
+
+            <div id="surahDetailView" class="hidden">
+                <button class="back-btn" onclick="closeSurahDetail()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Listeye Dön
+                </button>
+                
+                <div id="surahTitle" style="text-align:center; font-size:22px; font-weight:800; margin-bottom:20px; color:white;"></div>
+
+                <div id="verseCardContainer">
+                    </div>
+
+                <div class="verse-nav">
+                    <button class="nav-arrow-btn" id="prevVerseBtn" onclick="changeVerse(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div style="font-size:14px; opacity:0.6;" id="verseCounter">1 / 1</div>
+                    <button class="nav-arrow-btn" id="nextVerseBtn" onclick="changeVerse(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="switchTab('tracking', this)">
+            <div class="nav-icon-bg">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            </div>
+            <span>Takip</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('surahs', this)">
+            <div class="nav-icon-bg">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            </div>
+            <span>Sureler</span>
+        </button>
+    </nav>
+
+    <script>
+        // --- DATA KEYS ---
+        const PRAYER_KEY = 'namazTakipData_v2';
+        const prayers = [
+            { id: 'sabah', name: 'Sabah', rekat: 4 },
+            { id: 'ogle', name: 'Öğle', rekat: 10 },
+            { id: 'ikindi', name: 'İkindi', rekat: 8 },
+            { id: 'aksam', name: 'Akşam', rekat: 5 },
+            { id: 'yatsi', name: 'Yatsı', rekat: 13 }
+        ];
+
+        // --- GLOBAL VARS ---
+        let currentActiveDate = ""; // Artık input yerine string tutuyoruz
+        let currentSurahs = [];
+        let activeSurah = null;
+        let activeVerseIndex = 0;
+
+        function getLocalTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Başlangıç tarihi bugün olsun (URL parametresi yoksa)
+        currentActiveDate = getLocalTodayDate();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Başlangıçta loadDay çağrısı URL parametresi scripti tarafından yapılacak
+            // O yüzden burada direkt çağırmaya gerek yok, ama garanti olsun diye:
+            // updateDateBadge(currentActiveDate);
+            // loadDay(currentActiveDate);
+            
+            calculateStats();
+            renderMissedList();
+            loadSurahsFromDB(); 
+        });
+
+        // --- TARİH VE GÖSTERİM FONKSİYONLARI ---
+        function updateDateBadge(dateString) {
+            const dateParts = dateString.split('-'); // YYYY-MM-DD
+            if (dateParts.length === 3) {
+                const day = dateParts[2];
+                const month = dateParts[1];
+                document.getElementById('badgeDay').innerText = day;
+                document.getElementById('badgeMonth').innerText = getMonthName(month);
+            }
+        }
+
+        function getMonthName(monthNum) {
+            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            return months[parseInt(monthNum) - 1] || "";
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if(tabId === 'surahs') {
+                closeSurahDetail();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==========================================
+        //  DATABASE YÖNETİMİ & SURE LİSTESİ
+        // ==========================================
+
+        async function loadSurahsFromDB() {
+            try {
+                const response = await fetch('sureler.json?v=' + new Date().getTime());
+                if(!response.ok) throw new Error("Veritabanı bulunamadı");
+                const data = await response.json();
+                currentSurahs = data;
+                renderSurahList();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('surahListContainer').innerHTML = 
+                    '<div style="text-align:center; padding:20px; color:#ff4b1f;">Veritabanı (sureler.json) yüklenemedi.</div>';
+            }
+        }
+
+        function forceReloadSurahs() {
+            loadSurahsFromDB();
+            alert("Veritabanı yenilendi.");
+        }
+
+        function sortSurahs() {
+            currentSurahs.sort((a, b) => {
+                const numA = parseInt(a.title.match(/^\d+/) || 0);
+                const numB = parseInt(b.title.match(/^\d+/) || 0);
+                return numA - numB;
+            });
+        }
+
+        function renderSurahList() {
+            sortSurahs();
+            const container = document.getElementById('surahListContainer');
+            container.innerHTML = '';
+
+            if(currentSurahs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; opacity:0.6; padding:20px;">Liste boş.</div>';
+                return;
+            }
+
+            currentSurahs.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'surah-list-item';
+                
+                // Tıklama olayını tüm kutuya veriyoruz
+                item.onclick = () => openSurahDetail(s.id);
+                
+                item.innerHTML = `
+                    <div class="surah-list-title">${s.title}</div>
+                    <div style="opacity:0.5; font-size:12px;">Oku <i class="fas fa-chevron-right"></i></div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // ==========================================
+        //  FLASH CARD (AYET KARTI) MANTIĞI
+        // ==========================================
+
+        function openSurahDetail(id) {
+            activeSurah = currentSurahs.find(s => s.id == id);
+            
+            if(!activeSurah) {
+                console.error("Sure bulunamadı ID:", id);
+                return;
+            }
+
+            activeVerseIndex = 0; // İlk ayetten başla
+            
+            document.getElementById('surahTitle').innerText = activeSurah.title;
+            renderVerseCard();
+
+            document.getElementById('surahListView').classList.add('hidden');
+            document.getElementById('surahDetailView').classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function renderVerseCard() {
+            if(!activeSurah || !activeSurah.verses) return;
+            
+            const verse = activeSurah.verses[activeVerseIndex];
+            const container = document.getElementById('verseCardContainer');
+            
+            // Kart HTML'i
+            container.innerHTML = `
+                <div class="verse-card">
+                    <div class="verse-no">${verse.no}. Ayet</div>
+                    <div class="verse-arabic">${verse.arabic}</div>
+                    <div class="verse-reading">${verse.reading}</div>
+                    <div class="verse-meaning">${verse.meaning}</div>
+                </div>
+            `;
+
+            // Buton Durumları
+            document.getElementById('prevVerseBtn').disabled = (activeVerseIndex === 0);
+            document.getElementById('nextVerseBtn').disabled = (activeVerseIndex === activeSurah.verses.length - 1);
+            
+            // Sayaç
+            document.getElementById('verseCounter').innerText = `${activeVerseIndex + 1} / ${activeSurah.verses.length}`;
+        }
+
+        function changeVerse(dir) {
+            const newIndex = activeVerseIndex + dir;
+            if(newIndex >= 0 && newIndex < activeSurah.verses.length) {
+                activeVerseIndex = newIndex;
+                renderVerseCard();
+            }
+        }
+
+        function closeSurahDetail() {
+            document.getElementById('surahDetailView').classList.add('hidden');
+            document.getElementById('surahListView').classList.remove('hidden');
+            activeSurah = null;
+        }
+
+        // ==========================================
+        //  NAMAZ TAKİP MANTIĞI (STANDART)
+        // ==========================================
+        function getStoredPrayerData() {
+            const stored = localStorage.getItem(PRAYER_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function savePrayerData(data) {
+            localStorage.setItem(PRAYER_KEY, JSON.stringify(data));
+        }
+
+        function loadDay(date) {
+            const container = document.getElementById('prayerListContainer');
+            container.innerHTML = '';
+            const data = getStoredPrayerData();
+            const dayData = data[date] || {}; 
+
+            prayers.forEach(prayer => {
+                let status = dayData[prayer.id];
+                if (status === true) status = 'vakit'; 
+                if (!status) status = null;
+
+                const item = document.createElement('div');
+                item.className = `prayer-item prayer-time-${prayer.id} ${status ? 'status-' + status : ''}`;
+
+                item.innerHTML = `
+                    <div class="prayer-info">
+                        <div class="prayer-name-row">
+                            <span class="prayer-dot"></span>
+                            <span class="prayer-name">${prayer.name}</span>
+                        </div>
+                        <span class="prayer-rekat">${prayer.rekat} Rekat</span>
+                    </div>
+                    <div class="controls">
+                        <div class="toggle-wrapper" onclick="toggleStatus('${date}', '${prayer.id}', 'vakit')">
+                            <span class="toggle-label">Vaktinde</span>
+                            <div class="toggle"></div>
+                        </div>
+                        <button class="kaza-btn" onclick="toggleStatus('${date}', '${prayer.id}', 'kaza')">
+                            ${status === 'kaza' ? 'Kaza Yapıldı' : 'Kaza Olarak İşaretle'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleStatus(date, prayerId, requestedType) {
+            const data = getStoredPrayerData();
+            if (!data[date]) data[date] = {};
+            let currentStatus = data[date][prayerId];
+            if (currentStatus === true) currentStatus = 'vakit';
+
+            if (currentStatus === requestedType) {
+                delete data[date][prayerId];
+            } else {
+                data[date][prayerId] = requestedType;
+            }
+            savePrayerData(data);
+            loadDay(date);
+            calculateStats();
+            renderMissedList(); 
+        }
+
+        function calculateStats() {
+            const data = getStoredPrayerData();
+            const currentYear = new Date().getFullYear();
+            const startOfYear = new Date(currentYear, 0, 1);
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const oneDay = 24 * 60 * 60 * 1000;
+            const daysPassed = Math.round((todayStart - startOfYear) / oneDay) + 1;
+
+            let totalPrayersShouldBe = 0, totalCompleted = 0, totalMissedCount = 0, totalMissedRakat = 0;
+
+            for (let i = 0; i < daysPassed; i++) {
+                const loopDate = new Date(currentYear, 0, 1 + i);
+                const dateString = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
+                const dayRecord = data[dateString] || {};
+
+                prayers.forEach(p => {
+                    totalPrayersShouldBe++;
+                    let status = dayRecord[p.id];
+                    if (status === true) status = 'vakit';
+                    if (status === 'vakit' || status === 'kaza') {
+                        totalCompleted++;
+                    } else {
+                        totalMissedCount++;
+                        totalMissedRakat += p.rekat;
+                    }
+                });
+            }
+
+            document.getElementById('missedCount').textContent = totalMissedCount;
+            document.getElementById('missedRakat').textContent = totalMissedRakat;
+
+            let percentage = 0;
+            if (totalPrayersShouldBe > 0) percentage = Math.round((totalCompleted / totalPrayersShouldBe) * 100);
+            
+            document.getElementById('percentText').textContent = `%${percentage}`;
+            const pb = document.getElementById('progressBar');
+            pb.style.width = `${percentage}%`;
+            pb.style.background = percentage < 50 ? 'linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%)' : 'var(--vakit-gradient)';
+        }
+
+        function renderMissedList() {
+            const data = getStoredPrayerData();
+            const currentYear = new Date().getFullYear();
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const listEl = document.getElementById('missedListLog');
+            listEl.innerHTML = '';
+            
+            let htmlContent = '';
+            let hasMissed = false;
+            const oneDay = 24 * 60 * 60 * 1000;
+            const startOfYear = new Date(currentYear, 0, 1);
+            const daysSinceYearStart = Math.floor((todayStart - startOfYear) / oneDay);
+
+            for (let i = 1; i <= daysSinceYearStart; i++) {
+                const loopDate = new Date(todayStart);
+                loopDate.setDate(todayStart.getDate() - i);
+                if(loopDate.getFullYear() < currentYear) break;
+
+                const dateString = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
+                const dayRecord = data[dateString] || {};
+                let missingPrayersArr = [];
+
+                prayers.forEach(p => {
+                    let status = dayRecord[p.id];
+                    if (status === true) status = 'vakit';
+                    if (!status) missingPrayersArr.push(p.name);
+                });
+
+                if (missingPrayersArr.length > 0) {
+                    hasMissed = true;
+                    const formattedDate = loopDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+                    htmlContent += `<div class="missed-item"><span class="missed-date">${formattedDate}</span><span class="missed-prayers">${missingPrayersArr.join(', ')}</span></div>`;
+                }
+            }
+
+            if (!hasMissed) listEl.innerHTML = '<div style="padding:15px; opacity:0.6; text-align:center;">Geçmişe dönük eksik namaz bulunamadı.</div>';
+            else listEl.innerHTML = htmlContent;
+        }
+    </script>
+    
+    <script>
+        (function syncDateFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const externalDate = urlParams.get('date');
+                if (externalDate) {
+                    currentActiveDate = externalDate; // Global değişkene ata
+                    updateDateBadge(currentActiveDate);
+                    if(typeof loadDay === 'function') loadDay(currentActiveDate);
+                } else {
+                    // Parametre yoksa bugünü göster
+                    updateDateBadge(currentActiveDate);
+                    if(typeof loadDay === 'function') loadDay(currentActiveDate);
+                }
+            } catch (e) { console.log("Tarih senkronizasyon hatası:", e); }
+        })();
+    </script>
+</body>
+</html>
