@@ -1164,23 +1164,43 @@
             }
         }, 400);
 
+        // Modül yüklenene kadar bekle (poll)
+        async function waitForGlobal(name, timeoutMs = 8000) {
+            const start = Date.now();
+            while (!window[name]) {
+                if (Date.now() - start > timeoutMs) return false;
+                await new Promise(r => setTimeout(r, 120));
+            }
+            return true;
+        }
+
         async function handleGoogleLink() {
-            if (!window.dbAuth) {
-                alert('Bulut bağlantısı henüz hazır değil, birkaç saniye sonra tekrar deneyin.');
+            const btn = document.getElementById('btnLinkGoogle');
+            const labelEl = document.getElementById('btnLinkGoogleLabel');
+            const oldLabel = labelEl.textContent;
+            btn.disabled = true;
+            labelEl.textContent = 'Bekleniyor…';
+            const ok = await waitForGlobal('dbAuth');
+            if (!ok) {
+                btn.disabled = false;
+                labelEl.textContent = oldLabel;
+                alert(
+                    'Bulut bağlantısı kurulamadı.\n\n' +
+                    '1) İnternetin açık mı kontrol et\n' +
+                    '2) PWA\'yı tamamen kapatıp tekrar aç\n' +
+                    '3) Hâlâ olmuyorsa Safari ayarlarından site verilerini temizleyip ana ekrandan PWA\'yı kaldır → tekrar ekle'
+                );
                 return;
             }
-            const btn = document.getElementById('btnLinkGoogle');
-            btn.disabled = true;
-            const oldLabel = document.getElementById('btnLinkGoogleLabel').textContent;
-            document.getElementById('btnLinkGoogleLabel').textContent = 'Açılıyor…';
+            labelEl.textContent = 'Açılıyor…';
             try {
                 await window.dbAuth.linkWithGoogle();
-                // Başarılıysa onAuthStateChanged tetiklenip refreshAccountCard'ı çağırır
+                // Mobilde sayfa redirect olur; masaüstünde popup üzerinden auth state event'i gelir.
             } catch (e) {
                 alert(e.message || 'Google girişi başarısız.');
             } finally {
                 btn.disabled = false;
-                document.getElementById('btnLinkGoogleLabel').textContent = oldLabel;
+                labelEl.textContent = oldLabel;
             }
         }
 
@@ -1234,13 +1254,17 @@
         setTimeout(refreshDriveSection, 600);
 
         async function handleDriveBackup() {
-            if (!window.dbBackup) {
-                alert('Bulut katmanı henüz yüklenmedi, birkaç saniye sonra tekrar deneyin.');
-                return;
-            }
             const btn = document.getElementById('btnDriveBackup');
             const orig = btn.innerHTML;
             btn.disabled = true;
+            btn.innerHTML = '<span style="opacity:0.85">Hazırlanıyor…</span>';
+            const ok = await waitForGlobal('dbBackup');
+            if (!ok) {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+                alert('Bulut bağlantısı kurulamadı. PWA\'yı kapatıp tekrar aç ve sağ üstteki noktanın yeşile dönmesini bekle.');
+                return;
+            }
             btn.innerHTML = '<span style="opacity:0.85">Drive izni alınıyor…</span>';
             try {
                 // 1) Kullanıcı eylemi sırasında token sağla (popup blocker'ı geçer)
@@ -1274,6 +1298,11 @@
             document.getElementById('driveListModal').classList.add('open');
             const body = document.getElementById('driveListBody');
             body.innerHTML = '<div class="drive-list-loading">Yedekler getiriliyor…</div>';
+            const ok = await waitForGlobal('dbBackup');
+            if (!ok) {
+                body.innerHTML = '<div class="drive-list-empty" style="color:var(--danger-color, #ff5f6d);">Bulut bağlantısı kurulamadı. PWA\'yı tekrar aç.</div>';
+                return;
+            }
             try {
                 const files = await window.dbBackup.list();
                 if (!files.length) {
