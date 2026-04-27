@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v6';
+const CACHE_NAME = 'glass-planner-v7';
 const urlsToCache = [
   './',
   './index.html',
