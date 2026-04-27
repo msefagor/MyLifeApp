@@ -1,0 +1,115 @@
+const CACHE_NAME = 'glass-planner-v19';
+const urlsToCache = [
+  './',
+  './index.html',
+  './namaz.html',
+  './notlar.html',
+  './ingilizce.html',
+  './kitap1.html',
+  './yatirim1.html',
+  './devam.html',
+  './tabela.html',
+  './drive-sync.js',
+  './sureler.json',
+  './db.json',
+  './manifest.json',
+  './app-icon.png',
+  './splash-screen.png'
+];
+
+// Yükleme (Install)
+self.addEventListener('install', event => {
+  self.skipWaiting(); // Beklemeden aktif ol
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        // addAll, herhangi bir kaynak başarısız olursa tüm install'ı patlatır.
+        // Tek tek ekleyip eksik dosyalar nedeniyle SW'nin install'ını çökertmemek için
+        // her dosyayı ayrı ayrı eklemeyi deniyoruz.
+        return Promise.all(
+          urlsToCache.map(url =>
+            cache.add(url).catch(err => {
+              console.warn('SW: cache eklenemedi:', url, err);
+            })
+          )
+        );
+      })
+  );
+});
+
+// Aktifleştirme (Activate)
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+           if (cacheName !== CACHE_NAME) {
+             return caches.delete(cacheName);
+           }
+        })
+      );
+    }).then(() => self.clients.claim()) // Tüm sayfaların kontrolünü hemen al
+  );
+});
+
+// Fetch (İstek Yakalama) - NETWORK FIRST STRATEJİSİ + güvenli fallback
+self.addEventListener('fetch', event => {
+  // Sadece GET isteklerini ve aynı kaynaklı http(s) isteklerini ele al
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // drive-sync.js (ve eski db-sync.js fallback'i) için her zaman ağ.
+  // Eski sürümlerin takılı kalmasını önler.
+  if (url.pathname.endsWith('/drive-sync.js') || url.pathname.endsWith('drive-sync.js') ||
+      url.pathname.endsWith('/db-sync.js')    || url.pathname.endsWith('db-sync.js')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(new Request(url.origin + url.pathname)))
+    );
+    return;
+  }
+  // Google ve gstatic'e ait dış kaynaklar (GIS, gapi, Drive) — SW karışmasın
+  if (url.hostname === 'accounts.google.com' || url.hostname === 'apis.google.com' ||
+      url.hostname === 'www.googleapis.com'  || url.hostname.endsWith('.gstatic.com') ||
+      url.hostname === 'openidconnect.googleapis.com') {
+    return; // tarayıcının kendisi halletsin
+  }
+
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // İnternet var: Cevabı al, klonla ve cache'e kaydet (güncelle)
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          })
+          .catch(() => {});
+        return response;
+      })
+      .catch(async () => {
+        // İnternet yok / ağ hatası: Önce tam URL ile cache, yoksa pathname ile cache, yoksa index.html
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+
+        // Query string'i atıp tekrar dene (ör. devam.html?date=2026-04-25 → devam.html)
+        const noQuery = new Request(url.origin + url.pathname);
+        const cachedNoQuery = await caches.match(noQuery);
+        if (cachedNoQuery) return cachedNoQuery;
+
+        // Navigasyon (HTML) isteğiyse en azından ana sayfayı dön
+        if (event.request.mode === 'navigate') {
+          const fallback = await caches.match('./index.html');
+          if (fallback) return fallback;
+        }
+        return new Response('Çevrimdışı: kaynak bulunamadı', {
+          status: 503, statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      })
+  );
+});
