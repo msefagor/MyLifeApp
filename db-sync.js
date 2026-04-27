@@ -430,7 +430,7 @@ async function onAuthed(uid) {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         onAuthed(user.uid);
-    } else {
+    } else if (!_skipAutoAnon) {
         try {
             await signInAnonymously(auth);
         } catch (e) {
@@ -506,6 +506,8 @@ onAuthStateChanged(auth, () => dispatchAuthState());
 // Google access token'ını cache'le (Drive API için ileride kullanılacak)
 let _googleAccessToken = null;
 let _googleAccessTokenExp = 0;
+// signOut sonrası otomatik anonim auth'u geçici devre dışı bırakma
+let _skipAutoAnon = false;
 
 window.dbAuth = {
     /** Mevcut user durumu (UI için) */
@@ -547,10 +549,34 @@ window.dbAuth = {
                 return result.user;
             } catch (e) {
                 if (e.code === 'auth/credential-already-in-use') {
-                    throw new Error(
-                        'Bu Google hesabı zaten kullanılıyor (başka cihaza bağlanmış olabilir). ' +
-                        'O cihazdaki Google hesabıyla devam etmek isterseniz "Çıkış yap & Google ile gir" seçeneğini kullanın.'
+                    // Bu Google hesabı zaten Firebase'de başka bir uid'e bağlanmış.
+                    // Otomatik fallback: anonim çıkış + Google ile direkt giriş
+                    // Eski uid'in TÜM verileri (Firestore'da kalan) o anda geri gelir.
+                    const accept = confirm(
+                        'Bu Google hesabı daha önce uygulamaya bağlanmış (başka cihazdan veya bir önceki kurulumdan).\n\n' +
+                        'Eski Google hesabınla giriş yapayım mı?\n' +
+                        '• EVET → eski uygulamadan kaldığın TÜM veriler anında gelir.\n' +
+                        '• HAYIR → mevcut anonim hesabınla devam edersin (verilerinin Drive yedeği yok).'
                     );
+                    if (!accept) {
+                        throw new Error('Bağlama iptal edildi. Mevcut anonim hesapla devam ediyorsunuz.');
+                    }
+
+                    _skipAutoAnon = true;
+                    try {
+                        await fbSignOut(auth);
+                        // signOut sonrası onAuthStateChanged user=null olur
+                        // _skipAutoAnon = true olduğundan yeni anonim açılmaz
+                        const result2 = await signInWithPopup(auth, provider);
+                        const credential2 = GoogleAuthProvider.credentialFromResult(result2);
+                        if (credential2 && credential2.accessToken) {
+                            _googleAccessToken = credential2.accessToken;
+                            _googleAccessTokenExp = Date.now() + 3500_000;
+                        }
+                        return result2.user;
+                    } finally {
+                        _skipAutoAnon = false;
+                    }
                 }
                 if (e.code === 'auth/popup-closed-by-user') {
                     throw new Error('Google girişi iptal edildi.');
