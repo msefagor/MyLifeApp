@@ -511,6 +511,93 @@
         }
         .btn-google:active { background: #f1f3f4; }
         .hidden { display: none !important; }
+
+        /* === Drive yedek bölümü === */
+        .drive-section {
+            background: linear-gradient(135deg, rgba(76, 201, 240, 0.10), rgba(67, 97, 238, 0.06));
+            border: 1px solid rgba(76, 201, 240, 0.32);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+        .drive-section-label, .local-section-label {
+            display: block; text-align: left;
+            font-size: 10.5px; font-weight: 800;
+            letter-spacing: 1.4px; text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 0 0 8px 4px;
+        }
+        .local-section-label { margin-top: 6px; }
+        .drive-last-info {
+            font-size: 11.5px; color: var(--text-muted);
+            text-align: left; padding: 0 4px 8px;
+        }
+        .drive-last-info b { color: var(--text-color); font-weight: 700; }
+        .btn-drive-backup, .btn-drive-list {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(76, 201, 240, 0.45);
+            color: #fff; font-size: 13px; padding: 11px 14px;
+            margin-top: 6px !important;
+        }
+        .btn-drive-backup:active, .btn-drive-list:active { background: rgba(76, 201, 240, 0.18); }
+        .btn-drive-backup:disabled, .btn-drive-list:disabled {
+            opacity: 0.45; cursor: not-allowed;
+            border-color: rgba(255,255,255,0.10);
+        }
+
+        /* === Drive Yedek Listesi === */
+        .drive-list {
+            display: flex; flex-direction: column; gap: 6px;
+            background: rgba(0,0,0,0.20);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 8px;
+            margin-top: 10px;
+        }
+        .drive-list-loading, .drive-list-empty {
+            text-align: center; color: var(--text-muted);
+            font-size: 12.5px; padding: 22px 12px;
+        }
+        .drive-list-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px; align-items: center;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+        }
+        .drive-list-info {
+            min-width: 0;
+            display: flex; flex-direction: column; gap: 2px;
+            text-align: left;
+        }
+        .drive-list-name {
+            font-size: 12.5px; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            color: var(--text-color);
+        }
+        .drive-list-meta {
+            font-size: 10.5px; color: var(--text-muted);
+        }
+        .drive-list-btn {
+            background: rgba(76,201,240,0.18);
+            border: 1px solid rgba(76,201,240,0.40);
+            color: #4cc9f0;
+            padding: 6px 10px; border-radius: 8px;
+            font-size: 11px; font-weight: 700;
+            cursor: pointer; flex-shrink: 0;
+        }
+        .drive-list-btn:active { background: rgba(76,201,240,0.30); }
+        .drive-list-del {
+            background: rgba(255, 95, 109, 0.15);
+            border: 1px solid rgba(255, 95, 109, 0.40);
+            color: #ff5f6d;
+            padding: 6px 9px; border-radius: 8px;
+            font-size: 11px; font-weight: 700;
+            cursor: pointer; flex-shrink: 0;
+        }
+        .drive-list-del:active { background: rgba(255, 95, 109, 0.28); }
     </style>
 </head>
 <body>
@@ -784,6 +871,22 @@
                 </button>
             </div>
 
+            <!-- Drive yedek bölümü -->
+            <div id="driveSection" class="drive-section">
+                <div class="drive-section-label">Google Drive Yedeği</div>
+                <div class="drive-last-info" id="driveLastInfo">Son yedek: —</div>
+                <button class="modal-btn btn-drive-backup" id="btnDriveBackup" onclick="handleDriveBackup()" disabled>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6m0-6l-2.5 2.5M12 12l2.5 2.5"/></svg>
+                    Drive'a Şimdi Yedekle
+                </button>
+                <button class="modal-btn btn-drive-list" id="btnDriveList" onclick="openDriveBackups()" disabled>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 12h14M5 16h10M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
+                    Drive Yedeklerini Görüntüle
+                </button>
+            </div>
+
+            <div class="local-section-label">Yerel Yedek (JSON dosyası)</div>
+
             <button class="modal-btn btn-download" onclick="exportData()">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
                 Verileri İndir
@@ -797,6 +900,23 @@
             <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importData(this)">
 
             <button class="modal-btn btn-close" onclick="closeBackupModal()">Kapat</button>
+        </div>
+    </div>
+
+    <!-- Drive Yedek Listesi Modali -->
+    <div id="driveListModal" class="modal">
+        <div class="modal-content" style="max-width: 440px; max-height: 86vh; display: flex; flex-direction: column;">
+            <div class="modal-header-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 8h14M5 12h14M5 16h10"/>
+                </svg>
+            </div>
+            <h2>Drive Yedekleri</h2>
+            <p>Bir yedek seçip geri yüklenebilir veya silinebilir.</p>
+            <div id="driveListBody" class="drive-list" style="flex:1; overflow-y:auto; min-height: 100px;">
+                <div class="drive-list-loading">Yükleniyor…</div>
+            </div>
+            <button class="modal-btn btn-close" onclick="closeDriveListModal()" style="flex-shrink: 0; margin-top: 14px;">Kapat</button>
         </div>
     </div>
 
@@ -1072,6 +1192,123 @@
                 // Otomatik anonim oturum açılır, dbauthstate eventi tetiklenir
             } catch (e) {
                 alert('Çıkış sırasında hata: ' + e.message);
+            }
+        }
+
+        // === Drive yedek butonları ===
+        function fmtBackupTime(d) {
+            if (!d) return '—';
+            const dt = (d instanceof Date) ? d : new Date(d);
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(dt.getDate())}.${pad(dt.getMonth()+1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+        }
+        function fmtBytes(n) {
+            n = Number(n) || 0;
+            if (n < 1024) return n + ' B';
+            if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+            return (n/1024/1024).toFixed(2) + ' MB';
+        }
+
+        function refreshDriveSection() {
+            const u = window.dbAuth ? window.dbAuth.snapshot() : null;
+            const linked = !!(u && u.isGoogleLinked);
+            const btnB = document.getElementById('btnDriveBackup');
+            const btnL = document.getElementById('btnDriveList');
+            const info = document.getElementById('driveLastInfo');
+            if (!btnB) return;
+            btnB.disabled = !linked;
+            btnL.disabled = !linked;
+            const last = window.dbBackup ? window.dbBackup.lastTime() : null;
+            if (!linked) {
+                info.innerHTML = '<i>Drive yedeği için önce Google hesabınla bağlan.</i>';
+            } else if (!last) {
+                info.innerHTML = 'Son yedek: <b>henüz yok</b>';
+            } else {
+                info.innerHTML = 'Son yedek: <b>' + fmtBackupTime(last) + '</b>';
+            }
+        }
+        // Auth durumu değiştikçe Drive bölümünü güncelle
+        window.addEventListener('dbauthstate', refreshDriveSection);
+        window.addEventListener('dbbackup', refreshDriveSection);
+        // İlk açılış için
+        setTimeout(refreshDriveSection, 600);
+
+        async function handleDriveBackup() {
+            if (!window.dbBackup) return;
+            const btn = document.getElementById('btnDriveBackup');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span style="opacity:0.85">Yedekleniyor…</span>';
+            try {
+                const r = await window.dbBackup.runNow();
+                refreshDriveSection();
+                alert(`Yedek başarıyla alındı.\n${r.filename}\nKitap: ${r.counts.books}, Kayıt: ${r.counts.history}, Boyut: ${fmtBytes(r.size)}`);
+            } catch (e) {
+                alert('Yedek başarısız: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        }
+
+        async function openDriveBackups() {
+            document.getElementById('driveListModal').classList.add('open');
+            const body = document.getElementById('driveListBody');
+            body.innerHTML = '<div class="drive-list-loading">Yedekler getiriliyor…</div>';
+            try {
+                const files = await window.dbBackup.list();
+                if (!files.length) {
+                    body.innerHTML = '<div class="drive-list-empty">Henüz yedek dosyası yok.<br>"Drive\'a Şimdi Yedekle" ile ilk yedeği oluştur.</div>';
+                    return;
+                }
+                body.innerHTML = '';
+                files.forEach(f => {
+                    const row = document.createElement('div');
+                    row.className = 'drive-list-row';
+                    row.innerHTML = `
+                        <div class="drive-list-info">
+                            <span class="drive-list-name">${f.name}</span>
+                            <span class="drive-list-meta">${fmtBackupTime(f.modifiedTime)} · ${fmtBytes(f.size)}</span>
+                        </div>
+                        <button class="drive-list-btn" data-id="${f.id}">Geri Yükle</button>
+                        <button class="drive-list-del" data-id="${f.id}" data-name="${f.name.replace(/"/g,'')}">Sil</button>
+                    `;
+                    row.querySelector('.drive-list-btn').onclick = () => handleRestore(f.id, f.name);
+                    row.querySelector('.drive-list-del').onclick = () => handleDeleteBackup(f.id, f.name);
+                    body.appendChild(row);
+                });
+            } catch (e) {
+                body.innerHTML = `<div class="drive-list-empty" style="color: var(--danger-color, #ff5f6d);">Hata: ${e.message}</div>`;
+            }
+        }
+
+        function closeDriveListModal() {
+            document.getElementById('driveListModal').classList.remove('open');
+        }
+
+        async function handleRestore(fileId, name) {
+            if (!confirm(
+                'GERİ YÜKLEME UYARISI\n\n' +
+                `"${name}" dosyasından geri yükleneceksin.\n\n` +
+                'Mevcut tüm kitap, history ve diğer veriler bu yedekteki haliyle DEĞİŞTİRİLECEK. ' +
+                'Devam etmek istediğine emin misin?'
+            )) return;
+            try {
+                await window.dbBackup.restore(fileId);
+                alert('Geri yükleme tamamlandı. Sayfa yenileniyor…');
+                location.reload();
+            } catch (e) {
+                alert('Geri yükleme başarısız: ' + e.message);
+            }
+        }
+
+        async function handleDeleteBackup(fileId, name) {
+            if (!confirm(`"${name}" yedeğini silmek istediğine emin misin?`)) return;
+            try {
+                await window.dbBackup.deleteOne(fileId);
+                openDriveBackups(); // listeyi yenile
+            } catch (e) {
+                alert('Silme başarısız: ' + e.message);
             }
         }
 
