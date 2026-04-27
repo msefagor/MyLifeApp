@@ -7,6 +7,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>English Day</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cloud sync -->
+    <script>
+        // İngilizce sayfası birden çok dinamik anahtar kullanır (her tarihe bir kayıt)
+        window.SYNC_PREFIXES = ['eng_day_', 'eng_done_'];
+        window.addEventListener('dbsynced', () => {
+            try {
+                if (typeof renderCalendar === 'function') renderCalendar();
+                if (typeof updateSelectedDateCard === 'function') updateSelectedDateCard();
+            } catch (e) { console.warn('ingilizce refresh after sync:', e); }
+        });
+    </script>
+    <script type="module" src="./db-sync.js"></script>
     <style>
         :root {
             --bg-body: #07091a;
