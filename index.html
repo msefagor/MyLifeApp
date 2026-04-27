@@ -1,2758 +1,1257 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#8CA6C5">
-    
-    <link rel="manifest" href="manifest.json">
-    
-    <title>Ana Ekran</title>
-    
-    <link rel="preload" href="splash-screen.png" as="image">
-    
-    <link rel="apple-touch-icon" sizes="180x180" href="app-icon.png?v=3">
-    <link rel="icon" type="image/png" href="app-icon.png?v=3">
-    <link rel="shortcut icon" href="app-icon.png?v=3">
-    
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+// db-sync.js v14 yüklendi
+console.log('[db-sync] modül yükleniyor… UA=', navigator.userAgent.slice(0, 80));
+window.__dbSyncLoading = true;
 
-    <!-- Cloud auth (sync yok, sadece Google bağlantı API'si için) -->
-    <script>window.SYNC_KEYS = []; /* Bu sayfada sync edilecek veri yok */</script>
-    <script type="module" src="./db-sync.js?v=15"></script>
+// ============================================================================
+//  db-sync.js v2 — localStorage ↔ Firestore canlı senkron katmanı
+//
+//  Sayfa entegrasyonu:
+//
+//     <script>
+//       window.SYNC_KEYS = ['namazTakipData_v2'];
+//       // ya da: window.SYNC_PREFIXES = ['eng_day_', 'eng_done_'];
+//       window.addEventListener('dbsynced', () => {
+//         // bulutdan veri geldi → UI'yi yenile
+//       });
+//     </script>
+//     <script type="module" src="./db-sync.js"></script>
+//
+//  Mimari:
+//   - Anonim auth ile uid → users/{uid}/...
+//   - Genel anahtarlar:  users/{uid}/store/{key}  → { v: <JSON string>, u: ts }
+//   - SHARDED anahtar (kitap, çünkü 500+ kitap tek belgeye sığmaz):
+//       users/{uid}/store/liquid_lib_settings  → settings (dailyGoal, yearlyGoal)
+//       users/{uid}/books/{bookId}             → her kitap kendi belgesinde
+//       users/{uid}/history/{entryId}          → her okuma kaydı kendi belgesinde
+//     Migration: eski tek-belge formatı varsa otomatik parçalanır ve eskisi silinir.
+// ============================================================================
 
-    <style>
-        :root {
-            --glass-bg: rgba(255, 255, 255, 0.07);
-            --glass-bg-strong: rgba(255, 255, 255, 0.12);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --glass-stroke: rgba(255, 255, 255, 0.18);
-            --text-color: #ffffff;
-            --text-muted: rgba(255, 255, 255, 0.55);
-            --primary-color: #0a84ff;
-            --shadow-md: 0 12px 32px rgba(0,0,0,0.32);
-            --shadow-lg: 0 22px 60px rgba(0,0,0,0.5);
-        }
-        .theme-school .icon-box { background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); color: white; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import {
+    getAuth, signInAnonymously, onAuthStateChanged,
+    GoogleAuthProvider, linkWithPopup, signInWithPopup,
+    linkWithRedirect, signInWithRedirect, getRedirectResult,
+    signOut as fbSignOut
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import {
+    getFirestore, collection, doc, getDoc, getDocs,
+    setDoc, deleteDoc, onSnapshot, serverTimestamp,
+    writeBatch, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        body {
-            margin: 0; padding: 0;
-            background: radial-gradient(120% 90% at 0% 0%, #1a103a 0%, transparent 55%),
-                        radial-gradient(120% 90% at 100% 100%, #0d2b50 0%, transparent 55%),
-                        #07091a;
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
-            overscroll-behavior-y: none;
-        }
+const firebaseConfig = {
+    apiKey: "AIzaSyCNlJXeTLUd5BSrNv0ihJj8s4jzjGm3tBU",
+    authDomain: "mylifeapp-9e1a5.firebaseapp.com",
+    projectId: "mylifeapp-9e1a5",
+    storageBucket: "mylifeapp-9e1a5.firebasestorage.app",
+    messagingSenderId: "184551882274",
+    appId: "1:184551882274:web:2debc4946068b7586c147b",
+    measurementId: "G-G4N9Y45JYG"
+};
 
-        /* --- YÜKLEME EKRANI (SPLASH SCREEN) --- */
-        #loading-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background:
-                radial-gradient(60% 50% at 50% 30%, rgba(76, 110, 245, 0.45) 0%, transparent 70%),
-                radial-gradient(80% 60% at 80% 90%, rgba(247, 37, 133, 0.28) 0%, transparent 70%),
-                linear-gradient(180deg, #0b0f24 0%, #0a0918 100%);
-            z-index: 999999;
-            display: flex; flex-direction: column; align-items: center;
-            padding: calc(env(safe-area-inset-top) + 56px) 24px calc(env(safe-area-inset-bottom) + 32px);
-            transition: opacity 0.55s ease, visibility 0.55s;
-            overflow: hidden;
-        }
-        /* --- DUMAN / AKIŞ KATMANLARI (sağ alt blob kaldırıldı) --- */
-        .smoke-bg {
-            position: absolute; inset: 0; overflow: hidden;
-            pointer-events: none; z-index: 0;
-            animation: smokeHue 26s linear infinite;
-        }
-        @keyframes smokeHue {
-            0%   { filter: hue-rotate(0deg); }
-            50%  { filter: hue-rotate(28deg); }
-            100% { filter: hue-rotate(0deg); }
-        }
-        .smoke {
-            position: absolute; border-radius: 50%;
-            filter: blur(48px);
-            mix-blend-mode: screen;
-            will-change: transform, opacity;
-        }
-        .smoke-1 {
-            width: 70%; height: 70%; top: -10%; left: -18%;
-            background: radial-gradient(circle, rgba(76, 201, 240, 0.55) 0%, transparent 65%);
-            animation: smokeDrift1 18s ease-in-out infinite alternate;
-        }
-        .smoke-2 {
-            width: 75%; height: 75%; top: 25%; right: -22%;
-            background: radial-gradient(circle, rgba(247, 37, 133, 0.45) 0%, transparent 65%);
-            animation: smokeDrift2 22s ease-in-out infinite alternate;
-        }
-        .smoke-3 {
-            width: 60%; height: 60%; bottom: -10%; left: 10%;
-            background: radial-gradient(circle, rgba(115, 9, 183, 0.50) 0%, transparent 65%);
-            animation: smokeDrift3 20s ease-in-out infinite alternate;
-        }
-        .smoke-4 {
-            width: 55%; height: 55%; top: 50%; left: 35%;
-            background: radial-gradient(circle, rgba(67, 97, 238, 0.42) 0%, transparent 65%);
-            animation: smokeDrift4 16s ease-in-out infinite alternate;
-        }
-        @keyframes smokeDrift1 {
-            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.45; }
-            50%  { transform: translate(15%, 8%) scale(1.2); opacity: 0.7;  }
-            100% { transform: translate(5%, 18%) scale(1.08);opacity: 0.5;  }
-        }
-        @keyframes smokeDrift2 {
-            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
-            50%  { transform: translate(-12%, -10%) scale(1.15); opacity: 0.6; }
-            100% { transform: translate(-5%, 6%) scale(0.95); opacity: 0.45; }
-        }
-        @keyframes smokeDrift3 {
-            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
-            50%  { transform: translate(-14%, -8%) scale(1.22); opacity: 0.6; }
-            100% { transform: translate(8%, -14%) scale(1.05); opacity: 0.45;}
-        }
-        @keyframes smokeDrift4 {
-            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.3;  }
-            50%  { transform: translate(-10%, 8%) scale(1.18); opacity: 0.55;}
-            100% { transform: translate(-18%, -4%) scale(1.08); opacity: 0.4; }
-        }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+try { enableIndexedDbPersistence(db); } catch (_) {}
 
-        /* Logo en üstte */
-        .splash-logo {
-            position: relative; z-index: 2;
-            width: 88px; height: 88px; border-radius: 26px;
-            background: linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-            border: 1px solid rgba(255,255,255,0.18);
-            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-            animation: logoPulse 2.6s ease-in-out infinite, splashIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-            flex-shrink: 0;
-        }
-        .splash-logo img { width: 62px; height: 62px; border-radius: 18px; object-fit: cover; }
-        @keyframes logoPulse {
-            0%, 100% { box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
-            50%      { box-shadow: 0 28px 64px rgba(76,201,240,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
-        }
-        @keyframes splashIn {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+// === Sayfa yapılandırması ===
+const ALLOWED_KEYS = Array.isArray(window.SYNC_KEYS) ? window.SYNC_KEYS.slice() : [];
+const ALLOWED_PREFIXES = Array.isArray(window.SYNC_PREFIXES) ? window.SYNC_PREFIXES.slice() : [];
+const NEVER_SYNC_PREFIXES = ['101_v', 'devam_', '_dbsync_'];
 
-        /* Orta blok — başlık ve isim */
-        .splash-content {
-            position: relative; z-index: 2;
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px; width: 100%; max-width: 460px;
-            animation: splashIn 0.7s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
+// Sharded yapı kullanan anahtarlar
+const SHARDED_KEYS = ['liquid_lib_pro_v1'];
+const KITAP_KEY = 'liquid_lib_pro_v1';
+const KITAP_SETTINGS_DOC = 'liquid_lib_settings';
+const KITAP_OLD_DOC_ID = 'liquid_lib_pro_v1';
+const KITAP_SNAPSHOT_KEY = '_dbsync_kitap_snapshot';
 
-        .splash-prefix {
-            font-size: 11.5px; font-weight: 700; color: #4cc9f0;
-            letter-spacing: 4px; text-transform: uppercase;
-            display: inline-flex; align-items: center; gap: 12px;
-            margin-bottom: 4px;
-            text-shadow: 0 0 14px rgba(76,201,240,0.5);
-        }
-        .splash-prefix::before, .splash-prefix::after {
-            content: ''; display: block; width: 28px; height: 1px;
-            background: linear-gradient(90deg, transparent, #4cc9f0, transparent);
-        }
+function isAllowed(key) {
+    if (!key) return false;
+    if (NEVER_SYNC_PREFIXES.some(p => key.startsWith(p))) return false;
+    if (ALLOWED_KEYS.includes(key)) return true;
+    if (ALLOWED_PREFIXES.some(p => key.startsWith(p))) return true;
+    return false;
+}
+function isSharded(key) { return SHARDED_KEYS.includes(key); }
 
-        /* Harf-doldurma adı */
-        .name-fill-wrap {
-            position: relative; display: inline-block;
-            line-height: 1.05;
-            max-width: 92vw;
-        }
-        .name-bg, .name-fg {
-            font-size: clamp(20px, 6.8vw, 32px);
-            font-weight: 800; letter-spacing: -0.3px;
-            line-height: 1.05;
-            white-space: nowrap;
-            margin: 0; padding: 0 2px;
-        }
-        /* Doldurulmamış harfler — zemin tonuyla uyumlu (lacivert/mor ghost) */
-        .name-bg {
-            color: rgba(140, 165, 230, 0.10);
-            -webkit-text-stroke: 1px rgba(160, 180, 240, 0.28);
-        }
-        .name-fg {
-            position: absolute; top: 0; left: 0;
-            background: linear-gradient(90deg, #4cc9f0 0%, #4361ee 50%, #b388ff 100%);
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent; color: transparent;
-            filter: drop-shadow(0 0 14px rgba(67, 97, 238, 0.55));
-            clip-path: inset(0 100% 0 0);
-            transition: clip-path 0.12s linear;
-        }
+// === localStorage proxy ===
+const _origSet = Storage.prototype.setItem;
+const _origRemove = Storage.prototype.removeItem;
+let _suppressWrite = false;
+let _currentUid = null;
+let _hydrated = false;
 
-        /* Soldan sağa kayan yüzde chip'i (rakam) */
-        .fill-percent {
-            position: absolute;
-            top: calc(100% + 12px); left: 0;
-            transform: translateX(0);
-            font-size: 12px; font-weight: 800;
-            letter-spacing: -0.2px;
-            color: #fff; font-variant-numeric: tabular-nums;
-            padding: 4px 10px; border-radius: 999px;
-            background: linear-gradient(135deg, rgba(76, 201, 240, 0.22), rgba(67, 97, 238, 0.22));
-            border: 1px solid rgba(76, 201, 240, 0.4);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.32);
-            transition: left 0.12s linear, transform 0.12s linear;
-            white-space: nowrap;
-        }
+Storage.prototype.setItem = function (k, v) {
+    _origSet.call(this, k, v);
+    if (this !== window.localStorage) return;
+    if (_suppressWrite) return;
+    if (!isAllowed(k)) return;
+    scheduleWrite(k, v);
+};
+Storage.prototype.removeItem = function (k) {
+    _origRemove.call(this, k);
+    if (this !== window.localStorage) return;
+    if (_suppressWrite) return;
+    if (!isAllowed(k)) return;
+    scheduleDelete(k);
+};
 
-        /* Progress ile ton değiştiren arka plan katmanı */
-        .splash-tint {
-            position: absolute; inset: 0; pointer-events: none; z-index: 1;
-            background:
-                radial-gradient(55% 45% at 50% 60%, rgba(115, 9, 183, 0.42) 0%, transparent 70%),
-                radial-gradient(55% 45% at 25% 80%, rgba(76, 201, 240, 0.28) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity 0.3s linear;
-        }
-        /* --- YÜKLEME EKRANI BİTİŞ --- */
+// === Anahtar bazlı debounce ===
+const writeQueue = new Map();
+const writeTimers = new Map();
+const DEBOUNCE_MS = 600;
 
-        /* Arkaplan Efektleri */
-        .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.45; z-index: -1; }
-        .blob-1 { top: -12%; left: -20%; width: 320px; height: 320px; background: #f72585; animation: float 9s infinite ease-in-out; }
-        .blob-2 { bottom: -12%; right: -22%; width: 360px; height: 360px; background: #4361ee; animation: float 11s infinite ease-in-out reverse; }
-        .blob-3 { top: 38%; left: 30%; width: 200px; height: 200px; background: #4cc9f0; opacity: 0.32; }
-        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+function scheduleWrite(k, v) {
+    writeQueue.set(k, { type: 'set', value: v });
+    if (writeTimers.has(k)) clearTimeout(writeTimers.get(k));
+    writeTimers.set(k, setTimeout(() => flushWrite(k), DEBOUNCE_MS));
+}
+function scheduleDelete(k) {
+    writeQueue.set(k, { type: 'del' });
+    if (writeTimers.has(k)) clearTimeout(writeTimers.get(k));
+    writeTimers.set(k, setTimeout(() => flushWrite(k), DEBOUNCE_MS));
+}
 
-        /* Üst Bar (Nameplate) */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 22px 0 6px; margin-bottom: 16px; gap: 14px;
-        }
-        .header-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
-        .header-prefix {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 10.5px; font-weight: 700;
-            letter-spacing: 1.6px; text-transform: uppercase;
-            color: #4cc9f0;
-            position: relative;
-        }
-        .header-prefix::before {
-            content: ''; display: inline-block; width: 18px; height: 1px;
-            background: linear-gradient(90deg, transparent, #4cc9f0);
-        }
-        .header h1 {
-            font-size: 22px; margin: 0; font-weight: 800; letter-spacing: -0.4px;
-            line-height: 1.15;
-            background: linear-gradient(135deg, #ffffff 0%, #b6c8ff 100%);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .header h1 .name-last { font-weight: 900; letter-spacing: 0.5px; }
-        .backup-btn {
-            background: var(--glass-bg-strong); border: 1px solid var(--glass-stroke); color: white;
-            width: 46px; height: 46px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-            transition: transform 0.2s ease, background 0.2s ease;
-            box-shadow: var(--shadow-md);
-        }
-        .backup-btn svg { width: 20px; height: 20px; }
-        .backup-btn:active { transform: scale(0.93); background: rgba(255,255,255,0.22); }
-
-        /* Tarih Seçici (Profesyonel) */
-        .date-container {
-            position: relative;
-            background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
-            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 24px; padding: 18px 20px; margin-bottom: 26px;
-            box-shadow: var(--shadow-md);
-            display: flex; align-items: center; gap: 16px;
-            overflow: hidden;
-        }
-        .date-container::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 35%);
-        }
-        .date-day-block {
-            flex-shrink: 0;
-            width: 64px; height: 64px; border-radius: 18px;
-            background: linear-gradient(135deg, #4cc9f0, #4361ee);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 14px 30px rgba(67,97,238,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .date-day-num { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
-        .date-day-month { font-size: 10px; font-weight: 600; letter-spacing: 1px; opacity: 0.85; margin-top: 3px; text-transform: uppercase; }
-        .date-info { flex: 1; min-width: 0; }
-        .date-label {
-            font-size: 11px; color: var(--text-muted); margin-bottom: 4px;
-            text-transform: uppercase; letter-spacing: 1.4px;
-        }
-        .date-display { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; line-height: 1.2; }
-        .date-weekday { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-        .date-edit-icon {
-            width: 36px; height: 36px; border-radius: 12px;
-            background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            color: rgba(255,255,255,0.7);
-        }
-        .date-edit-icon svg { width: 16px; height: 16px; }
-        input[type="date"]#mainDatePicker {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            opacity: 0; border: none; background: transparent;
-            color: transparent; font-size: 1px;
-            -webkit-appearance: none; appearance: none;
-            cursor: pointer;
-        }
-
-        /* Menü */
-        .menu-list { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-        .menu-item {
-            position: relative;
-            background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-            backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
-            border: 1px solid var(--glass-border);
-            border-radius: 22px; padding: 16px 18px;
-            display: flex; align-items: center; gap: 16px;
-            text-decoration: none; color: white;
-            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-        }
-        .menu-item::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 35%);
-        }
-        .menu-item:active {
-            transform: scale(0.98);
-            background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
-            border-color: var(--glass-stroke);
-        }
-        .icon-box {
-            width: 50px; height: 50px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 10px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.22);
-            position: relative;
-        }
-        .icon-box svg { width: 24px; height: 24px; }
-        .item-info { display: flex; flex-direction: column; min-width: 0; }
-        .item-title { font-size: 16.5px; font-weight: 700; letter-spacing: -0.1px; }
-        .item-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
-        .menu-arrow {
-            margin-left: auto; flex-shrink: 0;
-            color: rgba(255,255,255,0.28);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .menu-arrow svg { width: 16px; height: 16px; }
-        .theme-namaz .icon-box { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #052e16; }
-        .theme-not .icon-box { background: linear-gradient(135deg, #f83600 0%, #f9d423 100%); color: #422006; }
-        .theme-eng .icon-box { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; }
-        .theme-book .icon-box { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #2a1240; }
-        .theme-money .icon-box { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
-        .theme-tabela .icon-box { background: linear-gradient(135deg, #093028 0%, #237a57 100%); color: #d4ffe5; }
-
-        .footer {
-            text-align: center; margin-top: 36px; padding: 22px 10px;
-            font-size: 11px; color: rgba(255, 255, 255, 0.32);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            letter-spacing: 0.2px;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed; inset: 0; background: rgba(5, 7, 18, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 100; display: none; align-items: center; justify-content: center;
-            padding: 20px;
-        }
-        .modal.open { display: flex; animation: modalFade 0.3s ease both; }
-        @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
-        .modal-content {
-            background: linear-gradient(180deg, #1a1f3a 0%, #131628 100%);
-            width: 100%; max-width: 380px; border-radius: 26px; padding: 26px 22px;
-            border: 1px solid var(--glass-stroke); text-align: center;
-            box-shadow: var(--shadow-lg);
-            animation: modalSlide 0.35s cubic-bezier(0.22,1,0.36,1) both;
-        }
-        @keyframes modalSlide {
-            from { transform: translateY(20px) scale(0.96); opacity: 0; }
-            to   { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        .modal-header-icon {
-            width: 56px; height: 56px; border-radius: 18px;
-            background: linear-gradient(135deg, #4cc9f0, #4361ee);
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 14px;
-            box-shadow: 0 14px 30px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .modal-header-icon svg { width: 26px; height: 26px; color: white; }
-        .modal-content h2 { margin: 0 0 6px; font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
-        .modal-content p { color: var(--text-muted); font-size: 13.5px; margin: 0 0 22px; line-height: 1.5; }
-
-        .modal-btn {
-            width: 100%; padding: 15px 16px; margin-top: 10px;
-            border-radius: 14px; border: none;
-            font-size: 15px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: transform 0.2s ease;
-            font-family: inherit;
-        }
-        .modal-btn:active { transform: scale(0.98); }
-        .modal-btn svg { width: 18px; height: 18px; }
-        .btn-download { background: linear-gradient(135deg, #4cc9f0, #4361ee); color: white; box-shadow: 0 8px 22px rgba(67,97,238,0.35); }
-        .btn-upload { background: linear-gradient(135deg, #06d6a0, #1b9aaa); color: white; box-shadow: 0 8px 22px rgba(6,214,160,0.32); }
-        .btn-close { background: rgba(255,255,255,0.06); color: white; margin-top: 18px; border: 1px solid var(--glass-border); }
-
-        /* Şifre Modali */
-        #passwordModal .modal-content { padding: 28px 22px 22px; }
-        .pwd-input-wrap {
-            display: flex; gap: 10px; justify-content: center; margin-bottom: 8px;
-        }
-        .pwd-dot {
-            width: 44px; height: 54px; border-radius: 14px;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 26px; line-height: 1; color: white; font-weight: 700;
-            transition: border-color 0.2s ease, background 0.2s ease;
-        }
-        .pwd-dot.filled { border-color: #4cc9f0; background: rgba(76,201,240,0.08); }
-        .pwd-dot.error { border-color: #ff5f6d; background: rgba(255,95,109,0.08); animation: shake 0.4s; }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-6px); }
-            40% { transform: translateX(6px); }
-            60% { transform: translateX(-4px); }
-            80% { transform: translateX(4px); }
-        }
-        .pwd-error-text {
-            color: #ff5f6d; font-size: 12.5px; min-height: 18px; margin-bottom: 8px;
-            transition: opacity 0.2s ease; opacity: 0;
-        }
-        .pwd-error-text.visible { opacity: 1; }
-        #pwdHidden {
-            position: absolute; opacity: 0; pointer-events: none;
-            width: 1px; height: 1px;
-        }
-        .pwd-keypad {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-            margin-top: 18px;
-        }
-        .pwd-key {
-            padding: 14px 0; border-radius: 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border); color: white;
-            font-size: 22px; font-weight: 600; cursor: pointer;
-            transition: transform 0.15s ease, background 0.2s ease;
-            font-family: inherit;
-        }
-        .pwd-key:active { transform: scale(0.93); background: rgba(255,255,255,0.12); }
-        .pwd-key.muted { background: transparent; border-color: transparent; }
-        .pwd-key.danger { color: #ff5f6d; }
-        .pwd-key svg { width: 20px; height: 20px; }
-        .pwd-actions {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px;
-        }
-        .pwd-actions .modal-btn { margin-top: 0; }
-        .btn-cancel { background: rgba(255,255,255,0.06); color: white; border: 1px solid var(--glass-border); }
-
-        /* === Hesap kartı (Veri Yönetimi modali) === */
-        .account-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 14px;
-            margin: 4px 0 18px;
-            text-align: left;
-        }
-        .account-card.account-google {
-            background: linear-gradient(135deg, rgba(66, 133, 244, 0.10), rgba(52, 168, 83, 0.05));
-            border-color: rgba(66, 133, 244, 0.35);
-        }
-        .account-card.account-needs {
-            background: linear-gradient(135deg, rgba(241, 196, 15, 0.18), rgba(255, 159, 67, 0.08));
-            border-color: rgba(241, 196, 15, 0.55);
-        }
-        .account-card.account-needs .account-status { color: #f1c40f; }
-        .account-row {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 12px;
-        }
-        .account-avatar {
-            width: 42px; height: 42px; border-radius: 50%;
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.18);
-            display: flex; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.75);
-            flex-shrink: 0; overflow: hidden;
-        }
-        .account-avatar svg { width: 22px; height: 22px; }
-        .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .account-info { flex: 1; min-width: 0; }
-        .account-status {
-            font-size: 13.5px; font-weight: 700; line-height: 1.2;
-            color: var(--text-color); margin-bottom: 2px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .account-meta {
-            font-size: 11px; color: var(--text-muted);
-            line-height: 1.45;
-        }
-        .account-card.account-google .account-status { color: #66c08c; }
-        .btn-google {
-            background: #fff; color: #3c4043;
-            font-weight: 600; font-size: 13.5px;
-            padding: 11px 14px;
-            border: 1px solid rgba(0,0,0,0.08);
-            margin-top: 0 !important;
-        }
-        .btn-google:active { background: #f1f3f4; }
-        .hidden { display: none !important; }
-
-        /* === Drive yedek bölümü === */
-        .drive-section {
-            background: linear-gradient(135deg, rgba(76, 201, 240, 0.10), rgba(67, 97, 238, 0.06));
-            border: 1px solid rgba(76, 201, 240, 0.32);
-            border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 14px;
-        }
-        .drive-section-label, .local-section-label {
-            display: block; text-align: left;
-            font-size: 10.5px; font-weight: 800;
-            letter-spacing: 1.4px; text-transform: uppercase;
-            color: var(--text-muted);
-            margin: 0 0 8px 4px;
-        }
-        .local-section-label { margin-top: 6px; }
-        .drive-last-info {
-            font-size: 11.5px; color: var(--text-muted);
-            text-align: left; padding: 0 4px 8px;
-        }
-        .drive-last-info b { color: var(--text-color); font-weight: 700; }
-        .btn-drive-backup, .btn-drive-list {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(76, 201, 240, 0.45);
-            color: #fff; font-size: 13px; padding: 11px 14px;
-            margin-top: 6px !important;
-        }
-        .btn-drive-backup:active, .btn-drive-list:active { background: rgba(76, 201, 240, 0.18); }
-        .btn-drive-backup:disabled, .btn-drive-list:disabled {
-            opacity: 0.45; cursor: not-allowed;
-            border-color: rgba(255,255,255,0.10);
-        }
-
-        /* === Drive Yedek Listesi === */
-        .drive-list {
-            display: flex; flex-direction: column; gap: 6px;
-            background: rgba(0,0,0,0.20);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 8px;
-            margin-top: 10px;
-        }
-        .drive-list-loading, .drive-list-empty {
-            text-align: center; color: var(--text-muted);
-            font-size: 12.5px; padding: 22px 12px;
-        }
-        .drive-list-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 8px; align-items: center;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-        }
-        .drive-list-info {
-            min-width: 0;
-            display: flex; flex-direction: column; gap: 2px;
-            text-align: left;
-        }
-        .drive-list-name {
-            font-size: 12.5px; font-weight: 700;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            color: var(--text-color);
-        }
-        .drive-list-meta {
-            font-size: 10.5px; color: var(--text-muted);
-        }
-        .drive-list-btn {
-            background: rgba(76,201,240,0.18);
-            border: 1px solid rgba(76,201,240,0.40);
-            color: #4cc9f0;
-            padding: 6px 10px; border-radius: 8px;
-            font-size: 11px; font-weight: 700;
-            cursor: pointer; flex-shrink: 0;
-        }
-        .drive-list-btn:active { background: rgba(76,201,240,0.30); }
-        .drive-list-del {
-            background: rgba(255, 95, 109, 0.15);
-            border: 1px solid rgba(255, 95, 109, 0.40);
-            color: #ff5f6d;
-            padding: 6px 9px; border-radius: 8px;
-            font-size: 11px; font-weight: 700;
-            cursor: pointer; flex-shrink: 0;
-        }
-        .drive-list-del:active { background: rgba(255, 95, 109, 0.28); }
-    </style>
-</head>
-<body>
-
-    <div id="loading-screen">
-        <div class="smoke-bg">
-            <div class="smoke smoke-1"></div>
-            <div class="smoke smoke-2"></div>
-            <div class="smoke smoke-3"></div>
-            <div class="smoke smoke-4"></div>
-        </div>
-        <div class="splash-tint" id="splashTint"></div>
-        <div class="splash-logo">
-            <img src="app-icon.png?v=3" alt="">
-        </div>
-        <div class="splash-content">
-            <div class="splash-prefix">Öğr. Gör. Dr.</div>
-            <div class="name-fill-wrap" id="nameFillWrap">
-                <div class="name-bg">Muhammed Sefa GÖR</div>
-                <div class="name-fg" id="nameFg">Muhammed Sefa GÖR</div>
-                <div class="fill-percent" id="fillPercent">%0</div>
-            </div>
-        </div>
-    </div>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
-
-    <div class="header">
-        <div class="header-text">
-            <span class="header-prefix">Öğr. Gör. Dr.</span>
-            <h1>Muhammed Sefa <span class="name-last">GÖR</span></h1>
-        </div>
-        <div class="backup-btn" onclick="checkPasswordAndOpen()" aria-label="Veri yönetimi">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 12v6m0 0l-2.5-2.5M12 18l2.5-2.5"/>
-            </svg>
-        </div>
-    </div>
-
-    <div class="date-container" onclick="document.getElementById('mainDatePicker').showPicker && document.getElementById('mainDatePicker').showPicker()">
-        <div class="date-day-block">
-            <div class="date-day-num" id="dateDayNum">--</div>
-            <div class="date-day-month" id="dateDayMonth">---</div>
-        </div>
-        <div class="date-info">
-            <div class="date-label">Seçili Tarih</div>
-            <div class="date-display" id="dateDisplay">—</div>
-            <div class="date-weekday" id="dateWeekday">—</div>
-        </div>
-        <div class="date-edit-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-        </div>
-        <input type="date" id="mainDatePicker">
-    </div>
-
-    <div class="menu-list">
-        <a href="#" onclick="navigateTo('namaz.html')" class="menu-item theme-namaz">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M5 20V11"/>
-                    <path d="M19 20V11"/>
-                    <path d="M4.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
-                    <path d="M18.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
-                    <path d="M8 20v-6c0-2.2 1.8-4 4-4s4 1.8 4 4v6"/>
-                    <path d="M12 9.5V8m0 0a1.2 1.2 0 010-2.4M12 8a1.2 1.2 0 000-2.4"/>
-                    <path d="M3 20h18"/>
-                    <path d="M11 20v-2.8a1 1 0 012 0V20"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Namaz Takibi</span>
-                <span class="item-desc">Vakitleri ve kazaları yönet</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('notlar.html')" class="menu-item theme-not">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/>
-                    <path d="M14 3v5a1 1 0 001 1h5"/>
-                    <path d="M8 13h8M8 17h5"/>
-                    <path d="M16.5 14.5l1.8-1.8a1 1 0 011.4 1.4L17.9 16"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Notlar</span>
-                <span class="item-desc">Günlük planlar ve hatırlatmalar</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('ingilizce.html')" class="menu-item theme-eng">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 5h7"/>
-                    <path d="M9 3v2"/>
-                    <path d="M5.5 8c0 0 .5 4.5 4.5 6.5"/>
-                    <path d="M11 8c0 0-1 5.5-7 8.5"/>
-                    <path d="M13 21l4-9 4 9"/>
-                    <path d="M14.4 18h5.2"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">İngilizce</span>
-                <span class="item-desc">Kelime, okuma ve diyalog çalışması</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('kitap1.html')" class="menu-item theme-book">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/>
-                    <path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/>
-                    <path d="M6 8.5h3M6 11.5h3M15 8.5h3M15 11.5h3"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Kitap</span>
-                <span class="item-desc">Okuma takibi ve kitaplık</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('yatirim1.html')" class="menu-item theme-money">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <ellipse cx="12" cy="6" rx="7" ry="2.4"/>
-                    <path d="M5 6v4.5c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4V6"/>
-                    <path d="M5 10.5V15c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-4.5"/>
-                    <path d="M5 15v3c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-3"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Bütçe</span>
-                <span class="item-desc">Gelir, gider ve hedef takibi</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('tabela.html')" class="menu-item theme-tabela">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="6" width="10" height="14" rx="1.6" transform="rotate(-9 8 13)"/>
-                    <rect x="11" y="4" width="10" height="14" rx="1.6" transform="rotate(9 16 11)"/>
-                    <text x="6" y="13" font-size="5" font-weight="800" fill="currentColor" stroke="none" transform="rotate(-9 8 13)">A</text>
-                    <text x="14" y="11" font-size="5" font-weight="800" fill="currentColor" stroke="none" transform="rotate(9 16 11)">K</text>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">101 Tabela</span>
-                <span class="item-desc">Skor, ceza ve dağıtıcı takibi</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('devam.html')" class="menu-item theme-school">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-                    <rect x="9" y="3" width="6" height="4" rx="1.2"/>
-                    <path d="M9 13.5l2.3 2.3L15.5 11.5"/>
-                    <path d="M9 18h4"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Öğrenci Devam</span>
-                <span class="item-desc">Yoklama, QR Kod ve Liste</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-    </div>
-
-    <div class="footer">
-        Bu program Muhammed Sefa GÖR tarafından şahsi kullanım için oluşturulmuştur.
-    </div>
-
-    <!-- Şifre Modali -->
-    <div id="passwordModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-            </div>
-            <h2>Şifre Gerekli</h2>
-            <p>Veri yönetimi panelini açmak için<br>6 haneli güvenlik şifrenizi girin.</p>
-
-            <div class="pwd-input-wrap" id="pwdDots">
-                <div class="pwd-dot"></div><div class="pwd-dot"></div><div class="pwd-dot"></div>
-                <div class="pwd-dot"></div><div class="pwd-dot"></div><div class="pwd-dot"></div>
-            </div>
-            <div class="pwd-error-text" id="pwdError">Hatalı şifre. Tekrar deneyin.</div>
-
-            <div class="pwd-keypad">
-                <button type="button" class="pwd-key" onclick="pwdKey('1')">1</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('2')">2</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('3')">3</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('4')">4</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('5')">5</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('6')">6</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('7')">7</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('8')">8</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('9')">9</button>
-                <button type="button" class="pwd-key muted"></button>
-                <button type="button" class="pwd-key" onclick="pwdKey('0')">0</button>
-                <button type="button" class="pwd-key danger" onclick="pwdBackspace()" aria-label="Sil">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:auto; display:block;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l4-7h14a1 1 0 011 1v12a1 1 0 01-1 1H7l-4-7zm10-2l-4 4m0-4l4 4"/>
-                    </svg>
-                </button>
-            </div>
-
-            <button class="modal-btn btn-cancel" onclick="closePasswordModal()" style="margin-top:18px;">Vazgeç</button>
-        </div>
-    </div>
-
-    <!-- Yedekleme Modali -->
-    <div id="backupModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/>
-                </svg>
-            </div>
-            <h2>Veri Yönetimi</h2>
-            <p>Tüm uygulamalardaki verilerinizi tek bir<br>dosya olarak indirin veya geri yükleyin.</p>
-
-            <!-- Hesap kartı (Google Sign-in / linkleme) -->
-            <div id="accountCard" class="account-card account-anon">
-                <div class="account-row">
-                    <div class="account-avatar" id="accountAvatar">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    </div>
-                    <div class="account-info">
-                        <div class="account-status" id="accountStatus">Anonim hesap</div>
-                        <div class="account-meta" id="accountMeta">Yalnız bu cihaza bağlı — telefon değişimini desteklemez.</div>
-                    </div>
-                </div>
-                <button class="modal-btn btn-google" id="btnLinkGoogle" onclick="handleGoogleLink()">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.265h2.908c1.702-1.567 2.684-3.875 2.684-6.622z" fill="#4285F4"/>
-                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.265c-.806.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-                        <path d="M3.964 10.704A5.41 5.41 0 013.682 9c0-.591.102-1.165.282-1.704V4.964H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.036l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.964L3.964 7.296C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                    </svg>
-                    <span id="btnLinkGoogleLabel">Google Hesabınla Bağla</span>
-                </button>
-                <button class="modal-btn btn-cancel hidden" id="btnSignOut" onclick="handleSignOut()" style="font-size:12.5px; padding:10px;">
-                    Çıkış Yap
-                </button>
-            </div>
-
-            <!-- Drive yedek bölümü -->
-            <div id="driveSection" class="drive-section">
-                <div class="drive-section-label">Google Drive Yedeği</div>
-                <div class="drive-last-info" id="driveLastInfo">Son yedek: —</div>
-                <button class="modal-btn btn-drive-backup" id="btnDriveBackup" onclick="handleDriveBackup()" disabled>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6m0-6l-2.5 2.5M12 12l2.5 2.5"/></svg>
-                    Drive'a Şimdi Yedekle
-                </button>
-                <button class="modal-btn btn-drive-list" id="btnDriveList" onclick="openDriveBackups()" disabled>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 12h14M5 16h10M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
-                    Drive Yedeklerini Görüntüle
-                </button>
-            </div>
-
-            <div class="local-section-label">Yerel Yedek (JSON dosyası)</div>
-
-            <button class="modal-btn btn-download" onclick="exportData()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-                Verileri İndir
-            </button>
-
-            <button class="modal-btn btn-upload" onclick="document.getElementById('fileInput').click()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5M12 4v12"/></svg>
-                Verileri Geri Yükle
-            </button>
-
-            <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importData(this)">
-
-            <button class="modal-btn btn-close" onclick="closeBackupModal()">Kapat</button>
-        </div>
-    </div>
-
-    <!-- Drive Yedek Listesi Modali -->
-    <div id="driveListModal" class="modal">
-        <div class="modal-content" style="max-width: 440px; max-height: 86vh; display: flex; flex-direction: column;">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 8h14M5 12h14M5 16h10"/>
-                </svg>
-            </div>
-            <h2>Drive Yedekleri</h2>
-            <p>Bir yedek seçip geri yüklenebilir veya silinebilir.</p>
-            <div id="driveListBody" class="drive-list" style="flex:1; overflow-y:auto; min-height: 100px;">
-                <div class="drive-list-loading">Yükleniyor…</div>
-            </div>
-            <button class="modal-btn btn-close" onclick="closeDriveListModal()" style="flex-shrink: 0; margin-top: 14px;">Kapat</button>
-        </div>
-    </div>
-
-    <script>
-        const APP_PASS = "120622";
-        const SESSION_KEY = "app_splash_shown";
-
-        // --- YÜKLEME EKRANI MANTIĞI ---
-        // Süre: 12 saniye. İsim harfleri soldan sağa renk dolar,
-        // alttaki yüzde chip'i de aynı tempoda sağa kayar.
-        document.addEventListener("DOMContentLoaded", () => {
-            const loadingScreen = document.getElementById('loading-screen');
-
-            // Eğer daha önce gösterildiyse gizle
-            if (sessionStorage.getItem(SESSION_KEY)) {
-                loadingScreen.style.display = 'none';
-                return;
+async function flushWrite(k) {
+    writeTimers.delete(k);
+    if (!_currentUid) return;
+    const op = writeQueue.get(k);
+    if (!op) return;
+    writeQueue.delete(k);
+    setStatus('syncing');
+    try {
+        if (isSharded(k)) {
+            await flushShardedKitap(op);
+        } else {
+            const ref = doc(db, 'users', _currentUid, 'store', k);
+            if (op.type === 'set') {
+                await setDoc(ref, { v: op.value, u: serverTimestamp() });
+            } else {
+                await deleteDoc(ref);
             }
+        }
+        setStatus('ok');
+    } catch (e) {
+        console.warn('[db-sync] write failed:', k, e);
+        setStatus('error');
+    }
+}
 
-            const nameFg = document.getElementById('nameFg');
-            const fillPercent = document.getElementById('fillPercent');
-            const splashTint = document.getElementById('splashTint');
+// =========================================================================
+//  SHARDED HANDLER: Kitap (liquid_lib_pro_v1)
+// =========================================================================
+function stripMeta(d) {
+    if (!d) return d;
+    const { u, ...rest } = d;
+    return rest;
+}
 
-            let progress = 0;
-            const totalTime = 12000;      // 12 saniye
-            const intervalTime = 60;
-            const step = 100 / (totalTime / intervalTime);
+async function pullKitap(uid) {
+    const settingsRef = doc(db, 'users', uid, 'store', KITAP_SETTINGS_DOC);
+    const booksRef = collection(db, 'users', uid, 'books');
+    const histRef = collection(db, 'users', uid, 'history');
 
-            const update = (p) => {
-                // Harfleri soldan sağa doldur
-                nameFg.style.clipPath = `inset(0 ${(100 - p).toFixed(2)}% 0 0)`;
-                // Yüzde chip'i: 0%'da sol kenara, 100%'de sağ kenara hizalı kayar
-                if (fillPercent) {
-                    fillPercent.textContent = `%${Math.floor(p)}`;
-                    fillPercent.style.left = p + '%';
-                    fillPercent.style.transform = `translateX(-${p}%)`;
-                }
-                // Arka plan tonu progress ile yoğunlaşır
-                if (splashTint) splashTint.style.opacity = (p / 100) * 0.9;
-            };
+    const [settingsSnap, booksSnap, histSnap] = await Promise.all([
+        getDoc(settingsRef),
+        getDocs(booksRef),
+        getDocs(histRef)
+    ]);
 
-            const loadingInterval = setInterval(() => {
-                progress += step;
-                if (progress >= 100) {
-                    progress = 100;
-                    update(100);
-                    clearInterval(loadingInterval);
-                    sessionStorage.setItem(SESSION_KEY, "true");
-                    setTimeout(() => {
-                        loadingScreen.style.opacity = '0';
-                        loadingScreen.style.visibility = 'hidden';
-                        setTimeout(() => loadingScreen.style.display = 'none', 550);
-                    }, 350);
-                    return;
-                }
-                update(progress);
-            }, intervalTime);
+    let settings = { dailyGoal: 50, yearlyGoal: 60 };
+    if (settingsSnap.exists()) {
+        try { settings = JSON.parse(settingsSnap.data().v); } catch (_) {}
+    }
+    const books = booksSnap.docs.map(d => stripMeta(d.data()));
+    const history = histSnap.docs.map(d => stripMeta(d.data()));
+    return { books, history, settings };
+}
+
+async function pushKitap(uid, newData, oldData) {
+    if (!newData) return;
+    if (!oldData) oldData = { books: [], history: [], settings: {} };
+
+    const writes = [];
+
+    // Settings
+    const newS = JSON.stringify(newData.settings || {});
+    const oldS = JSON.stringify(oldData.settings || {});
+    if (newS !== oldS) {
+        writes.push({
+            type: 'set',
+            ref: doc(db, 'users', uid, 'store', KITAP_SETTINGS_DOC),
+            data: { v: newS, u: serverTimestamp() }
         });
+    }
 
-        // --- SERVICE WORKER KAYDI (AUTO-UPDATE) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('SW Başarıyla Kaydedildi:', registration.scope);
-                    })
-                    .catch(err => {
-                        console.log('SW Kaydı Başarısız:', err);
-                    });
+    // Books diff
+    const oldBooks = new Map((oldData.books || []).map(b => [String(b.id), b]));
+    const newBooks = new Map((newData.books || []).map(b => [String(b.id), b]));
+    for (const [id, book] of newBooks) {
+        const oldBook = oldBooks.get(id);
+        if (!oldBook || JSON.stringify(book) !== JSON.stringify(oldBook)) {
+            writes.push({
+                type: 'set',
+                ref: doc(db, 'users', uid, 'books', id),
+                data: { ...book, u: serverTimestamp() }
             });
         }
-
-        // --- iOS TARAYICI BARLARINI GİZLEME VE LİNKLERİ YÖNETME ---
-        document.addEventListener('click', function (event) {
-            var target = event.target;
-            while (target && target.tagName !== 'A') {
-                target = target.parentNode;
-            }
-            if (target && target.tagName === 'A' && target.getAttribute('href')) {
-                var href = target.getAttribute('href');
-                if (!href.startsWith('http') && !href.startsWith('#')) {
-                    event.preventDefault();
-                    window.location.href = href;
-                }
-            }
-        }, false);
-
-        const TR_MONTHS_SHORT = ['OCA','ŞUB','MAR','NİS','MAY','HAZ','TEM','AĞU','EYL','EKİ','KAS','ARA'];
-        const TR_WEEKDAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
-
-        function setToday() {
-            const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            const picker = document.getElementById('mainDatePicker');
-            if(!picker.value) picker.value = localISOTime;
-            updateDateUI();
-            updateGreeting();
-
-            // Tarih değişiminde UI'yi güncelle
-            picker.addEventListener('change', updateDateUI);
+    }
+    for (const id of oldBooks.keys()) {
+        if (!newBooks.has(id)) {
+            writes.push({ type: 'delete', ref: doc(db, 'users', uid, 'books', id) });
         }
+    }
 
-        function updateDateUI() {
-            const picker = document.getElementById('mainDatePicker');
-            const v = picker.value;
-            if(!v) return;
-            const [y, m, d] = v.split('-').map(Number);
-            const dateObj = new Date(y, m-1, d);
-            const today = new Date(); today.setHours(0,0,0,0);
-            const isToday = (dateObj.getTime() === today.getTime());
-
-            document.getElementById('dateDayNum').textContent = String(d).padStart(2,'0');
-            document.getElementById('dateDayMonth').textContent = TR_MONTHS_SHORT[m-1];
-            document.getElementById('dateDisplay').textContent =
-                isToday ? 'Bugün' : dateObj.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
-            document.getElementById('dateWeekday').textContent =
-                isToday
-                    ? dateObj.toLocaleDateString('tr-TR', { day:'numeric', month:'long' }) + ' · ' + TR_WEEKDAYS[dateObj.getDay()]
-                    : TR_WEEKDAYS[dateObj.getDay()];
-        }
-
-        function updateGreeting() {
-            const h = new Date().getHours();
-            let g = 'İyi Akşamlar';
-            if (h >= 5 && h < 12) g = 'Günaydın';
-            else if (h >= 12 && h < 17) g = 'İyi Günler';
-            else if (h >= 17 && h < 22) g = 'İyi Akşamlar';
-            else g = 'İyi Geceler';
-            const el = document.getElementById('greetingText');
-            if(el) el.textContent = g;
-        }
-
-        function navigateTo(page) {
-            const date = document.getElementById('mainDatePicker').value;
-            window.location.href = `${page}?date=${date}`;
-        }
-
-        // --- ÖZEL ŞİFRE MODALİ ---
-        let pwdBuffer = '';
-        const PWD_LEN = 6;
-
-        function checkPasswordAndOpen() {
-            pwdBuffer = '';
-            renderPwdDots(false);
-            hidePwdError();
-            document.getElementById('passwordModal').classList.add('open');
-        }
-        function closePasswordModal() {
-            document.getElementById('passwordModal').classList.remove('open');
-        }
-        function renderPwdDots(error) {
-            const dots = document.querySelectorAll('#pwdDots .pwd-dot');
-            dots.forEach((d, i) => {
-                d.classList.toggle('filled', i < pwdBuffer.length);
-                d.classList.toggle('error', !!error);
-                d.textContent = (i < pwdBuffer.length) ? '•' : '';
+    // History diff
+    const oldHist = new Map((oldData.history || []).map(h => [String(h.id), h]));
+    const newHist = new Map((newData.history || []).map(h => [String(h.id), h]));
+    for (const [id, entry] of newHist) {
+        const oldEntry = oldHist.get(id);
+        if (!oldEntry || JSON.stringify(entry) !== JSON.stringify(oldEntry)) {
+            writes.push({
+                type: 'set',
+                ref: doc(db, 'users', uid, 'history', id),
+                data: { ...entry, u: serverTimestamp() }
             });
         }
-        function showPwdError() {
-            const e = document.getElementById('pwdError');
-            e.classList.add('visible');
-            renderPwdDots(true);
-            setTimeout(() => {
-                pwdBuffer = '';
-                renderPwdDots(false);
-            }, 450);
+    }
+    for (const id of oldHist.keys()) {
+        if (!newHist.has(id)) {
+            writes.push({ type: 'delete', ref: doc(db, 'users', uid, 'history', id) });
         }
-        function hidePwdError() {
-            document.getElementById('pwdError').classList.remove('visible');
+    }
+
+    if (writes.length === 0) return;
+
+    // 480'lik chunk'lar (Firestore limiti 500)
+    const CHUNK = 480;
+    for (let i = 0; i < writes.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        for (const w of writes.slice(i, i + CHUNK)) {
+            if (w.type === 'set') batch.set(w.ref, w.data);
+            else batch.delete(w.ref);
         }
-        function pwdKey(n) {
-            if (pwdBuffer.length >= PWD_LEN) return;
-            pwdBuffer += n;
-            hidePwdError();
-            renderPwdDots(false);
-            if (pwdBuffer.length === PWD_LEN) {
-                setTimeout(() => {
-                    if (pwdBuffer === APP_PASS) {
-                        closePasswordModal();
-                        document.getElementById('backupModal').classList.add('open');
-                    } else {
-                        showPwdError();
-                    }
-                }, 130);
-            }
+        await batch.commit();
+    }
+}
+
+async function flushShardedKitap(op) {
+    if (op.type === 'del') return; // explicit silme yok
+    const newData = JSON.parse(op.value || '{"books":[],"history":[],"settings":{}}');
+    let oldData = { books: [], history: [], settings: {} };
+    const snapStr = window.localStorage.getItem(KITAP_SNAPSHOT_KEY);
+    if (snapStr) { try { oldData = JSON.parse(snapStr); } catch (_) {} }
+    await pushKitap(_currentUid, newData, oldData);
+    _suppressWrite = true;
+    try { _origSet.call(window.localStorage, KITAP_SNAPSHOT_KEY, op.value); }
+    finally { _suppressWrite = false; }
+}
+
+async function migrateKitapIfNeeded(uid) {
+    const oldRef = doc(db, 'users', uid, 'store', KITAP_OLD_DOC_ID);
+    const oldSnap = await getDoc(oldRef);
+    if (!oldSnap.exists()) return false;
+    let oldData;
+    try { oldData = JSON.parse(oldSnap.data().v); }
+    catch (_) { return false; }
+    if (!oldData || !Array.isArray(oldData.books)) return false;
+    console.log('[db-sync] kitap migration: eski tek-belge bulundu, parçalanıyor...');
+    setStatus('syncing');
+    await pushKitap(uid, oldData, { books: [], history: [], settings: {} });
+    await deleteDoc(oldRef);
+    console.log('[db-sync] kitap migration tamamlandı.');
+    return true;
+}
+
+async function hydrateKitap(uid) {
+    if (!isAllowed(KITAP_KEY)) return;
+    await migrateKitapIfNeeded(uid);
+    const data = await pullKitap(uid);
+    const valueStr = JSON.stringify(data);
+    const localValue = window.localStorage.getItem(KITAP_KEY);
+    const cloudEmpty = data.books.length === 0 && data.history.length === 0;
+
+    _suppressWrite = true;
+    try {
+        if (cloudEmpty && localValue) {
+            // Bulut boş, yerelde veri var → snapshot'ı boş bırak,
+            // sonradan otomatik push edilsin
+            _origSet.call(window.localStorage, KITAP_SNAPSHOT_KEY, JSON.stringify({ books: [], history: [], settings: {} }));
+            scheduleWrite(KITAP_KEY, localValue);
+        } else {
+            _origSet.call(window.localStorage, KITAP_KEY, valueStr);
+            _origSet.call(window.localStorage, KITAP_SNAPSHOT_KEY, valueStr);
         }
-        function pwdBackspace() {
-            if (pwdBuffer.length === 0) return;
-            pwdBuffer = pwdBuffer.slice(0, -1);
-            hidePwdError();
-            renderPwdDots(false);
+    } finally {
+        _suppressWrite = false;
+    }
+}
+
+function subscribeKitap(uid) {
+    if (!isAllowed(KITAP_KEY)) return;
+    let books = null;
+    let history = null;
+    let settings = null;
+
+    const settle = () => {
+        if (books === null || history === null || settings === null) return;
+        const valueStr = JSON.stringify({ books, history, settings });
+        const cur = window.localStorage.getItem(KITAP_KEY);
+        if (cur === valueStr) return;
+        _suppressWrite = true;
+        try {
+            _origSet.call(window.localStorage, KITAP_KEY, valueStr);
+            _origSet.call(window.localStorage, KITAP_SNAPSHOT_KEY, valueStr);
+        } finally {
+            _suppressWrite = false;
         }
+        window.dispatchEvent(new CustomEvent('dbsynced', {
+            detail: { source: 'remote', sharded: 'kitap' }
+        }));
+    };
 
-        function closeBackupModal() { document.getElementById('backupModal').classList.remove('open'); }
+    onSnapshot(doc(db, 'users', uid, 'store', KITAP_SETTINGS_DOC), (d) => {
+        if (d.exists()) {
+            try { settings = JSON.parse(d.data().v); }
+            catch (_) { settings = { dailyGoal: 50, yearlyGoal: 60 }; }
+        } else {
+            settings = { dailyGoal: 50, yearlyGoal: 60 };
+        }
+        settle();
+    }, e => console.warn('[db-sync] settings snapshot:', e));
 
-        // === Hesap durumu UI'a yansıt ===
-        function refreshAccountCard(state) {
-            const card = document.getElementById('accountCard');
-            const status = document.getElementById('accountStatus');
-            const meta = document.getElementById('accountMeta');
-            const btnLink = document.getElementById('btnLinkGoogle');
-            const btnLinkLabel = document.getElementById('btnLinkGoogleLabel');
-            const btnSignOut = document.getElementById('btnSignOut');
-            const avatar = document.getElementById('accountAvatar');
-            if (!card || !status) return;
+    onSnapshot(collection(db, 'users', uid, 'books'), (qs) => {
+        books = qs.docs.map(d => stripMeta(d.data()));
+        settle();
+    }, e => console.warn('[db-sync] books snapshot:', e));
 
-            if (!state) {
-                status.textContent = 'Bağlanıyor…';
-                meta.textContent = 'Firebase bağlantısı kuruluyor.';
-                btnLink.disabled = true;
-                return;
-            }
-            btnLink.disabled = false;
+    onSnapshot(collection(db, 'users', uid, 'history'), (qs) => {
+        history = qs.docs.map(d => stripMeta(d.data()));
+        settle();
+    }, e => console.warn('[db-sync] history snapshot:', e));
+}
 
-            if (state.isGoogleLinked) {
-                card.classList.remove('account-anon');
-                card.classList.add('account-google');
-                status.textContent = state.displayName || state.email || 'Google hesabı';
-                meta.textContent = state.email
-                    ? `Bağlı: ${state.email} · cihazlar arası senkron aktif`
-                    : 'Google hesabıyla bağlı · cihazlar arası senkron aktif';
-                btnLinkLabel.textContent = 'Google Hesabını Tazele (Drive izni yenile)';
-                btnSignOut.classList.remove('hidden');
-                if (state.photoURL) {
-                    avatar.innerHTML = `<img src="${state.photoURL}" alt="">`;
+// =========================================================================
+//  GENEL HİDRASYON ve SUBSCRIBE
+// =========================================================================
+async function onAuthed(uid) {
+    _currentUid = uid;
+    setStatus('syncing');
+
+    // 1) Sharded keys (kitap)
+    if (SHARDED_KEYS.some(isAllowed)) {
+        try { await hydrateKitap(uid); }
+        catch (e) { console.warn('[db-sync] kitap hydrate error:', e); }
+    }
+
+    // 2) Normal store/{key} hidrasyon
+    const colRef = collection(db, 'users', uid, 'store');
+    let snap;
+    try {
+        snap = await getDocs(colRef);
+    } catch (e) {
+        console.warn('[db-sync] hydrate failed (kurallar?):', e);
+        setStatus('error');
+        return;
+    }
+
+    let applied = 0;
+    _suppressWrite = true;
+    try {
+        snap.forEach(d => {
+            const k = d.id;
+            // Kitap belgeleri özel handler ile işleniyor
+            if (k === KITAP_SETTINGS_DOC || isSharded(k)) return;
+            if (!isAllowed(k)) return;
+            const data = d.data();
+            if (data && typeof data.v === 'string') {
+                if (window.localStorage.getItem(k) !== data.v) {
+                    _origSet.call(window.localStorage, k, data.v);
+                    applied++;
                 }
-            } else if (state.needsGoogleSignin) {
-                // Anonim auth Console'da kapalı — kullanıcı Google ile giriş yapmalı
-                card.classList.remove('account-anon', 'account-google');
-                card.classList.add('account-needs');
-                status.textContent = 'Henüz giriş yapılmadı';
-                meta.textContent = 'Verileriniz buluta gönderilmiyor. Google ile bağlanarak senkronu başlatın.';
-                btnLinkLabel.textContent = 'Google ile Giriş Yap';
-                btnSignOut.classList.add('hidden');
-                avatar.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
-            } else {
-                card.classList.remove('account-google', 'account-needs');
-                card.classList.add('account-anon');
-                status.textContent = 'Anonim hesap';
-                meta.textContent = 'Yalnız bu cihaza bağlı — telefon değişimini desteklemez.';
-                btnLinkLabel.textContent = 'Google Hesabınla Bağla';
-                btnSignOut.classList.add('hidden');
-                avatar.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
             }
-        }
-
-        // db-sync'in yaydığı auth durum eventi
-        window.addEventListener('dbauthstate', (e) => refreshAccountCard(e.detail));
-        // Eğer auth zaten hazırsa (sayfa açıldığında snapshot alınır)
-        setTimeout(() => {
-            if (window.dbAuth && typeof window.dbAuth.snapshot === 'function') {
-                refreshAccountCard(window.dbAuth.snapshot());
-            }
-        }, 400);
-
-        // Modül yüklenene kadar bekle (poll)
-        async function waitForGlobal(name, timeoutMs = 8000) {
-            const start = Date.now();
-            while (!window[name]) {
-                if (Date.now() - start > timeoutMs) return false;
-                await new Promise(r => setTimeout(r, 120));
-            }
-            return true;
-        }
-
-        async function handleGoogleLink() {
-            const btn = document.getElementById('btnLinkGoogle');
-            const labelEl = document.getElementById('btnLinkGoogleLabel');
-            const oldLabel = labelEl.textContent;
-            btn.disabled = true;
-            labelEl.textContent = 'Bekleniyor…';
-            const ok = await waitForGlobal('dbAuth');
-            if (!ok) {
-                btn.disabled = false;
-                labelEl.textContent = oldLabel;
-                const loading = window.__dbSyncLoading ? 'modül hâlâ yükleniyor' : 'modül yüklenemedi';
-                const ready = window.__dbSyncReady ? 'EVET' : 'HAYIR';
-                alert(
-                    'Bulut bağlantısı kurulamadı (' + loading + ').\n\n' +
-                    'Durum: __dbSyncReady=' + ready + '\n\n' +
-                    'Adımlar:\n' +
-                    '1) İnternet açık mı?\n' +
-                    '2) Safari → Ayarlar → Geçmişi/Web Sitesi Verilerini SİL\n' +
-                    '3) PWA\'yı ana ekrandan KALDIR\n' +
-                    '4) Safari\'de https://msefagor.github.io/MyLifeApp/ aç\n' +
-                    '5) Ana Ekrana Ekle → tekrar aç\n\n' +
-                    'Hâlâ olmazsa: Mac → Safari → Develop → iPhone\'un → bağlanan sayfa → Console hatasını paylaş'
-                );
-                return;
-            }
-            labelEl.textContent = 'Açılıyor…';
-            try {
-                await window.dbAuth.linkWithGoogle();
-                // Mobilde sayfa redirect olur; masaüstünde popup üzerinden auth state event'i gelir.
-            } catch (e) {
-                alert(e.message || 'Google girişi başarısız.');
-            } finally {
-                btn.disabled = false;
-                labelEl.textContent = oldLabel;
-            }
-        }
-
-        async function handleSignOut() {
-            if (!window.dbAuth) return;
-            if (!confirm('Çıkış yapmak istediğinize emin misiniz?\nVerileriniz Firestore\'da kalır, başka cihazda Google ile giriş yaparak devam edebilirsiniz.')) return;
-            try {
-                await window.dbAuth.signOut();
-                // Otomatik anonim oturum açılır, dbauthstate eventi tetiklenir
-            } catch (e) {
-                alert('Çıkış sırasında hata: ' + e.message);
-            }
-        }
-
-        // === Drive yedek butonları ===
-        function fmtBackupTime(d) {
-            if (!d) return '—';
-            const dt = (d instanceof Date) ? d : new Date(d);
-            const pad = n => String(n).padStart(2, '0');
-            return `${pad(dt.getDate())}.${pad(dt.getMonth()+1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-        }
-        function fmtBytes(n) {
-            n = Number(n) || 0;
-            if (n < 1024) return n + ' B';
-            if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
-            return (n/1024/1024).toFixed(2) + ' MB';
-        }
-
-        function refreshDriveSection() {
-            const u = window.dbAuth ? window.dbAuth.snapshot() : null;
-            const linked = !!(u && u.isGoogleLinked);
-            const btnB = document.getElementById('btnDriveBackup');
-            const btnL = document.getElementById('btnDriveList');
-            const info = document.getElementById('driveLastInfo');
-            if (!btnB) return;
-            btnB.disabled = !linked;
-            btnL.disabled = !linked;
-            const last = window.dbBackup ? window.dbBackup.lastTime() : null;
-            if (!linked) {
-                info.innerHTML = '<i>Drive yedeği için önce Google hesabınla bağlan.</i>';
-            } else if (!last) {
-                info.innerHTML = 'Son yedek: <b>henüz yok</b>';
-            } else {
-                info.innerHTML = 'Son yedek: <b>' + fmtBackupTime(last) + '</b>';
-            }
-        }
-        // Auth durumu değiştikçe Drive bölümünü güncelle
-        window.addEventListener('dbauthstate', refreshDriveSection);
-        window.addEventListener('dbbackup', refreshDriveSection);
-        // İlk açılış için
-        setTimeout(refreshDriveSection, 600);
-
-        async function handleDriveBackup() {
-            const btn = document.getElementById('btnDriveBackup');
-            const orig = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span style="opacity:0.85">Hazırlanıyor…</span>';
-            const ok = await waitForGlobal('dbBackup');
-            if (!ok) {
-                btn.disabled = false;
-                btn.innerHTML = orig;
-                alert('Bulut bağlantısı kurulamadı. PWA\'yı kapatıp tekrar aç ve sağ üstteki noktanın yeşile dönmesini bekle.');
-                return;
-            }
-            btn.innerHTML = '<span style="opacity:0.85">Drive izni alınıyor…</span>';
-            try {
-                // 1) Kullanıcı eylemi sırasında token sağla (popup blocker'ı geçer)
-                if (window.dbAuth && typeof window.dbAuth.ensureGoogleToken === 'function') {
-                    await window.dbAuth.ensureGoogleToken();
-                }
-                btn.innerHTML = '<span style="opacity:0.85">Yedekleniyor…</span>';
-                console.log('[backup] runNow başlıyor...');
-                // 2) Yedeği al
-                const r = await window.dbBackup.runNow();
-                console.log('[backup] tamam:', r);
-                refreshDriveSection();
-                alert(
-                    'Yedek başarıyla alındı.\n\n' +
-                    `Dosya: ${r.filename}\n` +
-                    `Kitap: ${r.counts.books}\n` +
-                    `Okuma kaydı: ${r.counts.history}\n` +
-                    `Diğer kayıt: ${r.counts.store}\n` +
-                    `Boyut: ${fmtBytes(r.size)}`
-                );
-            } catch (e) {
-                console.error('[backup] hata:', e);
-                alert('Yedek başarısız:\n\n' + (e && e.message ? e.message : String(e)));
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = orig;
-            }
-        }
-
-        async function openDriveBackups() {
-            document.getElementById('driveListModal').classList.add('open');
-            const body = document.getElementById('driveListBody');
-            body.innerHTML = '<div class="drive-list-loading">Yedekler getiriliyor…</div>';
-            const ok = await waitForGlobal('dbBackup');
-            if (!ok) {
-                body.innerHTML = '<div class="drive-list-empty" style="color:var(--danger-color, #ff5f6d);">Bulut bağlantısı kurulamadı. PWA\'yı tekrar aç.</div>';
-                return;
-            }
-            try {
-                const files = await window.dbBackup.list();
-                if (!files.length) {
-                    body.innerHTML = '<div class="drive-list-empty">Henüz yedek dosyası yok.<br>"Drive\'a Şimdi Yedekle" ile ilk yedeği oluştur.</div>';
-                    return;
-                }
-                body.innerHTML = '';
-                files.forEach(f => {
-                    const row = document.createElement('div');
-                    row.className = 'drive-list-row';
-                    row.innerHTML = `
-                        <div class="drive-list-info">
-                            <span class="drive-list-name">${f.name}</span>
-                            <span class="drive-list-meta">${fmtBackupTime(f.modifiedTime)} · ${fmtBytes(f.size)}</span>
-                        </div>
-                        <button class="drive-list-btn" data-id="${f.id}">Geri Yükle</button>
-                        <button class="drive-list-del" data-id="${f.id}" data-name="${f.name.replace(/"/g,'')}">Sil</button>
-                    `;
-                    row.querySelector('.drive-list-btn').onclick = () => handleRestore(f.id, f.name);
-                    row.querySelector('.drive-list-del').onclick = () => handleDeleteBackup(f.id, f.name);
-                    body.appendChild(row);
-                });
-            } catch (e) {
-                body.innerHTML = `<div class="drive-list-empty" style="color: var(--danger-color, #ff5f6d);">Hata: ${e.message}</div>`;
-            }
-        }
-
-        function closeDriveListModal() {
-            document.getElementById('driveListModal').classList.remove('open');
-        }
-
-        async function handleRestore(fileId, name) {
-            if (!confirm(
-                'GERİ YÜKLEME UYARISI\n\n' +
-                `"${name}" dosyasından geri yükleneceksin.\n\n` +
-                'Mevcut tüm kitap, history ve diğer veriler bu yedekteki haliyle DEĞİŞTİRİLECEK. ' +
-                'Devam etmek istediğine emin misin?'
-            )) return;
-            try {
-                await window.dbBackup.restore(fileId);
-                alert('Geri yükleme tamamlandı. Sayfa yenileniyor…');
-                location.reload();
-            } catch (e) {
-                alert('Geri yükleme başarısız: ' + e.message);
-            }
-        }
-
-        async function handleDeleteBackup(fileId, name) {
-            if (!confirm(`"${name}" yedeğini silmek istediğine emin misin?`)) return;
-            try {
-                await window.dbBackup.deleteOne(fileId);
-                openDriveBackups(); // listeyi yenile
-            } catch (e) {
-                alert('Silme başarısız: ' + e.message);
-            }
-        }
-
-        function exportData() {
-            const allData = JSON.stringify(localStorage);
-            const blob = new Blob([allData], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const dateStr = new Date().toISOString().split('T')[0];
-            a.download = `backup_full_${dateStr}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            alert("Yedek dosyası indirildi.");
-        }
-
-        function importData(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    localStorage.clear();
-                    Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); });
-                    alert("Veriler başarıyla geri yüklendi!");
-                    location.reload(); 
-                } catch (err) { alert("Dosya bozuk veya hatalı format: " + err); }
-            };
-            reader.readAsText(file);
-        }
-
-        window.onload = setToday;
-    </script>
-</body>
-</html>
-
-            z-index: 999999;
-            display: flex; flex-direction: column; align-items: center;
-            padding: calc(env(safe-area-inset-top) + 56px) 24px calc(env(safe-area-inset-bottom) + 32px);
-            transition: opacity 0.55s ease, visibility 0.55s;
-            overflow: hidden;
-        }
-        /* --- DUMAN / AKIŞ KATMANLARI (sağ alt blob kaldırıldı) --- */
-        .smoke-bg {
-            position: absolute; inset: 0; overflow: hidden;
-            pointer-events: none; z-index: 0;
-            animation: smokeHue 26s linear infinite;
-        }
-        @keyframes smokeHue {
-            0%   { filter: hue-rotate(0deg); }
-            50%  { filter: hue-rotate(28deg); }
-            100% { filter: hue-rotate(0deg); }
-        }
-        .smoke {
-            position: absolute; border-radius: 50%;
-            filter: blur(48px);
-            mix-blend-mode: screen;
-            will-change: transform, opacity;
-        }
-        .smoke-1 {
-            width: 70%; height: 70%; top: -10%; left: -18%;
-            background: radial-gradient(circle, rgba(76, 201, 240, 0.55) 0%, transparent 65%);
-            animation: smokeDrift1 18s ease-in-out infinite alternate;
-        }
-        .smoke-2 {
-            width: 75%; height: 75%; top: 25%; right: -22%;
-            background: radial-gradient(circle, rgba(247, 37, 133, 0.45) 0%, transparent 65%);
-            animation: smokeDrift2 22s ease-in-out infinite alternate;
-        }
-        .smoke-3 {
-            width: 60%; height: 60%; bottom: -10%; left: 10%;
-            background: radial-gradient(circle, rgba(115, 9, 183, 0.50) 0%, transparent 65%);
-            animation: smokeDrift3 20s ease-in-out infinite alternate;
-        }
-        .smoke-4 {
-            width: 55%; height: 55%; top: 50%; left: 35%;
-            background: radial-gradient(circle, rgba(67, 97, 238, 0.42) 0%, transparent 65%);
-            animation: smokeDrift4 16s ease-in-out infinite alternate;
-        }
-        @keyframes smokeDrift1 {
-            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.45; }
-            50%  { transform: translate(15%, 8%) scale(1.2); opacity: 0.7;  }
-            100% { transform: translate(5%, 18%) scale(1.08);opacity: 0.5;  }
-        }
-        @keyframes smokeDrift2 {
-            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
-            50%  { transform: translate(-12%, -10%) scale(1.15); opacity: 0.6; }
-            100% { transform: translate(-5%, 6%) scale(0.95); opacity: 0.45; }
-        }
-        @keyframes smokeDrift3 {
-            0%   { transform: translate(0%, 0%) scale(1);     opacity: 0.4;  }
-            50%  { transform: translate(-14%, -8%) scale(1.22); opacity: 0.6; }
-            100% { transform: translate(8%, -14%) scale(1.05); opacity: 0.45;}
-        }
-        @keyframes smokeDrift4 {
-            0%   { transform: translate(0%, 0%) scale(1);    opacity: 0.3;  }
-            50%  { transform: translate(-10%, 8%) scale(1.18); opacity: 0.55;}
-            100% { transform: translate(-18%, -4%) scale(1.08); opacity: 0.4; }
-        }
-
-        /* Logo en üstte */
-        .splash-logo {
-            position: relative; z-index: 2;
-            width: 88px; height: 88px; border-radius: 26px;
-            background: linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04));
-            border: 1px solid rgba(255,255,255,0.18);
-            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-            animation: logoPulse 2.6s ease-in-out infinite, splashIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-            flex-shrink: 0;
-        }
-        .splash-logo img { width: 62px; height: 62px; border-radius: 18px; object-fit: cover; }
-        @keyframes logoPulse {
-            0%, 100% { box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
-            50%      { box-shadow: 0 28px 64px rgba(76,201,240,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
-        }
-        @keyframes splashIn {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Orta blok — başlık ve isim */
-        .splash-content {
-            position: relative; z-index: 2;
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px; width: 100%; max-width: 460px;
-            animation: splashIn 0.7s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-
-        .splash-prefix {
-            font-size: 11.5px; font-weight: 700; color: #4cc9f0;
-            letter-spacing: 4px; text-transform: uppercase;
-            display: inline-flex; align-items: center; gap: 12px;
-            margin-bottom: 4px;
-            text-shadow: 0 0 14px rgba(76,201,240,0.5);
-        }
-        .splash-prefix::before, .splash-prefix::after {
-            content: ''; display: block; width: 28px; height: 1px;
-            background: linear-gradient(90deg, transparent, #4cc9f0, transparent);
-        }
-
-        /* Harf-doldurma adı */
-        .name-fill-wrap {
-            position: relative; display: inline-block;
-            line-height: 1.05;
-            max-width: 92vw;
-        }
-        .name-bg, .name-fg {
-            font-size: clamp(20px, 6.8vw, 32px);
-            font-weight: 800; letter-spacing: -0.3px;
-            line-height: 1.05;
-            white-space: nowrap;
-            margin: 0; padding: 0 2px;
-        }
-        /* Doldurulmamış harfler — zemin tonuyla uyumlu (lacivert/mor ghost) */
-        .name-bg {
-            color: rgba(140, 165, 230, 0.10);
-            -webkit-text-stroke: 1px rgba(160, 180, 240, 0.28);
-        }
-        .name-fg {
-            position: absolute; top: 0; left: 0;
-            background: linear-gradient(90deg, #4cc9f0 0%, #4361ee 50%, #b388ff 100%);
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent; color: transparent;
-            filter: drop-shadow(0 0 14px rgba(67, 97, 238, 0.55));
-            clip-path: inset(0 100% 0 0);
-            transition: clip-path 0.12s linear;
-        }
-
-        /* Soldan sağa kayan yüzde chip'i (rakam) */
-        .fill-percent {
-            position: absolute;
-            top: calc(100% + 12px); left: 0;
-            transform: translateX(0);
-            font-size: 12px; font-weight: 800;
-            letter-spacing: -0.2px;
-            color: #fff; font-variant-numeric: tabular-nums;
-            padding: 4px 10px; border-radius: 999px;
-            background: linear-gradient(135deg, rgba(76, 201, 240, 0.22), rgba(67, 97, 238, 0.22));
-            border: 1px solid rgba(76, 201, 240, 0.4);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.32);
-            transition: left 0.12s linear, transform 0.12s linear;
-            white-space: nowrap;
-        }
-
-        /* Progress ile ton değiştiren arka plan katmanı */
-        .splash-tint {
-            position: absolute; inset: 0; pointer-events: none; z-index: 1;
-            background:
-                radial-gradient(55% 45% at 50% 60%, rgba(115, 9, 183, 0.42) 0%, transparent 70%),
-                radial-gradient(55% 45% at 25% 80%, rgba(76, 201, 240, 0.28) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity 0.3s linear;
-        }
-        /* --- YÜKLEME EKRANI BİTİŞ --- */
-
-        /* Arkaplan Efektleri */
-        .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.45; z-index: -1; }
-        .blob-1 { top: -12%; left: -20%; width: 320px; height: 320px; background: #f72585; animation: float 9s infinite ease-in-out; }
-        .blob-2 { bottom: -12%; right: -22%; width: 360px; height: 360px; background: #4361ee; animation: float 11s infinite ease-in-out reverse; }
-        .blob-3 { top: 38%; left: 30%; width: 200px; height: 200px; background: #4cc9f0; opacity: 0.32; }
-        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
-
-        /* Üst Bar (Nameplate) */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 22px 0 6px; margin-bottom: 16px; gap: 14px;
-        }
-        .header-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
-        .header-prefix {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 10.5px; font-weight: 700;
-            letter-spacing: 1.6px; text-transform: uppercase;
-            color: #4cc9f0;
-            position: relative;
-        }
-        .header-prefix::before {
-            content: ''; display: inline-block; width: 18px; height: 1px;
-            background: linear-gradient(90deg, transparent, #4cc9f0);
-        }
-        .header h1 {
-            font-size: 22px; margin: 0; font-weight: 800; letter-spacing: -0.4px;
-            line-height: 1.15;
-            background: linear-gradient(135deg, #ffffff 0%, #b6c8ff 100%);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .header h1 .name-last { font-weight: 900; letter-spacing: 0.5px; }
-        .backup-btn {
-            background: var(--glass-bg-strong); border: 1px solid var(--glass-stroke); color: white;
-            width: 46px; height: 46px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-            transition: transform 0.2s ease, background 0.2s ease;
-            box-shadow: var(--shadow-md);
-        }
-        .backup-btn svg { width: 20px; height: 20px; }
-        .backup-btn:active { transform: scale(0.93); background: rgba(255,255,255,0.22); }
-
-        /* Tarih Seçici (Profesyonel) */
-        .date-container {
-            position: relative;
-            background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
-            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
-            border: 1px solid var(--glass-stroke);
-            border-radius: 24px; padding: 18px 20px; margin-bottom: 26px;
-            box-shadow: var(--shadow-md);
-            display: flex; align-items: center; gap: 16px;
-            overflow: hidden;
-        }
-        .date-container::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 35%);
-        }
-        .date-day-block {
-            flex-shrink: 0;
-            width: 64px; height: 64px; border-radius: 18px;
-            background: linear-gradient(135deg, #4cc9f0, #4361ee);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 14px 30px rgba(67,97,238,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .date-day-num { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
-        .date-day-month { font-size: 10px; font-weight: 600; letter-spacing: 1px; opacity: 0.85; margin-top: 3px; text-transform: uppercase; }
-        .date-info { flex: 1; min-width: 0; }
-        .date-label {
-            font-size: 11px; color: var(--text-muted); margin-bottom: 4px;
-            text-transform: uppercase; letter-spacing: 1.4px;
-        }
-        .date-display { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; line-height: 1.2; }
-        .date-weekday { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-        .date-edit-icon {
-            width: 36px; height: 36px; border-radius: 12px;
-            background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            color: rgba(255,255,255,0.7);
-        }
-        .date-edit-icon svg { width: 16px; height: 16px; }
-        input[type="date"]#mainDatePicker {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            opacity: 0; border: none; background: transparent;
-            color: transparent; font-size: 1px;
-            -webkit-appearance: none; appearance: none;
-            cursor: pointer;
-        }
-
-        /* Menü */
-        .menu-list { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-        .menu-item {
-            position: relative;
-            background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-            backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
-            border: 1px solid var(--glass-border);
-            border-radius: 22px; padding: 16px 18px;
-            display: flex; align-items: center; gap: 16px;
-            text-decoration: none; color: white;
-            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-        }
-        .menu-item::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 35%);
-        }
-        .menu-item:active {
-            transform: scale(0.98);
-            background: linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
-            border-color: var(--glass-stroke);
-        }
-        .icon-box {
-            width: 50px; height: 50px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 10px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.22);
-            position: relative;
-        }
-        .icon-box svg { width: 24px; height: 24px; }
-        .item-info { display: flex; flex-direction: column; min-width: 0; }
-        .item-title { font-size: 16.5px; font-weight: 700; letter-spacing: -0.1px; }
-        .item-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
-        .menu-arrow {
-            margin-left: auto; flex-shrink: 0;
-            color: rgba(255,255,255,0.28);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .menu-arrow svg { width: 16px; height: 16px; }
-        .theme-namaz .icon-box { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #052e16; }
-        .theme-not .icon-box { background: linear-gradient(135deg, #f83600 0%, #f9d423 100%); color: #422006; }
-        .theme-eng .icon-box { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); color: white; }
-        .theme-book .icon-box { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #2a1240; }
-        .theme-money .icon-box { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
-        .theme-tabela .icon-box { background: linear-gradient(135deg, #093028 0%, #237a57 100%); color: #d4ffe5; }
-
-        .footer {
-            text-align: center; margin-top: 36px; padding: 22px 10px;
-            font-size: 11px; color: rgba(255, 255, 255, 0.32);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            letter-spacing: 0.2px;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed; inset: 0; background: rgba(5, 7, 18, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 100; display: none; align-items: center; justify-content: center;
-            padding: 20px;
-        }
-        .modal.open { display: flex; animation: modalFade 0.3s ease both; }
-        @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
-        .modal-content {
-            background: linear-gradient(180deg, #1a1f3a 0%, #131628 100%);
-            width: 100%; max-width: 380px; border-radius: 26px; padding: 26px 22px;
-            border: 1px solid var(--glass-stroke); text-align: center;
-            box-shadow: var(--shadow-lg);
-            animation: modalSlide 0.35s cubic-bezier(0.22,1,0.36,1) both;
-        }
-        @keyframes modalSlide {
-            from { transform: translateY(20px) scale(0.96); opacity: 0; }
-            to   { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        .modal-header-icon {
-            width: 56px; height: 56px; border-radius: 18px;
-            background: linear-gradient(135deg, #4cc9f0, #4361ee);
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 14px;
-            box-shadow: 0 14px 30px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .modal-header-icon svg { width: 26px; height: 26px; color: white; }
-        .modal-content h2 { margin: 0 0 6px; font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
-        .modal-content p { color: var(--text-muted); font-size: 13.5px; margin: 0 0 22px; line-height: 1.5; }
-
-        .modal-btn {
-            width: 100%; padding: 15px 16px; margin-top: 10px;
-            border-radius: 14px; border: none;
-            font-size: 15px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: transform 0.2s ease;
-            font-family: inherit;
-        }
-        .modal-btn:active { transform: scale(0.98); }
-        .modal-btn svg { width: 18px; height: 18px; }
-        .btn-download { background: linear-gradient(135deg, #4cc9f0, #4361ee); color: white; box-shadow: 0 8px 22px rgba(67,97,238,0.35); }
-        .btn-upload { background: linear-gradient(135deg, #06d6a0, #1b9aaa); color: white; box-shadow: 0 8px 22px rgba(6,214,160,0.32); }
-        .btn-close { background: rgba(255,255,255,0.06); color: white; margin-top: 18px; border: 1px solid var(--glass-border); }
-
-        /* Şifre Modali */
-        #passwordModal .modal-content { padding: 28px 22px 22px; }
-        .pwd-input-wrap {
-            display: flex; gap: 10px; justify-content: center; margin-bottom: 8px;
-        }
-        .pwd-dot {
-            width: 44px; height: 54px; border-radius: 14px;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 26px; line-height: 1; color: white; font-weight: 700;
-            transition: border-color 0.2s ease, background 0.2s ease;
-        }
-        .pwd-dot.filled { border-color: #4cc9f0; background: rgba(76,201,240,0.08); }
-        .pwd-dot.error { border-color: #ff5f6d; background: rgba(255,95,109,0.08); animation: shake 0.4s; }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-6px); }
-            40% { transform: translateX(6px); }
-            60% { transform: translateX(-4px); }
-            80% { transform: translateX(4px); }
-        }
-        .pwd-error-text {
-            color: #ff5f6d; font-size: 12.5px; min-height: 18px; margin-bottom: 8px;
-            transition: opacity 0.2s ease; opacity: 0;
-        }
-        .pwd-error-text.visible { opacity: 1; }
-        #pwdHidden {
-            position: absolute; opacity: 0; pointer-events: none;
-            width: 1px; height: 1px;
-        }
-        .pwd-keypad {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-            margin-top: 18px;
-        }
-        .pwd-key {
-            padding: 14px 0; border-radius: 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border); color: white;
-            font-size: 22px; font-weight: 600; cursor: pointer;
-            transition: transform 0.15s ease, background 0.2s ease;
-            font-family: inherit;
-        }
-        .pwd-key:active { transform: scale(0.93); background: rgba(255,255,255,0.12); }
-        .pwd-key.muted { background: transparent; border-color: transparent; }
-        .pwd-key.danger { color: #ff5f6d; }
-        .pwd-key svg { width: 20px; height: 20px; }
-        .pwd-actions {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px;
-        }
-        .pwd-actions .modal-btn { margin-top: 0; }
-        .btn-cancel { background: rgba(255,255,255,0.06); color: white; border: 1px solid var(--glass-border); }
-
-        /* === Hesap kartı (Veri Yönetimi modali) === */
-        .account-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 14px;
-            margin: 4px 0 18px;
-            text-align: left;
-        }
-        .account-card.account-google {
-            background: linear-gradient(135deg, rgba(66, 133, 244, 0.10), rgba(52, 168, 83, 0.05));
-            border-color: rgba(66, 133, 244, 0.35);
-        }
-        .account-row {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 12px;
-        }
-        .account-avatar {
-            width: 42px; height: 42px; border-radius: 50%;
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.18);
-            display: flex; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.75);
-            flex-shrink: 0; overflow: hidden;
-        }
-        .account-avatar svg { width: 22px; height: 22px; }
-        .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .account-info { flex: 1; min-width: 0; }
-        .account-status {
-            font-size: 13.5px; font-weight: 700; line-height: 1.2;
-            color: var(--text-color); margin-bottom: 2px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .account-meta {
-            font-size: 11px; color: var(--text-muted);
-            line-height: 1.45;
-        }
-        .account-card.account-google .account-status { color: #66c08c; }
-        .btn-google {
-            background: #fff; color: #3c4043;
-            font-weight: 600; font-size: 13.5px;
-            padding: 11px 14px;
-            border: 1px solid rgba(0,0,0,0.08);
-            margin-top: 0 !important;
-        }
-        .btn-google:active { background: #f1f3f4; }
-        .hidden { display: none !important; }
-
-        /* === Drive yedek bölümü === */
-        .drive-section {
-            background: linear-gradient(135deg, rgba(76, 201, 240, 0.10), rgba(67, 97, 238, 0.06));
-            border: 1px solid rgba(76, 201, 240, 0.32);
-            border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 14px;
-        }
-        .drive-section-label, .local-section-label {
-            display: block; text-align: left;
-            font-size: 10.5px; font-weight: 800;
-            letter-spacing: 1.4px; text-transform: uppercase;
-            color: var(--text-muted);
-            margin: 0 0 8px 4px;
-        }
-        .local-section-label { margin-top: 6px; }
-        .drive-last-info {
-            font-size: 11.5px; color: var(--text-muted);
-            text-align: left; padding: 0 4px 8px;
-        }
-        .drive-last-info b { color: var(--text-color); font-weight: 700; }
-        .btn-drive-backup, .btn-drive-list {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(76, 201, 240, 0.45);
-            color: #fff; font-size: 13px; padding: 11px 14px;
-            margin-top: 6px !important;
-        }
-        .btn-drive-backup:active, .btn-drive-list:active { background: rgba(76, 201, 240, 0.18); }
-        .btn-drive-backup:disabled, .btn-drive-list:disabled {
-            opacity: 0.45; cursor: not-allowed;
-            border-color: rgba(255,255,255,0.10);
-        }
-
-        /* === Drive Yedek Listesi === */
-        .drive-list {
-            display: flex; flex-direction: column; gap: 6px;
-            background: rgba(0,0,0,0.20);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 8px;
-            margin-top: 10px;
-        }
-        .drive-list-loading, .drive-list-empty {
-            text-align: center; color: var(--text-muted);
-            font-size: 12.5px; padding: 22px 12px;
-        }
-        .drive-list-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 8px; align-items: center;
-            padding: 10px 12px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-        }
-        .drive-list-info {
-            min-width: 0;
-            display: flex; flex-direction: column; gap: 2px;
-            text-align: left;
-        }
-        .drive-list-name {
-            font-size: 12.5px; font-weight: 700;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            color: var(--text-color);
-        }
-        .drive-list-meta {
-            font-size: 10.5px; color: var(--text-muted);
-        }
-        .drive-list-btn {
-            background: rgba(76,201,240,0.18);
-            border: 1px solid rgba(76,201,240,0.40);
-            color: #4cc9f0;
-            padding: 6px 10px; border-radius: 8px;
-            font-size: 11px; font-weight: 700;
-            cursor: pointer; flex-shrink: 0;
-        }
-        .drive-list-btn:active { background: rgba(76,201,240,0.30); }
-        .drive-list-del {
-            background: rgba(255, 95, 109, 0.15);
-            border: 1px solid rgba(255, 95, 109, 0.40);
-            color: #ff5f6d;
-            padding: 6px 9px; border-radius: 8px;
-            font-size: 11px; font-weight: 700;
-            cursor: pointer; flex-shrink: 0;
-        }
-        .drive-list-del:active { background: rgba(255, 95, 109, 0.28); }
-    </style>
-</head>
-<body>
-
-    <div id="loading-screen">
-        <div class="smoke-bg">
-            <div class="smoke smoke-1"></div>
-            <div class="smoke smoke-2"></div>
-            <div class="smoke smoke-3"></div>
-            <div class="smoke smoke-4"></div>
-        </div>
-        <div class="splash-tint" id="splashTint"></div>
-        <div class="splash-logo">
-            <img src="app-icon.png?v=3" alt="">
-        </div>
-        <div class="splash-content">
-            <div class="splash-prefix">Öğr. Gör. Dr.</div>
-            <div class="name-fill-wrap" id="nameFillWrap">
-                <div class="name-bg">Muhammed Sefa GÖR</div>
-                <div class="name-fg" id="nameFg">Muhammed Sefa GÖR</div>
-                <div class="fill-percent" id="fillPercent">%0</div>
-            </div>
-        </div>
-    </div>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
-
-    <div class="header">
-        <div class="header-text">
-            <span class="header-prefix">Öğr. Gör. Dr.</span>
-            <h1>Muhammed Sefa <span class="name-last">GÖR</span></h1>
-        </div>
-        <div class="backup-btn" onclick="checkPasswordAndOpen()" aria-label="Veri yönetimi">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 12v6m0 0l-2.5-2.5M12 18l2.5-2.5"/>
-            </svg>
-        </div>
-    </div>
-
-    <div class="date-container" onclick="document.getElementById('mainDatePicker').showPicker && document.getElementById('mainDatePicker').showPicker()">
-        <div class="date-day-block">
-            <div class="date-day-num" id="dateDayNum">--</div>
-            <div class="date-day-month" id="dateDayMonth">---</div>
-        </div>
-        <div class="date-info">
-            <div class="date-label">Seçili Tarih</div>
-            <div class="date-display" id="dateDisplay">—</div>
-            <div class="date-weekday" id="dateWeekday">—</div>
-        </div>
-        <div class="date-edit-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-        </div>
-        <input type="date" id="mainDatePicker">
-    </div>
-
-    <div class="menu-list">
-        <a href="#" onclick="navigateTo('namaz.html')" class="menu-item theme-namaz">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M5 20V11"/>
-                    <path d="M19 20V11"/>
-                    <path d="M4.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
-                    <path d="M18.4 11c0-1.7.6-2.7.6-2.7s.6 1 .6 2.7"/>
-                    <path d="M8 20v-6c0-2.2 1.8-4 4-4s4 1.8 4 4v6"/>
-                    <path d="M12 9.5V8m0 0a1.2 1.2 0 010-2.4M12 8a1.2 1.2 0 000-2.4"/>
-                    <path d="M3 20h18"/>
-                    <path d="M11 20v-2.8a1 1 0 012 0V20"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Namaz Takibi</span>
-                <span class="item-desc">Vakitleri ve kazaları yönet</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('notlar.html')" class="menu-item theme-not">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/>
-                    <path d="M14 3v5a1 1 0 001 1h5"/>
-                    <path d="M8 13h8M8 17h5"/>
-                    <path d="M16.5 14.5l1.8-1.8a1 1 0 011.4 1.4L17.9 16"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Notlar</span>
-                <span class="item-desc">Günlük planlar ve hatırlatmalar</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('ingilizce.html')" class="menu-item theme-eng">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 5h7"/>
-                    <path d="M9 3v2"/>
-                    <path d="M5.5 8c0 0 .5 4.5 4.5 6.5"/>
-                    <path d="M11 8c0 0-1 5.5-7 8.5"/>
-                    <path d="M13 21l4-9 4 9"/>
-                    <path d="M14.4 18h5.2"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">İngilizce</span>
-                <span class="item-desc">Kelime, okuma ve diyalog çalışması</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('kitap1.html')" class="menu-item theme-book">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 5.5A2.5 2.5 0 015.5 3H10a2 2 0 012 2v15a1.5 1.5 0 00-1.5-1.5H5.5A2.5 2.5 0 013 16V5.5z"/>
-                    <path d="M21 5.5A2.5 2.5 0 0018.5 3H14a2 2 0 00-2 2v15a1.5 1.5 0 011.5-1.5h5A2.5 2.5 0 0021 16V5.5z"/>
-                    <path d="M6 8.5h3M6 11.5h3M15 8.5h3M15 11.5h3"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Kitap</span>
-                <span class="item-desc">Okuma takibi ve kitaplık</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('yatirim1.html')" class="menu-item theme-money">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <ellipse cx="12" cy="6" rx="7" ry="2.4"/>
-                    <path d="M5 6v4.5c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4V6"/>
-                    <path d="M5 10.5V15c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-4.5"/>
-                    <path d="M5 15v3c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-3"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Bütçe</span>
-                <span class="item-desc">Gelir, gider ve hedef takibi</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('tabela.html')" class="menu-item theme-tabela">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="6" width="10" height="14" rx="1.6" transform="rotate(-9 8 13)"/>
-                    <rect x="11" y="4" width="10" height="14" rx="1.6" transform="rotate(9 16 11)"/>
-                    <text x="6" y="13" font-size="5" font-weight="800" fill="currentColor" stroke="none" transform="rotate(-9 8 13)">A</text>
-                    <text x="14" y="11" font-size="5" font-weight="800" fill="currentColor" stroke="none" transform="rotate(9 16 11)">K</text>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">101 Tabela</span>
-                <span class="item-desc">Skor, ceza ve dağıtıcı takibi</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-        <a href="#" onclick="navigateTo('devam.html')" class="menu-item theme-school">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-                    <rect x="9" y="3" width="6" height="4" rx="1.2"/>
-                    <path d="M9 13.5l2.3 2.3L15.5 11.5"/>
-                    <path d="M9 18h4"/>
-                </svg>
-            </div>
-            <div class="item-info">
-                <span class="item-title">Öğrenci Devam</span>
-                <span class="item-desc">Yoklama, QR Kod ve Liste</span>
-            </div>
-            <span class="menu-arrow">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-            </span>
-        </a>
-
-    </div>
-
-    <div class="footer">
-        Bu program Muhammed Sefa GÖR tarafından şahsi kullanım için oluşturulmuştur.
-    </div>
-
-    <!-- Şifre Modali -->
-    <div id="passwordModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-            </div>
-            <h2>Şifre Gerekli</h2>
-            <p>Veri yönetimi panelini açmak için<br>6 haneli güvenlik şifrenizi girin.</p>
-
-            <div class="pwd-input-wrap" id="pwdDots">
-                <div class="pwd-dot"></div><div class="pwd-dot"></div><div class="pwd-dot"></div>
-                <div class="pwd-dot"></div><div class="pwd-dot"></div><div class="pwd-dot"></div>
-            </div>
-            <div class="pwd-error-text" id="pwdError">Hatalı şifre. Tekrar deneyin.</div>
-
-            <div class="pwd-keypad">
-                <button type="button" class="pwd-key" onclick="pwdKey('1')">1</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('2')">2</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('3')">3</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('4')">4</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('5')">5</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('6')">6</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('7')">7</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('8')">8</button>
-                <button type="button" class="pwd-key" onclick="pwdKey('9')">9</button>
-                <button type="button" class="pwd-key muted"></button>
-                <button type="button" class="pwd-key" onclick="pwdKey('0')">0</button>
-                <button type="button" class="pwd-key danger" onclick="pwdBackspace()" aria-label="Sil">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:auto; display:block;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l4-7h14a1 1 0 011 1v12a1 1 0 01-1 1H7l-4-7zm10-2l-4 4m0-4l4 4"/>
-                    </svg>
-                </button>
-            </div>
-
-            <button class="modal-btn btn-cancel" onclick="closePasswordModal()" style="margin-top:18px;">Vazgeç</button>
-        </div>
-    </div>
-
-    <!-- Yedekleme Modali -->
-    <div id="backupModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/>
-                </svg>
-            </div>
-            <h2>Veri Yönetimi</h2>
-            <p>Tüm uygulamalardaki verilerinizi tek bir<br>dosya olarak indirin veya geri yükleyin.</p>
-
-            <!-- Hesap kartı (Google Sign-in / linkleme) -->
-            <div id="accountCard" class="account-card account-anon">
-                <div class="account-row">
-                    <div class="account-avatar" id="accountAvatar">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    </div>
-                    <div class="account-info">
-                        <div class="account-status" id="accountStatus">Anonim hesap</div>
-                        <div class="account-meta" id="accountMeta">Yalnız bu cihaza bağlı — telefon değişimini desteklemez.</div>
-                    </div>
-                </div>
-                <button class="modal-btn btn-google" id="btnLinkGoogle" onclick="handleGoogleLink()">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.265h2.908c1.702-1.567 2.684-3.875 2.684-6.622z" fill="#4285F4"/>
-                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.265c-.806.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-                        <path d="M3.964 10.704A5.41 5.41 0 013.682 9c0-.591.102-1.165.282-1.704V4.964H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.036l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.964L3.964 7.296C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                    </svg>
-                    <span id="btnLinkGoogleLabel">Google Hesabınla Bağla</span>
-                </button>
-                <button class="modal-btn btn-cancel hidden" id="btnSignOut" onclick="handleSignOut()" style="font-size:12.5px; padding:10px;">
-                    Çıkış Yap
-                </button>
-            </div>
-
-            <!-- Drive yedek bölümü -->
-            <div id="driveSection" class="drive-section">
-                <div class="drive-section-label">Google Drive Yedeği</div>
-                <div class="drive-last-info" id="driveLastInfo">Son yedek: —</div>
-                <button class="modal-btn btn-drive-backup" id="btnDriveBackup" onclick="handleDriveBackup()" disabled>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 100-8 5 5 0 00-9.584-1.292A4 4 0 003 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6m0-6l-2.5 2.5M12 12l2.5 2.5"/></svg>
-                    Drive'a Şimdi Yedekle
-                </button>
-                <button class="modal-btn btn-drive-list" id="btnDriveList" onclick="openDriveBackups()" disabled>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 12h14M5 16h10M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
-                    Drive Yedeklerini Görüntüle
-                </button>
-            </div>
-
-            <div class="local-section-label">Yerel Yedek (JSON dosyası)</div>
-
-            <button class="modal-btn btn-download" onclick="exportData()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-                Verileri İndir
-            </button>
-
-            <button class="modal-btn btn-upload" onclick="document.getElementById('fileInput').click()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5M12 4v12"/></svg>
-                Verileri Geri Yükle
-            </button>
-
-            <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importData(this)">
-
-            <button class="modal-btn btn-close" onclick="closeBackupModal()">Kapat</button>
-        </div>
-    </div>
-
-    <!-- Drive Yedek Listesi Modali -->
-    <div id="driveListModal" class="modal">
-        <div class="modal-content" style="max-width: 440px; max-height: 86vh; display: flex; flex-direction: column;">
-            <div class="modal-header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 8h14M5 12h14M5 16h10"/>
-                </svg>
-            </div>
-            <h2>Drive Yedekleri</h2>
-            <p>Bir yedek seçip geri yüklenebilir veya silinebilir.</p>
-            <div id="driveListBody" class="drive-list" style="flex:1; overflow-y:auto; min-height: 100px;">
-                <div class="drive-list-loading">Yükleniyor…</div>
-            </div>
-            <button class="modal-btn btn-close" onclick="closeDriveListModal()" style="flex-shrink: 0; margin-top: 14px;">Kapat</button>
-        </div>
-    </div>
-
-    <script>
-        const APP_PASS = "120622";
-        const SESSION_KEY = "app_splash_shown";
-
-        // --- YÜKLEME EKRANI MANTIĞI ---
-        // Süre: 12 saniye. İsim harfleri soldan sağa renk dolar,
-        // alttaki yüzde chip'i de aynı tempoda sağa kayar.
-        document.addEventListener("DOMContentLoaded", () => {
-            const loadingScreen = document.getElementById('loading-screen');
-
-            // Eğer daha önce gösterildiyse gizle
-            if (sessionStorage.getItem(SESSION_KEY)) {
-                loadingScreen.style.display = 'none';
-                return;
-            }
-
-            const nameFg = document.getElementById('nameFg');
-            const fillPercent = document.getElementById('fillPercent');
-            const splashTint = document.getElementById('splashTint');
-
-            let progress = 0;
-            const totalTime = 12000;      // 12 saniye
-            const intervalTime = 60;
-            const step = 100 / (totalTime / intervalTime);
-
-            const update = (p) => {
-                // Harfleri soldan sağa doldur
-                nameFg.style.clipPath = `inset(0 ${(100 - p).toFixed(2)}% 0 0)`;
-                // Yüzde chip'i: 0%'da sol kenara, 100%'de sağ kenara hizalı kayar
-                if (fillPercent) {
-                    fillPercent.textContent = `%${Math.floor(p)}`;
-                    fillPercent.style.left = p + '%';
-                    fillPercent.style.transform = `translateX(-${p}%)`;
-                }
-                // Arka plan tonu progress ile yoğunlaşır
-                if (splashTint) splashTint.style.opacity = (p / 100) * 0.9;
-            };
-
-            const loadingInterval = setInterval(() => {
-                progress += step;
-                if (progress >= 100) {
-                    progress = 100;
-                    update(100);
-                    clearInterval(loadingInterval);
-                    sessionStorage.setItem(SESSION_KEY, "true");
-                    setTimeout(() => {
-                        loadingScreen.style.opacity = '0';
-                        loadingScreen.style.visibility = 'hidden';
-                        setTimeout(() => loadingScreen.style.display = 'none', 550);
-                    }, 350);
-                    return;
-                }
-                update(progress);
-            }, intervalTime);
         });
+    } finally {
+        _suppressWrite = false;
+    }
 
-        // --- SERVICE WORKER KAYDI (AUTO-UPDATE) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('SW Başarıyla Kaydedildi:', registration.scope);
-                    })
-                    .catch(err => {
-                        console.log('SW Kaydı Başarısız:', err);
-                    });
-            });
-        }
+    // İlk açılış: yerelde olup bulutta olmayan normal anahtarları yukarı it
+    const cloudKeys = new Set(snap.docs.map(d => d.id));
+    for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith('_dbsync_')) continue;
+        if (isSharded(k)) continue; // sharded kendi hidrasyonu işliyor
+        if (!isAllowed(k) || cloudKeys.has(k)) continue;
+        scheduleWrite(k, window.localStorage.getItem(k));
+    }
 
-        // --- iOS TARAYICI BARLARINI GİZLEME VE LİNKLERİ YÖNETME ---
-        document.addEventListener('click', function (event) {
-            var target = event.target;
-            while (target && target.tagName !== 'A') {
-                target = target.parentNode;
-            }
-            if (target && target.tagName === 'A' && target.getAttribute('href')) {
-                var href = target.getAttribute('href');
-                if (!href.startsWith('http') && !href.startsWith('#')) {
-                    event.preventDefault();
-                    window.location.href = href;
-                }
-            }
-        }, false);
+    _hydrated = true;
+    setStatus('ok');
+    window.dispatchEvent(new CustomEvent('dbsynced', {
+        detail: { applied, uid, source: 'hydrate' }
+    }));
 
-        const TR_MONTHS_SHORT = ['OCA','ŞUB','MAR','NİS','MAY','HAZ','TEM','AĞU','EYL','EKİ','KAS','ARA'];
-        const TR_WEEKDAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+    // 3) Subscribe — sharded
+    if (SHARDED_KEYS.some(isAllowed)) subscribeKitap(uid);
 
-        function setToday() {
-            const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            const picker = document.getElementById('mainDatePicker');
-            if(!picker.value) picker.value = localISOTime;
-            updateDateUI();
-            updateGreeting();
-
-            // Tarih değişiminde UI'yi güncelle
-            picker.addEventListener('change', updateDateUI);
-        }
-
-        function updateDateUI() {
-            const picker = document.getElementById('mainDatePicker');
-            const v = picker.value;
-            if(!v) return;
-            const [y, m, d] = v.split('-').map(Number);
-            const dateObj = new Date(y, m-1, d);
-            const today = new Date(); today.setHours(0,0,0,0);
-            const isToday = (dateObj.getTime() === today.getTime());
-
-            document.getElementById('dateDayNum').textContent = String(d).padStart(2,'0');
-            document.getElementById('dateDayMonth').textContent = TR_MONTHS_SHORT[m-1];
-            document.getElementById('dateDisplay').textContent =
-                isToday ? 'Bugün' : dateObj.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
-            document.getElementById('dateWeekday').textContent =
-                isToday
-                    ? dateObj.toLocaleDateString('tr-TR', { day:'numeric', month:'long' }) + ' · ' + TR_WEEKDAYS[dateObj.getDay()]
-                    : TR_WEEKDAYS[dateObj.getDay()];
-        }
-
-        function updateGreeting() {
-            const h = new Date().getHours();
-            let g = 'İyi Akşamlar';
-            if (h >= 5 && h < 12) g = 'Günaydın';
-            else if (h >= 12 && h < 17) g = 'İyi Günler';
-            else if (h >= 17 && h < 22) g = 'İyi Akşamlar';
-            else g = 'İyi Geceler';
-            const el = document.getElementById('greetingText');
-            if(el) el.textContent = g;
-        }
-
-        function navigateTo(page) {
-            const date = document.getElementById('mainDatePicker').value;
-            window.location.href = `${page}?date=${date}`;
-        }
-
-        // --- ÖZEL ŞİFRE MODALİ ---
-        let pwdBuffer = '';
-        const PWD_LEN = 6;
-
-        function checkPasswordAndOpen() {
-            pwdBuffer = '';
-            renderPwdDots(false);
-            hidePwdError();
-            document.getElementById('passwordModal').classList.add('open');
-        }
-        function closePasswordModal() {
-            document.getElementById('passwordModal').classList.remove('open');
-        }
-        function renderPwdDots(error) {
-            const dots = document.querySelectorAll('#pwdDots .pwd-dot');
-            dots.forEach((d, i) => {
-                d.classList.toggle('filled', i < pwdBuffer.length);
-                d.classList.toggle('error', !!error);
-                d.textContent = (i < pwdBuffer.length) ? '•' : '';
-            });
-        }
-        function showPwdError() {
-            const e = document.getElementById('pwdError');
-            e.classList.add('visible');
-            renderPwdDots(true);
-            setTimeout(() => {
-                pwdBuffer = '';
-                renderPwdDots(false);
-            }, 450);
-        }
-        function hidePwdError() {
-            document.getElementById('pwdError').classList.remove('visible');
-        }
-        function pwdKey(n) {
-            if (pwdBuffer.length >= PWD_LEN) return;
-            pwdBuffer += n;
-            hidePwdError();
-            renderPwdDots(false);
-            if (pwdBuffer.length === PWD_LEN) {
-                setTimeout(() => {
-                    if (pwdBuffer === APP_PASS) {
-                        closePasswordModal();
-                        document.getElementById('backupModal').classList.add('open');
-                    } else {
-                        showPwdError();
+    // 4) Subscribe — normal store
+    onSnapshot(colRef, (qs) => {
+        let changed = 0;
+        _suppressWrite = true;
+        try {
+            qs.docChanges().forEach(ch => {
+                const k = ch.doc.id;
+                if (k === KITAP_SETTINGS_DOC || isSharded(k)) return;
+                if (!isAllowed(k)) return;
+                if (ch.type === 'removed') {
+                    if (window.localStorage.getItem(k) !== null) {
+                        _origRemove.call(window.localStorage, k);
+                        changed++;
                     }
-                }, 130);
-            }
-        }
-        function pwdBackspace() {
-            if (pwdBuffer.length === 0) return;
-            pwdBuffer = pwdBuffer.slice(0, -1);
-            hidePwdError();
-            renderPwdDots(false);
-        }
-
-        function closeBackupModal() { document.getElementById('backupModal').classList.remove('open'); }
-
-        // === Hesap durumu UI'a yansıt ===
-        function refreshAccountCard(state) {
-            const card = document.getElementById('accountCard');
-            const status = document.getElementById('accountStatus');
-            const meta = document.getElementById('accountMeta');
-            const btnLink = document.getElementById('btnLinkGoogle');
-            const btnLinkLabel = document.getElementById('btnLinkGoogleLabel');
-            const btnSignOut = document.getElementById('btnSignOut');
-            const avatar = document.getElementById('accountAvatar');
-            if (!card || !status) return;
-
-            if (!state) {
-                status.textContent = 'Bağlanıyor…';
-                meta.textContent = 'Firebase bağlantısı kuruluyor.';
-                btnLink.disabled = true;
-                return;
-            }
-            btnLink.disabled = false;
-
-            if (state.isGoogleLinked) {
-                card.classList.remove('account-anon');
-                card.classList.add('account-google');
-                status.textContent = state.displayName || state.email || 'Google hesabı';
-                meta.textContent = state.email
-                    ? `Bağlı: ${state.email} · cihazlar arası senkron aktif`
-                    : 'Google hesabıyla bağlı · cihazlar arası senkron aktif';
-                btnLinkLabel.textContent = 'Google Hesabını Tazele (Drive izni yenile)';
-                btnSignOut.classList.remove('hidden');
-                if (state.photoURL) {
-                    avatar.innerHTML = `<img src="${state.photoURL}" alt="">`;
+                } else {
+                    const v = ch.doc.data().v;
+                    if (typeof v === 'string' && window.localStorage.getItem(k) !== v) {
+                        _origSet.call(window.localStorage, k, v);
+                        changed++;
+                    }
                 }
+            });
+        } finally {
+            _suppressWrite = false;
+        }
+        if (changed > 0) {
+            window.dispatchEvent(new CustomEvent('dbsynced', {
+                detail: { changed, source: 'remote' }
+            }));
+        }
+    }, (err) => {
+        console.warn('[db-sync] onSnapshot error:', err);
+        setStatus('error');
+    });
+}
+
+// =====================================================================
+//  Mobil redirect dönüşünü işle (sayfa yüklendiğinde bir kez)
+// =====================================================================
+async function processMobileRedirectResult() {
+    let result = null;
+    try {
+        result = await getRedirectResult(auth);
+    } catch (e) {
+        const action = window.localStorage.getItem(REDIRECT_PENDING_KEY);
+        const fallback = window.localStorage.getItem(REDIRECT_FALLBACK_KEY);
+        if (e.code === 'auth/credential-already-in-use' && action === 'link' && !fallback) {
+            // Otomatik fallback: çıkış + Google ile direkt giriş (yine redirect)
+            console.log('[db-sync] Google hesabı zaten kayıtlı, otomatik geri yükleme...');
+            try {
+                window.localStorage.setItem(REDIRECT_FALLBACK_KEY, '1');
+                _skipAutoAnon = true;
+                await fbSignOut(auth);
+                const provider = new GoogleAuthProvider();
+                provider.addScope('https://www.googleapis.com/auth/drive.file');
+                provider.setCustomParameters({ prompt: 'select_account' });
+                window.localStorage.setItem(REDIRECT_PENDING_KEY, 'reauth');
+                await signInWithRedirect(auth, provider);
+                return; // sayfa yine redirect olur
+            } catch (e2) {
+                console.warn('[db-sync] redirect fallback hatası:', e2);
+                _skipAutoAnon = false;
+                window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+                window.localStorage.removeItem(REDIRECT_FALLBACK_KEY);
+            }
+        } else {
+            console.warn('[db-sync] redirect result hata:', e);
+            window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+            window.localStorage.removeItem(REDIRECT_FALLBACK_KEY);
+        }
+        return;
+    }
+
+    if (result) {
+        // Email whitelist kontrolü
+        try {
+            await enforceAllowedEmail(result.user);
+        } catch (errEmail) {
+            console.warn('[db-sync] yetkisiz email, çıkış yapılıyor:', errEmail.message);
+            window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+            window.localStorage.removeItem(REDIRECT_FALLBACK_KEY);
+            alert(errEmail.message);
+            return;
+        }
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            _googleAccessToken = credential.accessToken;
+            _googleAccessTokenExp = Date.now() + 3500_000;
+        }
+        window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+        window.localStorage.removeItem(REDIRECT_FALLBACK_KEY);
+        console.log('[db-sync] redirect login OK:', result.user.email);
+    }
+}
+
+// =====================================================================
+//  Email whitelist — sadece izinli email girebilir
+// =====================================================================
+async function enforceAllowedEmail(user) {
+    if (!user) return;
+    const email = (user.email || '').toLowerCase();
+    if (email && email !== ALLOWED_EMAIL.toLowerCase()) {
+        try { await fbSignOut(auth); } catch (_) {}
+        throw new Error(
+            `Bu uygulama sadece "${ALLOWED_EMAIL}" hesabıyla açılabilir.\n` +
+            `Girdiğiniz hesap: ${email}\n\n` +
+            `Doğru hesabı seçip tekrar deneyin.`
+        );
+    }
+}
+
+// Önce redirect dönüşünü tüket — sonra normal auth listener kurulur
+processMobileRedirectResult();
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        _anonDisabled = false;
+        onAuthed(user.uid);
+    } else if (!_skipAutoAnon) {
+        try {
+            await signInAnonymously(auth);
+        } catch (e) {
+            console.error('[db-sync] anonim giriş hatası:', e);
+            // Anonymous Console'da kapalıysa graceful degrade
+            if (e.code === 'auth/admin-restricted-operation' ||
+                e.code === 'auth/operation-not-allowed' ||
+                e.code === 'auth/configuration-not-found') {
+                _anonDisabled = true;
+                setStatus('warning');
+                console.warn('[db-sync] Anonymous Auth kapalı. "Google ile Giriş Yap" butonunu kullan.');
+                dispatchAuthState();
             } else {
-                card.classList.remove('account-google');
-                card.classList.add('account-anon');
-                status.textContent = 'Anonim hesap';
-                meta.textContent = 'Yalnız bu cihaza bağlı — telefon değişimini desteklemez.';
-                btnLinkLabel.textContent = 'Google Hesabınla Bağla';
-                btnSignOut.classList.add('hidden');
-                avatar.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
+                setStatus('error');
             }
         }
+    }
+});
 
-        // db-sync'in yaydığı auth durum eventi
-        window.addEventListener('dbauthstate', (e) => refreshAccountCard(e.detail));
-        // Eğer auth zaten hazırsa (sayfa açıldığında snapshot alınır)
-        setTimeout(() => {
-            if (window.dbAuth && typeof window.dbAuth.snapshot === 'function') {
-                refreshAccountCard(window.dbAuth.snapshot());
-            }
-        }, 400);
+// =========================================================================
+//  Sağ üstte sync durumu (renkli nokta)
+// =========================================================================
+function ensureBadge() {
+    let el = document.getElementById('dbsync-badge');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'dbsync-badge';
+    el.title = 'Bulut senkronu';
+    el.style.cssText = `
+        position: fixed;
+        top: max(env(safe-area-inset-top), 10px);
+        right: 10px;
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #888;
+        z-index: 99999;
+        box-shadow: 0 0 8px currentColor;
+        transition: background 0.3s ease;
+        pointer-events: none;
+    `;
+    document.body.appendChild(el);
+    return el;
+}
+function setStatus(state) {
+    const colors = {
+        syncing: '#f1c40f',  // sarı
+        ok: '#2ecc71',        // yeşil
+        warning: '#3498db',   // mavi (anonim kapalı, Google bekleniyor)
+        error: '#e74c3c'      // kırmızı
+    };
+    const c = colors[state] || '#888';
+    const apply = () => { const b = ensureBadge(); b.style.background = c; b.style.color = c; };
+    if (document.body) apply();
+    else document.addEventListener('DOMContentLoaded', apply, { once: true });
+}
+setStatus('syncing');
 
-        // Modül yüklenene kadar bekle (poll)
-        async function waitForGlobal(name, timeoutMs = 8000) {
-            const start = Date.now();
-            while (!window[name]) {
-                if (Date.now() - start > timeoutMs) return false;
-                await new Promise(r => setTimeout(r, 120));
-            }
-            return true;
+// Debug için global yardımcılar
+window.dbSync = {
+    forceFlushAll() {
+        for (const k of writeTimers.keys()) {
+            clearTimeout(writeTimers.get(k));
+            flushWrite(k);
         }
+    },
+    isHydrated: () => _hydrated,
+    uid: () => _currentUid
+};
+console.log('[db-sync] modül yüklendi ✓');
+window.__dbSyncLoading = false;
+window.__dbSyncReady = true;
 
-        async function handleGoogleLink() {
-            const btn = document.getElementById('btnLinkGoogle');
-            const labelEl = document.getElementById('btnLinkGoogleLabel');
-            const oldLabel = labelEl.textContent;
-            btn.disabled = true;
-            labelEl.textContent = 'Bekleniyor…';
-            const ok = await waitForGlobal('dbAuth');
-            if (!ok) {
-                btn.disabled = false;
-                labelEl.textContent = oldLabel;
-                const loading = window.__dbSyncLoading ? 'modül hâlâ yükleniyor' : 'modül yüklenemedi';
-                const ready = window.__dbSyncReady ? 'EVET' : 'HAYIR';
-                alert(
-                    'Bulut bağlantısı kurulamadı (' + loading + ').\n\n' +
-                    'Durum: __dbSyncReady=' + ready + '\n\n' +
-                    'Adımlar:\n' +
-                    '1) İnternet açık mı?\n' +
-                    '2) Safari → Ayarlar → Geçmişi/Web Sitesi Verilerini SİL\n' +
-                    '3) PWA\'yı ana ekrandan KALDIR\n' +
-                    '4) Safari\'de https://msefagor.github.io/MyLifeApp/ aç\n' +
-                    '5) Ana Ekrana Ekle → tekrar aç\n\n' +
-                    'Hâlâ olmazsa: Mac → Safari → Develop → iPhone\'un → bağlanan sayfa → Console hatasını paylaş'
-                );
+// ============================================================================
+//  GOOGLE SIGN-IN  (anonim → Google'a linkleme, Drive yetkisi dahil)
+// ============================================================================
+
+// Auth durumu değişikliklerini yayar — UI bunlara abone olur
+function dispatchAuthState() {
+    const u = auth.currentUser;
+    let detail;
+    if (u) {
+        detail = {
+            uid: u.uid,
+            isAnonymous: u.isAnonymous,
+            displayName: u.displayName || null,
+            email: u.email || null,
+            photoURL: u.photoURL || null,
+            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com'),
+            needsGoogleSignin: false
+        };
+    } else if (_anonDisabled) {
+        // Anonymous Console'da kapalı — kullanıcı Google ile giriş yapmalı
+        detail = {
+            uid: null, isAnonymous: false,
+            displayName: null, email: null, photoURL: null,
+            isGoogleLinked: false,
+            needsGoogleSignin: true
+        };
+    } else {
+        detail = null;
+    }
+    window.dispatchEvent(new CustomEvent('dbauthstate', { detail }));
+}
+onAuthStateChanged(auth, () => dispatchAuthState());
+
+// Google access token'ını cache'le (Drive API için ileride kullanılacak)
+let _googleAccessToken = null;
+let _googleAccessTokenExp = 0;
+// signOut sonrası otomatik anonim auth'u geçici devre dışı bırakma
+let _skipAutoAnon = false;
+
+// Anonymous auth Console'da kapalıysa bu flag set edilir
+let _anonDisabled = false;
+
+// Sadece bu email girebilir (yanlış hesap girilirse otomatik signOut)
+const ALLOWED_EMAIL = 'muhammedsefagor@gmail.com';
+
+// Mobilde popup akışı kırılgan olduğu için signInWithRedirect kullanırız
+const _isMobileLike = (() => {
+    try {
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+        return /iPad|iPhone|iPod|Android|webOS|BlackBerry|Windows Phone/i
+            .test(navigator.userAgent || '');
+    } catch (_) { return false; }
+})();
+const REDIRECT_PENDING_KEY = '_dbsync_redirect_pending';
+const REDIRECT_FALLBACK_KEY = '_dbsync_redirect_fallback';
+
+window.dbAuth = {
+    /** Mevcut user durumu (UI için) */
+    snapshot() {
+        const u = auth.currentUser;
+        if (!u) {
+            if (_anonDisabled) {
+                return {
+                    uid: null, isAnonymous: false,
+                    displayName: null, email: null, photoURL: null,
+                    isGoogleLinked: false,
+                    needsGoogleSignin: true
+                };
+            }
+            return null;
+        }
+        return {
+            uid: u.uid,
+            isAnonymous: u.isAnonymous,
+            displayName: u.displayName || null,
+            email: u.email || null,
+            photoURL: u.photoURL || null,
+            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com'),
+            needsGoogleSignin: false
+        };
+    },
+
+    /**
+     * Google ile giriş / mevcut anonim hesabı Google'a bağlar.
+     * Anonymous kapalıysa bile çalışır (doğrudan Google login).
+     * Mobilde redirect, masaüstünde popup akışı kullanır.
+     */
+    async linkWithGoogle() {
+        const user = auth.currentUser; // null olabilir (anonim kapalı)
+
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        // ============== MOBİL: REDIRECT AKIŞI ==============
+        if (_isMobileLike) {
+            // user yoksa veya zaten Google'lıysa direkt signInWithRedirect
+            if (!user || !user.isAnonymous) {
+                window.localStorage.setItem(REDIRECT_PENDING_KEY, 'reauth');
+                await signInWithRedirect(auth, provider);
                 return;
             }
-            labelEl.textContent = 'Açılıyor…';
+            // Anonim user var → linkWithRedirect (uid korunur)
+            window.localStorage.setItem(REDIRECT_PENDING_KEY, 'link');
             try {
-                await window.dbAuth.linkWithGoogle();
-                // Mobilde sayfa redirect olur; masaüstünde popup üzerinden auth state event'i gelir.
+                await linkWithRedirect(user, provider);
             } catch (e) {
-                alert(e.message || 'Google girişi başarısız.');
-            } finally {
-                btn.disabled = false;
-                labelEl.textContent = oldLabel;
+                window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+                throw e;
             }
+            return;
         }
 
-        async function handleSignOut() {
-            if (!window.dbAuth) return;
-            if (!confirm('Çıkış yapmak istediğinize emin misiniz?\nVerileriniz Firestore\'da kalır, başka cihazda Google ile giriş yaparak devam edebilirsiniz.')) return;
-            try {
-                await window.dbAuth.signOut();
-                // Otomatik anonim oturum açılır, dbauthstate eventi tetiklenir
-            } catch (e) {
-                alert('Çıkış sırasında hata: ' + e.message);
+        // ============== MASAÜSTÜ: POPUP AKIŞI ==============
+        // user yoksa veya zaten Google'lıysa doğrudan signInWithPopup
+        if (!user || !user.isAnonymous) {
+            const result = await signInWithPopup(auth, provider);
+            await enforceAllowedEmail(result.user);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential && credential.accessToken) {
+                _googleAccessToken = credential.accessToken;
+                _googleAccessTokenExp = Date.now() + 3500_000;
             }
+            return result.user;
         }
 
-        // === Drive yedek butonları ===
-        function fmtBackupTime(d) {
-            if (!d) return '—';
-            const dt = (d instanceof Date) ? d : new Date(d);
-            const pad = n => String(n).padStart(2, '0');
-            return `${pad(dt.getDate())}.${pad(dt.getMonth()+1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-        }
-        function fmtBytes(n) {
-            n = Number(n) || 0;
-            if (n < 1024) return n + ' B';
-            if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
-            return (n/1024/1024).toFixed(2) + ' MB';
-        }
-
-        function refreshDriveSection() {
-            const u = window.dbAuth ? window.dbAuth.snapshot() : null;
-            const linked = !!(u && u.isGoogleLinked);
-            const btnB = document.getElementById('btnDriveBackup');
-            const btnL = document.getElementById('btnDriveList');
-            const info = document.getElementById('driveLastInfo');
-            if (!btnB) return;
-            btnB.disabled = !linked;
-            btnL.disabled = !linked;
-            const last = window.dbBackup ? window.dbBackup.lastTime() : null;
-            if (!linked) {
-                info.innerHTML = '<i>Drive yedeği için önce Google hesabınla bağlan.</i>';
-            } else if (!last) {
-                info.innerHTML = 'Son yedek: <b>henüz yok</b>';
-            } else {
-                info.innerHTML = 'Son yedek: <b>' + fmtBackupTime(last) + '</b>';
+        // Anonim user var, Google'a link et (uid korunur)
+        try {
+            const result = await linkWithPopup(user, provider);
+            await enforceAllowedEmail(result.user);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential && credential.accessToken) {
+                _googleAccessToken = credential.accessToken;
+                _googleAccessTokenExp = Date.now() + 3500_000;
             }
-        }
-        // Auth durumu değiştikçe Drive bölümünü güncelle
-        window.addEventListener('dbauthstate', refreshDriveSection);
-        window.addEventListener('dbbackup', refreshDriveSection);
-        // İlk açılış için
-        setTimeout(refreshDriveSection, 600);
-
-        async function handleDriveBackup() {
-            const btn = document.getElementById('btnDriveBackup');
-            const orig = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span style="opacity:0.85">Hazırlanıyor…</span>';
-            const ok = await waitForGlobal('dbBackup');
-            if (!ok) {
-                btn.disabled = false;
-                btn.innerHTML = orig;
-                alert('Bulut bağlantısı kurulamadı. PWA\'yı kapatıp tekrar aç ve sağ üstteki noktanın yeşile dönmesini bekle.');
-                return;
-            }
-            btn.innerHTML = '<span style="opacity:0.85">Drive izni alınıyor…</span>';
-            try {
-                // 1) Kullanıcı eylemi sırasında token sağla (popup blocker'ı geçer)
-                if (window.dbAuth && typeof window.dbAuth.ensureGoogleToken === 'function') {
-                    await window.dbAuth.ensureGoogleToken();
-                }
-                btn.innerHTML = '<span style="opacity:0.85">Yedekleniyor…</span>';
-                console.log('[backup] runNow başlıyor...');
-                // 2) Yedeği al
-                const r = await window.dbBackup.runNow();
-                console.log('[backup] tamam:', r);
-                refreshDriveSection();
-                alert(
-                    'Yedek başarıyla alındı.\n\n' +
-                    `Dosya: ${r.filename}\n` +
-                    `Kitap: ${r.counts.books}\n` +
-                    `Okuma kaydı: ${r.counts.history}\n` +
-                    `Diğer kayıt: ${r.counts.store}\n` +
-                    `Boyut: ${fmtBytes(r.size)}`
-                );
-            } catch (e) {
-                console.error('[backup] hata:', e);
-                alert('Yedek başarısız:\n\n' + (e && e.message ? e.message : String(e)));
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = orig;
-            }
-        }
-
-        async function openDriveBackups() {
-            document.getElementById('driveListModal').classList.add('open');
-            const body = document.getElementById('driveListBody');
-            body.innerHTML = '<div class="drive-list-loading">Yedekler getiriliyor…</div>';
-            const ok = await waitForGlobal('dbBackup');
-            if (!ok) {
-                body.innerHTML = '<div class="drive-list-empty" style="color:var(--danger-color, #ff5f6d);">Bulut bağlantısı kurulamadı. PWA\'yı tekrar aç.</div>';
-                return;
-            }
-            try {
-                const files = await window.dbBackup.list();
-                if (!files.length) {
-                    body.innerHTML = '<div class="drive-list-empty">Henüz yedek dosyası yok.<br>"Drive\'a Şimdi Yedekle" ile ilk yedeği oluştur.</div>';
-                    return;
-                }
-                body.innerHTML = '';
-                files.forEach(f => {
-                    const row = document.createElement('div');
-                    row.className = 'drive-list-row';
-                    row.innerHTML = `
-                        <div class="drive-list-info">
-                            <span class="drive-list-name">${f.name}</span>
-                            <span class="drive-list-meta">${fmtBackupTime(f.modifiedTime)} · ${fmtBytes(f.size)}</span>
-                        </div>
-                        <button class="drive-list-btn" data-id="${f.id}">Geri Yükle</button>
-                        <button class="drive-list-del" data-id="${f.id}" data-name="${f.name.replace(/"/g,'')}">Sil</button>
-                    `;
-                    row.querySelector('.drive-list-btn').onclick = () => handleRestore(f.id, f.name);
-                    row.querySelector('.drive-list-del').onclick = () => handleDeleteBackup(f.id, f.name);
-                    body.appendChild(row);
-                });
-            } catch (e) {
-                body.innerHTML = `<div class="drive-list-empty" style="color: var(--danger-color, #ff5f6d);">Hata: ${e.message}</div>`;
-            }
-        }
-
-        function closeDriveListModal() {
-            document.getElementById('driveListModal').classList.remove('open');
-        }
-
-        async function handleRestore(fileId, name) {
-            if (!confirm(
-                'GERİ YÜKLEME UYARISI\n\n' +
-                `"${name}" dosyasından geri yükleneceksin.\n\n` +
-                'Mevcut tüm kitap, history ve diğer veriler bu yedekteki haliyle DEĞİŞTİRİLECEK. ' +
-                'Devam etmek istediğine emin misin?'
-            )) return;
-            try {
-                await window.dbBackup.restore(fileId);
-                alert('Geri yükleme tamamlandı. Sayfa yenileniyor…');
-                location.reload();
-            } catch (e) {
-                alert('Geri yükleme başarısız: ' + e.message);
-            }
-        }
-
-        async function handleDeleteBackup(fileId, name) {
-            if (!confirm(`"${name}" yedeğini silmek istediğine emin misin?`)) return;
-            try {
-                await window.dbBackup.deleteOne(fileId);
-                openDriveBackups(); // listeyi yenile
-            } catch (e) {
-                alert('Silme başarısız: ' + e.message);
-            }
-        }
-
-        function exportData() {
-            const allData = JSON.stringify(localStorage);
-            const blob = new Blob([allData], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const dateStr = new Date().toISOString().split('T')[0];
-            a.download = `backup_full_${dateStr}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            alert("Yedek dosyası indirildi.");
-        }
-
-        function importData(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            return result.user;
+        } catch (e) {
+            if (e.code === 'auth/credential-already-in-use') {
+                // Sessiz fallback: anonim'ten çık, doğrudan Google ile gir.
+                console.log('[db-sync] Google hesabı zaten kayıtlı, mevcut hesap geri yükleniyor...');
+                _skipAutoAnon = true;
                 try {
-                    const data = JSON.parse(e.target.result);
-                    localStorage.clear();
-                    Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); });
-                    alert("Veriler başarıyla geri yüklendi!");
-                    location.reload(); 
-                } catch (err) { alert("Dosya bozuk veya hatalı format: " + err); }
-            };
-            reader.readAsText(file);
+                    await fbSignOut(auth);
+                    const result2 = await signInWithPopup(auth, provider);
+                    await enforceAllowedEmail(result2.user);
+                    const credential2 = GoogleAuthProvider.credentialFromResult(result2);
+                    if (credential2 && credential2.accessToken) {
+                        _googleAccessToken = credential2.accessToken;
+                        _googleAccessTokenExp = Date.now() + 3500_000;
+                    }
+                    return result2.user;
+                } finally {
+                    _skipAutoAnon = false;
+                }
+            }
+            if (e.code === 'auth/popup-closed-by-user') {
+                throw new Error('Google girişi iptal edildi.');
+            }
+            throw e;
+        }
+    },
+
+    /**
+     * Mevcut anonim oturumu kapatıp doğrudan Google ile gir (mevcut anonim veriler kaybolur).
+     * Yeni bir cihaza ana cihazdaki Google hesabını taşımak için kullanılır.
+     */
+    async signInWithGoogleFresh() {
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        provider.setCustomParameters({ prompt: 'select_account' });
+        if (_isMobileLike) {
+            window.localStorage.setItem(REDIRECT_PENDING_KEY, 'reauth');
+            await signInWithRedirect(auth, provider);
+            return;
+        }
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            _googleAccessToken = credential.accessToken;
+            _googleAccessTokenExp = Date.now() + 3500_000;
+        }
+        return result.user;
+    },
+
+    /** Çıkış (sonra yeni anonim oturum otomatik açılır) */
+    async signOut() {
+        _googleAccessToken = null;
+        _googleAccessTokenExp = 0;
+        await fbSignOut(auth);
+    },
+
+    /** Drive API çağrıları için access token (Aşama 2'de kullanılacak) */
+    getGoogleAccessToken() {
+        if (_googleAccessToken && Date.now() < _googleAccessTokenExp) return _googleAccessToken;
+        return null;
+    },
+
+    /** Token süresi dolduysa Google ile yeniden popup/redirect açıp tazele */
+    async refreshGoogleAccessToken() {
+        const u = auth.currentUser;
+        if (!u || u.isAnonymous) throw new Error('Önce Google ile giriş yapın.');
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        if (_isMobileLike) {
+            window.localStorage.setItem(REDIRECT_PENDING_KEY, 'reauth');
+            await signInWithRedirect(auth, provider);
+            return null;
+        }
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            _googleAccessToken = credential.accessToken;
+            _googleAccessTokenExp = Date.now() + 3500_000;
+        }
+        return _googleAccessToken;
+    },
+
+    /**
+     * Drive'a istek atmadan önce çağrılır.
+     * Token varsa döner, yoksa popup/redirect ile yeniden alır.
+     */
+    async ensureGoogleToken() {
+        const u = auth.currentUser;
+        if (!u) throw new Error('Auth henüz hazır değil.');
+        if (u.isAnonymous) throw new Error('Önce Google ile bağlanın.');
+        if (_googleAccessToken && Date.now() < _googleAccessTokenExp) {
+            return _googleAccessToken;
+        }
+        if (_isMobileLike) {
+            // Mobilde sayfa redirect olacağından kullanıcıyı yönlendir
+            throw new Error(
+                'Drive yetkisi süresi dolmuş. Veri Yönetimi → "Google Hesabını Tazele" ' +
+                'butonuyla yenilemeniz gerekiyor.'
+            );
+        }
+        // Desktop: popup ile sessiz tazele
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (!credential || !credential.accessToken) {
+            throw new Error('Google Drive yetkisi alınamadı.');
+        }
+        _googleAccessToken = credential.accessToken;
+        _googleAccessTokenExp = Date.now() + 3500_000;
+        return _googleAccessToken;
+    },
+
+    /** Mobilde "yön. olunuyor mu?" göstergesi için */
+    isMobileFlow() { return _isMobileLike; }
+};
+
+// ============================================================================
+//  DRIVE API + YEDEKLEME
+// ============================================================================
+const DRIVE_FOLDER_NAME = 'MyLifeApp Yedekleri';
+const DRIVE_FOLDER_KEY = '_dbsync_drive_folder_id';
+const LAST_BACKUP_KEY = '_dbsync_last_backup';
+const BACKUP_KEEP_DAYS = 60;
+let _driveFolderId = null;
+let _backupRunning = false;
+
+async function driveFetch(path, options = {}, _retried = false) {
+    // Token yoksa veya süresi dolmuşsa popup ile al
+    let token;
+    try {
+        token = await window.dbAuth.ensureGoogleToken();
+    } catch (e) {
+        throw new Error('Drive yetkisi alınamadı: ' + e.message);
+    }
+    const url = path.startsWith('http')
+        ? path
+        : `https://www.googleapis.com/drive/v3${path}`;
+    const headers = {
+        Authorization: 'Bearer ' + token,
+        ...(options.headers || {})
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (res.status === 401 && !_retried) {
+        // Token expired — bir kez yenile ve tekrar dene
+        console.warn('[db-sync] Drive 401, token tazeleniyor...');
+        try { await window.dbAuth.refreshGoogleAccessToken(); }
+        catch (e) { throw new Error('Drive yetkisi tazelenemedi: ' + e.message); }
+        return driveFetch(path, options, true);
+    }
+    if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.text()).slice(0, 300); } catch (_) {}
+        throw new Error(`Drive ${res.status}: ${detail || res.statusText}`);
+    }
+    return res;
+}
+
+async function ensureBackupFolder() {
+    if (_driveFolderId) return _driveFolderId;
+    const cached = window.localStorage.getItem(DRIVE_FOLDER_KEY);
+    if (cached) {
+        try {
+            const r = await driveFetch(`/files/${cached}?fields=id,trashed`);
+            const j = await r.json();
+            if (!j.trashed) {
+                _driveFolderId = cached;
+                return cached;
+            }
+        } catch (_) {
+            window.localStorage.removeItem(DRIVE_FOLDER_KEY);
+        }
+    }
+    // Klasörü ara
+    const q = encodeURIComponent(
+        `name='${DRIVE_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    );
+    const searchRes = await driveFetch(`/files?q=${q}&fields=files(id,name)`);
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+        _driveFolderId = searchData.files[0].id;
+        window.localStorage.setItem(DRIVE_FOLDER_KEY, _driveFolderId);
+        return _driveFolderId;
+    }
+    // Yoksa oluştur
+    const createRes = await driveFetch('/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: DRIVE_FOLDER_NAME,
+            mimeType: 'application/vnd.google-apps.folder'
+        })
+    });
+    const created = await createRes.json();
+    _driveFolderId = created.id;
+    window.localStorage.setItem(DRIVE_FOLDER_KEY, _driveFolderId);
+    return _driveFolderId;
+}
+
+async function uploadBackupFile(jsonStr, filename) {
+    const folderId = await ensureBackupFolder();
+    const metadata = {
+        name: filename,
+        parents: [folderId],
+        mimeType: 'application/json'
+    };
+    const boundary = '----mlb' + Math.random().toString(36).slice(2);
+    const body =
+        '--' + boundary + '\r\n' +
+        'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+        JSON.stringify(metadata) + '\r\n' +
+        '--' + boundary + '\r\n' +
+        'Content-Type: application/json\r\n\r\n' +
+        jsonStr + '\r\n' +
+        '--' + boundary + '--';
+    const res = await driveFetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size',
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+            body
+        }
+    );
+    return await res.json();
+}
+
+async function listBackupFiles() {
+    const folderId = await ensureBackupFolder();
+    const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    const res = await driveFetch(
+        `/files?q=${q}&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=100`
+    );
+    const data = await res.json();
+    return data.files || [];
+}
+
+async function downloadBackupFile(fileId) {
+    const res = await driveFetch(`/files/${fileId}?alt=media`);
+    return await res.json();
+}
+
+async function deleteBackupFile(fileId) {
+    await driveFetch(`/files/${fileId}`, { method: 'DELETE' });
+}
+
+// === Yedek için Firestore'dan tüm veriyi topla ===
+async function collectBackupData() {
+    if (!_currentUid) throw new Error('Auth hazır değil.');
+    const uid = _currentUid;
+    const [storeSnap, booksSnap, histSnap] = await Promise.all([
+        getDocs(collection(db, 'users', uid, 'store')),
+        getDocs(collection(db, 'users', uid, 'books')),
+        getDocs(collection(db, 'users', uid, 'history'))
+    ]);
+    const store = {};
+    storeSnap.forEach(d => {
+        const data = d.data();
+        if (data && typeof data.v === 'string') store[d.id] = data.v;
+    });
+    const books = booksSnap.docs.map(d => stripMeta(d.data()));
+    const history = histSnap.docs.map(d => stripMeta(d.data()));
+    return {
+        version: 2,
+        timestamp: new Date().toISOString(),
+        uid,
+        device: navigator.userAgent.slice(0, 120),
+        counts: {
+            store: Object.keys(store).length,
+            books: books.length,
+            history: history.length
+        },
+        store, books, history
+    };
+}
+
+async function performBackup() {
+    if (_backupRunning) throw new Error('Yedekleme zaten sürüyor.');
+    if (!window.dbAuth || !window.dbAuth.snapshot()) {
+        throw new Error('Henüz auth hazır değil.');
+    }
+    if (!window.dbAuth.snapshot().isGoogleLinked) {
+        throw new Error('Önce Google hesabınla bağlan.');
+    }
+    _backupRunning = true;
+    setStatus('syncing');
+    try {
+        const data = await collectBackupData();
+        const json = JSON.stringify(data);
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
+        const filename = `mylifeapp-${dateStr}-${timeStr}.json`;
+        const result = await uploadBackupFile(json, filename);
+        window.localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
+        // Eskileri temizle (arka planda)
+        cleanupOldBackups().catch(e => console.warn('[db-sync] cleanup:', e.message));
+        setStatus('ok');
+        return {
+            fileId: result.id, filename,
+            size: json.length,
+            counts: data.counts
+        };
+    } catch (e) {
+        setStatus('error');
+        throw e;
+    } finally {
+        _backupRunning = false;
+    }
+}
+
+async function cleanupOldBackups() {
+    const files = await listBackupFiles();
+    const cutoff = Date.now() - BACKUP_KEEP_DAYS * 24 * 3600 * 1000;
+    for (const f of files) {
+        const t = new Date(f.modifiedTime).getTime();
+        if (t < cutoff) {
+            try { await deleteBackupFile(f.id); }
+            catch (_) {}
+        }
+    }
+}
+
+// === Geri yükleme ===
+async function performRestore(fileId, options = {}) {
+    if (!_currentUid) throw new Error('Auth hazır değil');
+    const data = await downloadBackupFile(fileId);
+    if (!data || data.version !== 2) {
+        throw new Error('Geçersiz yedek formatı (v2 değil).');
+    }
+    const uid = _currentUid;
+    setStatus('syncing');
+
+    try {
+        // Mevcut books/history'yi sil (replace mode)
+        const [oldBooksSnap, oldHistSnap] = await Promise.all([
+            getDocs(collection(db, 'users', uid, 'books')),
+            getDocs(collection(db, 'users', uid, 'history'))
+        ]);
+        const ops = [];
+        oldBooksSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+        oldHistSnap.docs.forEach(d => ops.push({ type: 'delete', ref: d.ref }));
+
+        // Store key'lerini yaz
+        if (data.store && typeof data.store === 'object') {
+            for (const [k, v] of Object.entries(data.store)) {
+                if (typeof v !== 'string') continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'store', k),
+                    data: { v, u: serverTimestamp() }
+                });
+            }
+        }
+        // Books
+        if (Array.isArray(data.books)) {
+            for (const book of data.books) {
+                if (!book || typeof book !== 'object' || !book.id) continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'books', String(book.id)),
+                    data: { ...book, u: serverTimestamp() }
+                });
+            }
+        }
+        // History
+        if (Array.isArray(data.history)) {
+            for (const h of data.history) {
+                if (!h || typeof h !== 'object' || !h.id) continue;
+                ops.push({
+                    type: 'set',
+                    ref: doc(db, 'users', uid, 'history', String(h.id)),
+                    data: { ...h, u: serverTimestamp() }
+                });
+            }
         }
 
-        window.onload = setToday;
-    </script>
-</body>
-</html>
+        const CHUNK = 480;
+        for (let i = 0; i < ops.length; i += CHUNK) {
+            const batch = writeBatch(db);
+            for (const w of ops.slice(i, i + CHUNK)) {
+                if (w.type === 'set') batch.set(w.ref, w.data);
+                else batch.delete(w.ref);
+            }
+            await batch.commit();
+        }
+        setStatus('ok');
+        return { restored: true, counts: data.counts };
+    } catch (e) {
+        setStatus('error');
+        throw e;
+    }
+}
 
+// === Günlük zamanlayıcı ===
+let _dailyTimer = null;
+function scheduleDailyBackup() {
+    if (_dailyTimer) clearTimeout(_dailyTimer);
+
+    const last = window.localStorage.getItem(LAST_BACKUP_KEY);
+    const lastDate = last ? new Date(last) : null;
+    const now = new Date();
+
+    // Bugün için yedek alındı mı?
+    const todayDone = lastDate &&
+        lastDate.toDateString() === now.toDateString();
+
+    // 23:55 hedefi (bugün için)
+    const target = new Date(now);
+    target.setHours(23, 55, 0, 0);
+
+    if (!todayDone) {
+        if (now >= target) {
+            // 23:55 geçmiş, hemen al
+            setTimeout(() => tryAutoBackup(), 4000);
+        } else {
+            // 23:55'e zamanla (tarayıcı açık kalırsa)
+            const ms = target.getTime() - now.getTime();
+            _dailyTimer = setTimeout(() => tryAutoBackup(), ms);
+            console.log(`[db-sync] otomatik yedek için ${Math.round(ms/60000)}dk zamanlandı (23:55)`);
+        }
+    }
+    // Hiç yedek yoksa ilk açılışta hemen al
+    if (!last) {
+        setTimeout(() => tryAutoBackup(), 8000);
+    }
+}
+
+async function tryAutoBackup() {
+    try {
+        const u = window.dbAuth && window.dbAuth.snapshot();
+        if (!u || !u.isGoogleLinked) return;
+        // Çift yedek olmasın diye son 2 saat içinde yedek varsa atla
+        const last = window.localStorage.getItem(LAST_BACKUP_KEY);
+        if (last) {
+            const ms = Date.now() - new Date(last).getTime();
+            if (ms < 2 * 3600 * 1000) {
+                console.log('[db-sync] son yedek 2 saat içinde alınmış, otomatik atlanıyor');
+                return;
+            }
+        }
+        await performBackup();
+        console.log('[db-sync] otomatik yedek tamam');
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { source: 'auto' } }));
+        // Bir sonraki güne tekrar zamanla
+        scheduleDailyBackup();
+    } catch (e) {
+        console.warn('[db-sync] otomatik yedek başarısız:', e.message);
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { error: e.message } }));
+    }
+}
+
+// Auth bağlandıktan sonra zamanlayıcıyı başlat
+window.addEventListener('dbauthstate', (e) => {
+    if (e.detail && e.detail.isGoogleLinked && _currentUid) {
+        scheduleDailyBackup();
+        claimSessionLock(_currentUid);
+    }
+});
+
+// ============================================================================
+//  TEK CİHAZ OTURUM KİLİDİ
+//  Aynı Google hesabıyla başka bir cihaz giriş yaparsa bu cihaz otomatik çıkar.
+//  Sadece Google'a bağlı kullanıcılar için aktif (anonim hesaplar zaten cihaza özel).
+// ============================================================================
+const SESSION_LOCAL_KEY = '_dbsync_session_id';
+let _sessionUnsub = null;
+let _autoSignOutInProgress = false;
+
+function generateSid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+
+function claimSessionLock(uid) {
+    if (!uid) return;
+    if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
+
+    const sid = generateSid();
+    window.localStorage.setItem(SESSION_LOCAL_KEY, sid);
+    const ref = doc(db, 'users', uid, '_session', 'current');
+
+    // Cloud'a kendi sid'imizi yaz (fire-and-forget; onSnapshot zaten gözlüyor)
+    setDoc(ref, {
+        sid,
+        device: navigator.userAgent.slice(0, 120),
+        ts: serverTimestamp()
+    }).catch(e => console.warn('[db-sync] session claim:', e));
+
+    // Belge değişimlerini gözle. Mantık çok sade:
+    //   cloud.sid == local.sid  → kendi yazımız, no-op
+    //   cloud.sid != local.sid  → başka cihaz aktif olmuş, çıkış
+    _sessionUnsub = onSnapshot(ref, (snap) => {
+        if (_autoSignOutInProgress) return;
+        if (!snap.exists()) return;
+        const cloudSid = snap.data().sid;
+        const localSid = window.localStorage.getItem(SESSION_LOCAL_KEY);
+        if (cloudSid && localSid && cloudSid !== localSid) {
+            handleAutoSignOut(snap.data().device);
+        }
+    }, e => console.warn('[db-sync] session watch:', e));
+}
+
+async function handleAutoSignOut(otherDevice) {
+    if (_autoSignOutInProgress) return;
+    _autoSignOutInProgress = true;
+    console.warn('[db-sync] başka bir cihazda giriş tespit edildi, çıkış yapılıyor...');
+    if (_sessionUnsub) { _sessionUnsub(); _sessionUnsub = null; }
+    try {
+        const desc = otherDevice ? otherDevice.slice(0, 60) : 'başka bir cihaz';
+        alert(`⚠ Hesabın "${desc}" üzerinden açıldı.\nBu cihazdan otomatik çıkış yapılıyor.`);
+    } catch (_) {}
+    // signOut sonrası anonim açılmasın — kullanıcı bu cihazda artık çıkmış olsun
+    _skipAutoAnon = true;
+    try { await fbSignOut(auth); } catch (_) {}
+    // Local session id'yi temizle
+    window.localStorage.removeItem(SESSION_LOCAL_KEY);
+    setTimeout(() => location.reload(), 800);
+}
+
+// === dbBackup global API ===
+window.dbBackup = {
+    async runNow() {
+        const r = await performBackup();
+        window.dispatchEvent(new CustomEvent('dbbackup', { detail: { source: 'manual', ...r } }));
+        return r;
+    },
+    async list() { return await listBackupFiles(); },
+    async restore(fileId) { return await performRestore(fileId); },
+    async deleteOne(fileId) { return await deleteBackupFile(fileId); },
+    lastTime() {
+        const v = window.localStorage.getItem(LAST_BACKUP_KEY);
+        return v ? new Date(v) : null;
+    }
+};
