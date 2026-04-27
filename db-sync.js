@@ -470,6 +470,16 @@ async function processMobileRedirectResult() {
     }
 
     if (result) {
+        // Email whitelist kontrolü
+        try {
+            await enforceAllowedEmail(result.user);
+        } catch (errEmail) {
+            console.warn('[db-sync] yetkisiz email, çıkış yapılıyor:', errEmail.message);
+            window.localStorage.removeItem(REDIRECT_PENDING_KEY);
+            window.localStorage.removeItem(REDIRECT_FALLBACK_KEY);
+            alert(errEmail.message);
+            return;
+        }
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential && credential.accessToken) {
             _googleAccessToken = credential.accessToken;
@@ -481,18 +491,45 @@ async function processMobileRedirectResult() {
     }
 }
 
+// =====================================================================
+//  Email whitelist — sadece izinli email girebilir
+// =====================================================================
+async function enforceAllowedEmail(user) {
+    if (!user) return;
+    const email = (user.email || '').toLowerCase();
+    if (email && email !== ALLOWED_EMAIL.toLowerCase()) {
+        try { await fbSignOut(auth); } catch (_) {}
+        throw new Error(
+            `Bu uygulama sadece "${ALLOWED_EMAIL}" hesabıyla açılabilir.\n` +
+            `Girdiğiniz hesap: ${email}\n\n` +
+            `Doğru hesabı seçip tekrar deneyin.`
+        );
+    }
+}
+
 // Önce redirect dönüşünü tüket — sonra normal auth listener kurulur
 processMobileRedirectResult();
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        _anonDisabled = false;
         onAuthed(user.uid);
     } else if (!_skipAutoAnon) {
         try {
             await signInAnonymously(auth);
         } catch (e) {
             console.error('[db-sync] anonim giriş hatası:', e);
-            setStatus('error');
+            // Anonymous Console'da kapalıysa graceful degrade
+            if (e.code === 'auth/admin-restricted-operation' ||
+                e.code === 'auth/operation-not-allowed' ||
+                e.code === 'auth/configuration-not-found') {
+                _anonDisabled = true;
+                setStatus('warning');
+                console.warn('[db-sync] Anonymous Auth kapalı. "Google ile Giriş Yap" butonunu kullan.');
+                dispatchAuthState();
+            } else {
+                setStatus('error');
+            }
         }
     }
 });
@@ -521,7 +558,12 @@ function ensureBadge() {
     return el;
 }
 function setStatus(state) {
-    const colors = { syncing: '#f1c40f', ok: '#2ecc71', error: '#e74c3c' };
+    const colors = {
+        syncing: '#f1c40f',  // sarı
+        ok: '#2ecc71',        // yeşil
+        warning: '#3498db',   // mavi (anonim kapalı, Google bekleniyor)
+        error: '#e74c3c'      // kırmızı
+    };
     const c = colors[state] || '#888';
     const apply = () => { const b = ensureBadge(); b.style.background = c; b.style.color = c; };
     if (document.body) apply();
@@ -551,14 +593,28 @@ window.__dbSyncReady = true;
 // Auth durumu değişikliklerini yayar — UI bunlara abone olur
 function dispatchAuthState() {
     const u = auth.currentUser;
-    const detail = u ? {
-        uid: u.uid,
-        isAnonymous: u.isAnonymous,
-        displayName: u.displayName || null,
-        email: u.email || null,
-        photoURL: u.photoURL || null,
-        isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com')
-    } : null;
+    let detail;
+    if (u) {
+        detail = {
+            uid: u.uid,
+            isAnonymous: u.isAnonymous,
+            displayName: u.displayName || null,
+            email: u.email || null,
+            photoURL: u.photoURL || null,
+            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com'),
+            needsGoogleSignin: false
+        };
+    } else if (_anonDisabled) {
+        // Anonymous Console'da kapalı — kullanıcı Google ile giriş yapmalı
+        detail = {
+            uid: null, isAnonymous: false,
+            displayName: null, email: null, photoURL: null,
+            isGoogleLinked: false,
+            needsGoogleSignin: true
+        };
+    } else {
+        detail = null;
+    }
     window.dispatchEvent(new CustomEvent('dbauthstate', { detail }));
 }
 onAuthStateChanged(auth, () => dispatchAuthState());
@@ -568,6 +624,12 @@ let _googleAccessToken = null;
 let _googleAccessTokenExp = 0;
 // signOut sonrası otomatik anonim auth'u geçici devre dışı bırakma
 let _skipAutoAnon = false;
+
+// Anonymous auth Console'da kapalıysa bu flag set edilir
+let _anonDisabled = false;
+
+// Sadece bu email girebilir (yanlış hesap girilirse otomatik signOut)
+const ALLOWED_EMAIL = 'muhammedsefagor@gmail.com';
 
 // Mobilde popup akışı kırılgan olduğu için signInWithRedirect kullanırız
 const _isMobileLike = (() => {
@@ -584,100 +646,105 @@ window.dbAuth = {
     /** Mevcut user durumu (UI için) */
     snapshot() {
         const u = auth.currentUser;
-        if (!u) return null;
+        if (!u) {
+            if (_anonDisabled) {
+                return {
+                    uid: null, isAnonymous: false,
+                    displayName: null, email: null, photoURL: null,
+                    isGoogleLinked: false,
+                    needsGoogleSignin: true
+                };
+            }
+            return null;
+        }
         return {
             uid: u.uid,
             isAnonymous: u.isAnonymous,
             displayName: u.displayName || null,
             email: u.email || null,
             photoURL: u.photoURL || null,
-            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com')
+            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com'),
+            needsGoogleSignin: false
         };
     },
 
     /**
-     * Anonim hesabı Google'a bağlar (uid korunur, veriler kaybolmaz).
-     * Drive API erişimi için drive.file scope dahil edilir.
+     * Google ile giriş / mevcut anonim hesabı Google'a bağlar.
+     * Anonymous kapalıysa bile çalışır (doğrudan Google login).
      * Mobilde redirect, masaüstünde popup akışı kullanır.
      */
     async linkWithGoogle() {
-        const user = auth.currentUser;
-        if (!user) throw new Error('Henüz auth hazır değil. Birkaç saniye bekleyip tekrar deneyin.');
+        const user = auth.currentUser; // null olabilir (anonim kapalı)
 
         const provider = new GoogleAuthProvider();
         provider.addScope('https://www.googleapis.com/auth/drive.file');
-        // Hesap seçim ekranı her zaman gösterilsin
         provider.setCustomParameters({ prompt: 'select_account' });
 
         // ============== MOBİL: REDIRECT AKIŞI ==============
-        // iOS Safari (özellikle PWA) popup'larda auth state'i tutarsız taşır,
-        // bu yüzden mobilde tam-sayfa redirect kullanırız.
         if (_isMobileLike) {
-            window.localStorage.setItem(REDIRECT_PENDING_KEY,
-                user.isAnonymous ? 'link' : 'reauth');
+            // user yoksa veya zaten Google'lıysa direkt signInWithRedirect
+            if (!user || !user.isAnonymous) {
+                window.localStorage.setItem(REDIRECT_PENDING_KEY, 'reauth');
+                await signInWithRedirect(auth, provider);
+                return;
+            }
+            // Anonim user var → linkWithRedirect (uid korunur)
+            window.localStorage.setItem(REDIRECT_PENDING_KEY, 'link');
             try {
-                if (user.isAnonymous) {
-                    await linkWithRedirect(user, provider);
-                } else {
-                    await signInWithRedirect(auth, provider);
-                }
+                await linkWithRedirect(user, provider);
             } catch (e) {
                 window.localStorage.removeItem(REDIRECT_PENDING_KEY);
                 throw e;
             }
-            // Sayfa redirect olur, buradan ileri kod çalışmaz
             return;
         }
 
         // ============== MASAÜSTÜ: POPUP AKIŞI ==============
-        if (user.isAnonymous) {
-            // Anonim hesabı Google'a yükselt
-            try {
-                const result = await linkWithPopup(user, provider);
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                if (credential && credential.accessToken) {
-                    _googleAccessToken = credential.accessToken;
-                    _googleAccessTokenExp = Date.now() + 3500_000; // ~58dk
-                }
-                return result.user;
-            } catch (e) {
-                if (e.code === 'auth/credential-already-in-use') {
-                    // Sessiz otomatik fallback: anonim'ten çık, doğrudan Google ile gir.
-                    // Eski Google uid'in TÜM verileri (Firestore'da duran) anında geri gelir.
-                    // Hangi cihazdan girilirse aynı veri gelir.
-                    console.log('[db-sync] Google hesabı zaten kayıtlı, mevcut hesap geri yükleniyor...');
-                    _skipAutoAnon = true;
-                    try {
-                        await fbSignOut(auth);
-                        const result2 = await signInWithPopup(auth, provider);
-                        const credential2 = GoogleAuthProvider.credentialFromResult(result2);
-                        if (credential2 && credential2.accessToken) {
-                            _googleAccessToken = credential2.accessToken;
-                            _googleAccessTokenExp = Date.now() + 3500_000;
-                        }
-                        return result2.user;
-                    } finally {
-                        _skipAutoAnon = false;
+        // user yoksa veya zaten Google'lıysa doğrudan signInWithPopup
+        if (!user || !user.isAnonymous) {
+            const result = await signInWithPopup(auth, provider);
+            await enforceAllowedEmail(result.user);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential && credential.accessToken) {
+                _googleAccessToken = credential.accessToken;
+                _googleAccessTokenExp = Date.now() + 3500_000;
+            }
+            return result.user;
+        }
+
+        // Anonim user var, Google'a link et (uid korunur)
+        try {
+            const result = await linkWithPopup(user, provider);
+            await enforceAllowedEmail(result.user);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential && credential.accessToken) {
+                _googleAccessToken = credential.accessToken;
+                _googleAccessTokenExp = Date.now() + 3500_000;
+            }
+            return result.user;
+        } catch (e) {
+            if (e.code === 'auth/credential-already-in-use') {
+                // Sessiz fallback: anonim'ten çık, doğrudan Google ile gir.
+                console.log('[db-sync] Google hesabı zaten kayıtlı, mevcut hesap geri yükleniyor...');
+                _skipAutoAnon = true;
+                try {
+                    await fbSignOut(auth);
+                    const result2 = await signInWithPopup(auth, provider);
+                    await enforceAllowedEmail(result2.user);
+                    const credential2 = GoogleAuthProvider.credentialFromResult(result2);
+                    if (credential2 && credential2.accessToken) {
+                        _googleAccessToken = credential2.accessToken;
+                        _googleAccessTokenExp = Date.now() + 3500_000;
                     }
+                    return result2.user;
+                } finally {
+                    _skipAutoAnon = false;
                 }
-                if (e.code === 'auth/popup-closed-by-user') {
-                    throw new Error('Google girişi iptal edildi.');
-                }
-                throw e;
             }
-        } else {
-            // Zaten Google'a bağlı — sadece access token tazele
-            try {
-                const result = await signInWithPopup(auth, provider);
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                if (credential && credential.accessToken) {
-                    _googleAccessToken = credential.accessToken;
-                    _googleAccessTokenExp = Date.now() + 3500_000;
-                }
-                return result.user;
-            } catch (e) {
-                throw e;
+            if (e.code === 'auth/popup-closed-by-user') {
+                throw new Error('Google girişi iptal edildi.');
             }
+            throw e;
         }
     },
 
