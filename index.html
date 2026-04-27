@@ -23,7 +23,7 @@
 
     <!-- Cloud auth (sync yok, sadece Google bağlantı API'si için) -->
     <script>window.SYNC_KEYS = []; /* Bu sayfada sync edilecek veri yok */</script>
-    <script type="module" src="./db-sync.js"></script>
+    <script type="module" src="./db-sync.js?v=14"></script>
 
     <style>
         :root {
@@ -1184,11 +1184,18 @@
             if (!ok) {
                 btn.disabled = false;
                 labelEl.textContent = oldLabel;
+                const loading = window.__dbSyncLoading ? 'modül hâlâ yükleniyor' : 'modül yüklenemedi';
+                const ready = window.__dbSyncReady ? 'EVET' : 'HAYIR';
                 alert(
-                    'Bulut bağlantısı kurulamadı.\n\n' +
-                    '1) İnternetin açık mı kontrol et\n' +
-                    '2) PWA\'yı tamamen kapatıp tekrar aç\n' +
-                    '3) Hâlâ olmuyorsa Safari ayarlarından site verilerini temizleyip ana ekrandan PWA\'yı kaldır → tekrar ekle'
+                    'Bulut bağlantısı kurulamadı (' + loading + ').\n\n' +
+                    'Durum: __dbSyncReady=' + ready + '\n\n' +
+                    'Adımlar:\n' +
+                    '1) İnternet açık mı?\n' +
+                    '2) Safari → Ayarlar → Geçmişi/Web Sitesi Verilerini SİL\n' +
+                    '3) PWA\'yı ana ekrandan KALDIR\n' +
+                    '4) Safari\'de https://msefagor.github.io/MyLifeApp/ aç\n' +
+                    '5) Ana Ekrana Ekle → tekrar aç\n\n' +
+                    'Hâlâ olmazsa: Mac → Safari → Develop → iPhone\'un → bağlanan sayfa → Console hatasını paylaş'
                 );
                 return;
             }
