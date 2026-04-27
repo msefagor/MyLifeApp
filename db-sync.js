@@ -24,7 +24,9 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import {
-    getAuth, signInAnonymously, onAuthStateChanged
+    getAuth, signInAnonymously, onAuthStateChanged,
+    GoogleAuthProvider, linkWithPopup, signInWithPopup,
+    signOut as fbSignOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
     getFirestore, collection, doc, getDoc, getDocs,
@@ -480,4 +482,139 @@ window.dbSync = {
     },
     isHydrated: () => _hydrated,
     uid: () => _currentUid
+};
+
+// ============================================================================
+//  GOOGLE SIGN-IN  (anonim → Google'a linkleme, Drive yetkisi dahil)
+// ============================================================================
+
+// Auth durumu değişikliklerini yayar — UI bunlara abone olur
+function dispatchAuthState() {
+    const u = auth.currentUser;
+    const detail = u ? {
+        uid: u.uid,
+        isAnonymous: u.isAnonymous,
+        displayName: u.displayName || null,
+        email: u.email || null,
+        photoURL: u.photoURL || null,
+        isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com')
+    } : null;
+    window.dispatchEvent(new CustomEvent('dbauthstate', { detail }));
+}
+onAuthStateChanged(auth, () => dispatchAuthState());
+
+// Google access token'ını cache'le (Drive API için ileride kullanılacak)
+let _googleAccessToken = null;
+let _googleAccessTokenExp = 0;
+
+window.dbAuth = {
+    /** Mevcut user durumu (UI için) */
+    snapshot() {
+        const u = auth.currentUser;
+        if (!u) return null;
+        return {
+            uid: u.uid,
+            isAnonymous: u.isAnonymous,
+            displayName: u.displayName || null,
+            email: u.email || null,
+            photoURL: u.photoURL || null,
+            isGoogleLinked: u.providerData.some(p => p.providerId === 'google.com')
+        };
+    },
+
+    /**
+     * Anonim hesabı Google'a bağlar (uid korunur, veriler kaybolmaz).
+     * Drive API erişimi için drive.file scope dahil edilir.
+     */
+    async linkWithGoogle() {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Henüz auth hazır değil. Birkaç saniye bekleyip tekrar deneyin.');
+
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        // Hesap seçim ekranı her zaman gösterilsin (kullanıcı yanlış hesap eklemesin)
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        if (user.isAnonymous) {
+            // Anonim hesabı Google'a yükselt
+            try {
+                const result = await linkWithPopup(user, provider);
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                if (credential && credential.accessToken) {
+                    _googleAccessToken = credential.accessToken;
+                    _googleAccessTokenExp = Date.now() + 3500_000; // ~58dk
+                }
+                return result.user;
+            } catch (e) {
+                if (e.code === 'auth/credential-already-in-use') {
+                    throw new Error(
+                        'Bu Google hesabı zaten kullanılıyor (başka cihaza bağlanmış olabilir). ' +
+                        'O cihazdaki Google hesabıyla devam etmek isterseniz "Çıkış yap & Google ile gir" seçeneğini kullanın.'
+                    );
+                }
+                if (e.code === 'auth/popup-closed-by-user') {
+                    throw new Error('Google girişi iptal edildi.');
+                }
+                throw e;
+            }
+        } else {
+            // Zaten Google'a bağlı — sadece access token tazele
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                if (credential && credential.accessToken) {
+                    _googleAccessToken = credential.accessToken;
+                    _googleAccessTokenExp = Date.now() + 3500_000;
+                }
+                return result.user;
+            } catch (e) {
+                throw e;
+            }
+        }
+    },
+
+    /**
+     * Mevcut anonim oturumu kapatıp doğrudan Google ile gir (mevcut anonim veriler kaybolur).
+     * Yeni bir cihaza ana cihazdaki Google hesabını taşımak için kullanılır.
+     */
+    async signInWithGoogleFresh() {
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        provider.setCustomParameters({ prompt: 'select_account' });
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            _googleAccessToken = credential.accessToken;
+            _googleAccessTokenExp = Date.now() + 3500_000;
+        }
+        return result.user;
+    },
+
+    /** Çıkış (sonra yeni anonim oturum otomatik açılır) */
+    async signOut() {
+        _googleAccessToken = null;
+        _googleAccessTokenExp = 0;
+        await fbSignOut(auth);
+    },
+
+    /** Drive API çağrıları için access token (Aşama 2'de kullanılacak) */
+    getGoogleAccessToken() {
+        if (_googleAccessToken && Date.now() < _googleAccessTokenExp) return _googleAccessToken;
+        return null;
+    },
+
+    /** Token süresi dolduysa Google ile yeniden popup açıp tazele */
+    async refreshGoogleAccessToken() {
+        const u = auth.currentUser;
+        if (!u || u.isAnonymous) throw new Error('Önce Google ile giriş yapın.');
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            _googleAccessToken = credential.accessToken;
+            _googleAccessTokenExp = Date.now() + 3500_000;
+        }
+        return _googleAccessToken;
+    }
 };
