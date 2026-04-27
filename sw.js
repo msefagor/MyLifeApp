@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v4';
+const CACHE_NAME = 'glass-planner-v5';
 const urlsToCache = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const urlsToCache = [
   './yatirim1.html',
   './devam.html',
   './tabela.html',
+  './db-sync.js',
   './sureler.json',
   './db.json',
   './manifest.json',
