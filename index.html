@@ -1234,17 +1234,36 @@
         setTimeout(refreshDriveSection, 600);
 
         async function handleDriveBackup() {
-            if (!window.dbBackup) return;
+            if (!window.dbBackup) {
+                alert('Bulut katmanı henüz yüklenmedi, birkaç saniye sonra tekrar deneyin.');
+                return;
+            }
             const btn = document.getElementById('btnDriveBackup');
             const orig = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span style="opacity:0.85">Yedekleniyor…</span>';
+            btn.innerHTML = '<span style="opacity:0.85">Drive izni alınıyor…</span>';
             try {
+                // 1) Kullanıcı eylemi sırasında token sağla (popup blocker'ı geçer)
+                if (window.dbAuth && typeof window.dbAuth.ensureGoogleToken === 'function') {
+                    await window.dbAuth.ensureGoogleToken();
+                }
+                btn.innerHTML = '<span style="opacity:0.85">Yedekleniyor…</span>';
+                console.log('[backup] runNow başlıyor...');
+                // 2) Yedeği al
                 const r = await window.dbBackup.runNow();
+                console.log('[backup] tamam:', r);
                 refreshDriveSection();
-                alert(`Yedek başarıyla alındı.\n${r.filename}\nKitap: ${r.counts.books}, Kayıt: ${r.counts.history}, Boyut: ${fmtBytes(r.size)}`);
+                alert(
+                    'Yedek başarıyla alındı.\n\n' +
+                    `Dosya: ${r.filename}\n` +
+                    `Kitap: ${r.counts.books}\n` +
+                    `Okuma kaydı: ${r.counts.history}\n` +
+                    `Diğer kayıt: ${r.counts.store}\n` +
+                    `Boyut: ${fmtBytes(r.size)}`
+                );
             } catch (e) {
-                alert('Yedek başarısız: ' + e.message);
+                console.error('[backup] hata:', e);
+                alert('Yedek başarısız:\n\n' + (e && e.message ? e.message : String(e)));
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = orig;
