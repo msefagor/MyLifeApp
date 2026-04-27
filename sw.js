@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v14';
+const CACHE_NAME = 'glass-planner-v15';
 const urlsToCache = [
   './',
   './index.html',
@@ -73,38 +73,6 @@ self.addEventListener('fetch', event => {
       .then(response => {
         // İnternet var: Cevabı al, klonla ve cache'e kaydet (güncelle)
         if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
-          })
-          .catch(() => {});
-        return response;
-      })
-      .catch(async () => {
-        // İnternet yok / ağ hatası: Önce tam URL ile cache, yoksa pathname ile cache, yoksa index.html
-        const cached = await caches.match(event.request);
-        if (cached) return cached;
-
-        // Query string'i atıp tekrar dene (ör. devam.html?date=2026-04-25 → devam.html)
-        const noQuery = new Request(url.origin + url.pathname);
-        const cachedNoQuery = await caches.match(noQuery);
-        if (cachedNoQuery) return cachedNoQuery;
-
-        // Navigasyon (HTML) isteğiyse en azından ana sayfayı dön
-        if (event.request.mode === 'navigate') {
-          const fallback = await caches.match('./index.html');
-          if (fallback) return fallback;
-        }
-        return new Response('Çevrimdışı: kaynak bulunamadı', {
-          status: 503, statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        });
-      })
-  );
-});        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
         const responseToCache = response.clone();
