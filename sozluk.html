@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Sözlük</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cloud sync -->
+    <script>
+        window.SYNC_KEYS = ['sozlukKelimeler'];
+        window.addEventListener('dbsynced', () => {
+            try {
+                if (typeof loadWords === 'function') loadWords();
+                if (typeof renderList === 'function') renderList();
+            } catch (e) { console.warn('sozluk refresh after sync:', e); }
+        });
+    </script>
+    <script type="module" src="./drive-sync.js?v=1"></script>
+
+    <style>
+        :root {
+            --bg-body: #07091a;
+            --glass-bg: rgba(18, 22, 38, 0.55);
+            --glass-bg-strong: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.10);
+            --glass-stroke: rgba(255, 255, 255, 0.16);
+            --primary: #c084fc;
+            --primary-deep: #7c3aed;
+            --primary-gradient: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
+            --accent: #f0abfc;
+            --accent-gradient: linear-gradient(135deg, #f0abfc 0%, #c026d3 100%);
+            --gold: #ffd166;
+            --gold-gradient: linear-gradient(135deg, #ffd166 0%, #ef8354 100%);
+            --danger: #ff5f6d;
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.72);
+            --text-muted: rgba(255, 255, 255, 0.48);
+            --shadow-sm: 0 2px 10px rgba(0,0,0,0.18);
+            --shadow-md: 0 12px 32px rgba(0,0,0,0.32);
+            --shadow-lg: 0 22px 60px rgba(0,0,0,0.5);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { height: -webkit-fill-available; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0;
+            color: var(--text);
+            background:
+                radial-gradient(120% 90% at 0% 0%, #2a1058 0%, transparent 55%),
+                radial-gradient(120% 90% at 100% 100%, #0d2b50 0%, transparent 55%),
+                var(--bg-body);
+            min-height: 100vh;
+            padding-bottom: calc(110px + env(safe-area-inset-bottom));
+            padding-top: env(safe-area-inset-top);
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .blob {
+            position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.45; z-index: -1;
+            pointer-events: none;
+        }
+        .blob-1 { top: -12%; left: -20%; width: 320px; height: 320px; background: #7c3aed; animation: float 10s infinite ease-in-out; }
+        .blob-2 { bottom: -10%; right: -22%; width: 360px; height: 360px; background: #c026d3; animation: float 11s infinite ease-in-out reverse; }
+        .blob-3 { top: 42%; left: 35%; width: 200px; height: 200px; background: #f0abfc; opacity: 0.25; }
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+
+        .container { max-width: 100%; padding: 12px 20px 24px; }
+
+        /* --- HEADER --- */
+        .top-bar {
+            display: flex; align-items: center; gap: 14px;
+            padding: 8px 0 18px;
+        }
+
+        .header-icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 26px rgba(10, 132, 255, 0.28);
+        }
+        .header-icon img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Swipe-back hint (silinmiş geri butonu yerine kısa bir görsel ipucu) */
+        .swipe-hint {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 11.5px; color: var(--text-muted);
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+        .swipe-hint i { font-size: 11px; }
+
+        .header-title {
+            flex: 1;
+            display: flex; flex-direction: column;
+            min-width: 0;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.6px;
+            background: linear-gradient(135deg, #f0abfc 0%, #c084fc 50%, #ffffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-title .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Top Add button */
+        .add-btn-wide {
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: none;
+            background: var(--primary-gradient);
+            color: white;
+            font-size: 15px; font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 10px 28px rgba(124, 58, 237, 0.45);
+            margin-bottom: 14px;
+            transition: transform 0.18s;
+            letter-spacing: 0.2px;
+        }
+        .add-btn-wide:active { transform: scale(0.985); }
+        .add-btn-ico {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.22);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 6px;
+            padding: 5px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 14px;
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 13.5px; font-weight: 600;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .tab-btn i { font-size: 12.5px; }
+        .tab-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4);
+        }
+        .tab-btn:not(.active):active {
+            background: var(--glass-bg-strong);
+            color: var(--text);
+        }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: tabFade 0.25s ease; }
+        @keyframes tabFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tab-helper {
+            font-size: 12px; color: var(--text-muted);
+        }
+
+        /* --- Fihrist (alphabetical index) --- */
+        .index-list { display: flex; flex-direction: column; gap: 18px; }
+        .alpha-group {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 12px 14px 14px;
+            overflow: hidden;
+        }
+        .alpha-letter {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            font-weight: 800; font-size: 15px;
+            background: var(--primary-gradient);
+            color: white;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+        }
+        .alpha-items {
+            display: flex; flex-direction: column;
+        }
+        .alpha-item {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px;
+            padding: 10px 4px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            transition: background 0.18s;
+            border-radius: 8px;
+        }
+        .alpha-item:first-child { border-top: none; }
+        .alpha-item:active { background: rgba(192, 132, 252, 0.10); }
+        .alpha-item .ai-word {
+            font-size: 15px; font-weight: 600;
+            color: var(--text);
+        }
+        .alpha-item .ai-meta {
+            font-size: 12px; color: var(--text-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 60%;
+            text-align: right;
+        }
+        .alpha-item .ai-arrow {
+            color: var(--text-muted); font-size: 12px;
+            margin-left: 4px;
+        }
+
+        /* A-Z hızlı atlama şeridi */
+        .alpha-jumper {
+            position: sticky;
+            top: 8px;
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 5;
+        }
+        .alpha-jumper button {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px; font-weight: 700;
+            font-family: inherit;
+            padding: 5px 8px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .alpha-jumper button:active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .alpha-jumper button.disabled {
+            opacity: 0.25; pointer-events: none;
+        }
+
+        /* --- SEARCH --- */
+        .search-wrap {
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-input:focus {
+            border-color: rgba(192, 132, 252, 0.55);
+            box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.18);
+        }
+        .search-icon {
+            position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 15px; pointer-events: none;
+        }
+
+        /* --- COUNTER --- */
+        .counter-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+        .counter-row .count-text {
+            font-size: 13px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .counter-row .count-text strong {
+            color: var(--primary); font-weight: 700;
+        }
+        .sort-btn {
+            background: transparent; border: none; color: var(--text-secondary);
+            font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; border-radius: 10px;
+            transition: 0.2s;
+        }
+        .sort-btn:active { background: var(--glass-bg-strong); }
+
+        /* --- WORD LIST --- */
+        .word-list {
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .word-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: transform 0.18s, border-color 0.2s, background 0.2s;
+            display: flex; align-items: center; gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .word-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background: var(--primary-gradient);
+            opacity: 0.85;
+        }
+        .word-card:active {
+            transform: scale(0.985);
+            border-color: rgba(192, 132, 252, 0.45);
+            background: rgba(192, 132, 252, 0.08);
+        }
+        .word-letter {
+            width: 46px; height: 46px;
+            border-radius: 14px;
+            background: var(--primary-gradient);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 20px;
+            color: white;
+            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+            flex-shrink: 0;
+        }
+        .word-card-body {
+            flex: 1; min-width: 0;
+        }
+        .word-card-title {
+            font-size: 17px; font-weight: 700;
+            margin: 0 0 3px;
+            letter-spacing: -0.2px;
+        }
+        .word-card-meta {
+            font-size: 12.5px; color: var(--text-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .word-card-meta .dot {
+            display: inline-block; width: 3px; height: 3px;
+            background: var(--text-muted); border-radius: 50%;
+            margin: 0 7px; vertical-align: middle;
+        }
+        .word-arrow {
+            color: var(--text-muted); font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* --- EMPTY STATE --- */
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state i {
+            font-size: 48px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 14px; opacity: 0.7;
+        }
+        .empty-state h3 { color: var(--text); margin: 8px 0 6px; font-weight: 600; }
+        .empty-state p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+        /* --- FAB --- */
+        .fab {
+            position: fixed;
+            right: 22px;
+            bottom: calc(28px + env(safe-area-inset-bottom));
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 12px 32px rgba(124, 58, 237, 0.55);
+            cursor: pointer;
+            z-index: 50;
+            transition: transform 0.18s;
+        }
+        .fab:active { transform: scale(0.92); }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(5, 6, 18, 0.6);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal {
+            width: 100%;
+            max-width: 540px;
+            background: linear-gradient(180deg, rgba(28, 24, 56, 0.95) 0%, rgba(14, 12, 32, 0.98) 100%);
+            border-top: 1px solid var(--glass-stroke);
+            border-radius: 24px 24px 0 0;
+            padding: 22px 22px calc(28px + env(safe-area-inset-bottom));
+            max-height: 92vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-grabber {
+            width: 44px; height: 5px;
+            background: rgba(255,255,255,0.22);
+            border-radius: 5px;
+            margin: 0 auto 18px;
+        }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .modal-title {
+            font-size: 19px; font-weight: 700; margin: 0;
+            letter-spacing: -0.3px;
+        }
+        .modal-close {
+            background: var(--glass-bg-strong); border: 1px solid var(--glass-border);
+            color: var(--text); width: 36px; height: 36px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 14px;
+        }
+        .modal-close:active { transform: scale(0.92); }
+
+        /* Quick paste */
+        .paste-section {
+            background: linear-gradient(135deg, rgba(192, 132, 252, 0.10) 0%, rgba(124, 58, 237, 0.10) 100%);
+            border: 1px dashed rgba(192, 132, 252, 0.45);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .paste-section .paste-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .paste-section .paste-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12.5px; font-weight: 700; color: #e9d5ff;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        .paste-section .paste-label i { color: var(--primary); }
+        .paste-hint {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .paste-hint code {
+            background: rgba(255,255,255,0.08);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #e9d5ff;
+        }
+        #pasteArea {
+            width: 100%;
+            min-height: 96px;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.55;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #pasteArea::placeholder { color: var(--text-muted); }
+        #pasteArea:focus {
+            border-color: rgba(192, 132, 252, 0.55);
+            box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.18);
+        }
+        .paste-actions {
+            display: flex; gap: 8px; margin-top: 10px;
+        }
+        .paste-btn {
+            flex: 1;
+            padding: 10px 12px;
+            background: rgba(192, 132, 252, 0.18);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            border-radius: 10px;
+            color: #f3e8ff;
+            font-size: 13px; font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            transition: 0.2s;
+        }
+        .paste-btn:active { transform: scale(0.97); background: rgba(192, 132, 252, 0.28); }
+        .paste-btn.ghost {
+            background: transparent;
+            border-color: var(--glass-border);
+            color: var(--text-muted);
+        }
+        .paste-status {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            min-height: 16px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .paste-status.ok { color: #6ee7b7; }
+        .paste-status.warn { color: #fbbf24; }
+
+        .divider-or {
+            display: flex; align-items: center; gap: 10px;
+            color: var(--text-muted); font-size: 11px;
+            text-transform: uppercase; letter-spacing: 1.2px;
+            margin: 6px 0 14px;
+            font-weight: 600;
+        }
+        .divider-or::before, .divider-or::after {
+            content: ''; flex: 1; height: 1px;
+            background: var(--glass-border);
+        }
+
+        /* Form */
+        .field { margin-bottom: 14px; }
+        .field-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        .field-label i {
+            color: var(--primary); font-size: 12px;
+        }
+        .field input, .field textarea {
+            width: 100%;
+            padding: 13px 15px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: var(--text);
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+        }
+        .field textarea { min-height: 78px; line-height: 1.55; }
+        .field input::placeholder, .field textarea::placeholder { color: var(--text-muted); }
+        .field input:focus, .field textarea:focus {
+            border-color: rgba(192, 132, 252, 0.55);
+            box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.18);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .modal-actions {
+            display: flex; gap: 10px; margin-top: 18px;
+        }
+        .btn {
+            flex: 1; padding: 14px;
+            border-radius: 14px; border: none;
+            font-size: 15px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: transform 0.18s, opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 8px 22px rgba(124, 58, 237, 0.45);
+        }
+        .btn-secondary {
+            background: var(--glass-bg-strong);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-danger {
+            background: rgba(255, 95, 109, 0.15);
+            color: #ff8e9a;
+            border: 1px solid rgba(255, 95, 109, 0.3);
+        }
+
+        /* Detail view */
+        .detail-head {
+            text-align: center;
+            padding: 6px 0 18px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 18px;
+        }
+        .detail-head h2 {
+            margin: 0 0 6px;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            background: linear-gradient(135deg, #f0abfc 0%, #c084fc 50%, #ffffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .detail-head .origin-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12.5px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            background: rgba(192, 132, 252, 0.15);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            color: #e9d5ff;
+        }
+        .detail-section {
+            background: rgba(255,255,255,0.035);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .detail-section-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11.5px; font-weight: 700; color: var(--primary);
+            margin-bottom: 8px;
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .detail-section-label i { font-size: 12px; }
+        .detail-section-body {
+            font-size: 15px; line-height: 1.65;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+        .detail-section-body.example {
+            font-style: italic;
+            color: var(--text-secondary);
+            border-left: 3px solid var(--primary);
+            padding-left: 12px;
+        }
+
+        .detail-actions {
+            display: flex; gap: 10px; margin-top: 18px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: calc(100px + env(safe-area-inset-bottom));
+            left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(28, 24, 56, 0.95);
+            border: 1px solid var(--glass-stroke);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.25s, transform 0.25s;
+            pointer-events: none;
+            z-index: 200;
+            box-shadow: var(--shadow-md);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="container">
+        <div class="top-bar">
+            <div class="header-icon" aria-hidden="true">
+                <img src="sozluk-icon.png?v=1" alt="Sözlük">
+            </div>
+            <div class="header-title">
+                <h1>Sözlük</h1>
+                <span class="subtitle">Kelimeler, kökenler ve anlamlar</span>
+            </div>
+        </div>
+
+        <button class="add-btn-wide" onclick="openAddModal()">
+            <span class="add-btn-ico"><i class="fas fa-plus"></i></span>
+            <span>Yeni Kelime Ekle</span>
+        </button>
+
+        <div class="search-wrap">
+            <i class="fas fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Kelime veya anlam ara..." oninput="renderList()">
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="recent" onclick="switchTab('recent')">
+                <i class="fas fa-clock-rotate-left"></i>
+                <span>Eklenenler</span>
+            </button>
+            <button class="tab-btn" data-tab="index" onclick="switchTab('index')">
+                <i class="fas fa-list"></i>
+                <span>Fihrist</span>
+            </button>
+        </div>
+
+        <div class="counter-row">
+            <div class="count-text">
+                Toplam <strong id="wordCount">0</strong> kelime
+            </div>
+            <span class="tab-helper" id="tabHelper">Eklenme sırasına göre</span>
+        </div>
+
+        <!-- Eklenenler sekmesi -->
+        <div id="tab-recent" class="tab-pane active">
+            <div id="wordList" class="word-list"></div>
+        </div>
+
+        <!-- Fihrist sekmesi -->
+        <div id="tab-index" class="tab-pane">
+            <div id="indexList" class="index-list"></div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            <i class="fas fa-book-open"></i>
+            <h3>Henüz kelime yok</h3>
+            <p>Yukarıdaki <b>+ Yeni Kelime Ekle</b> butonuyla<br>ilk kelimeni ekleyebilirsin.</p>
+        </div>
+    </div>
+
+    <button class="fab" onclick="openAddModal()" aria-label="Kelime Ekle">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal" onclick="if(event.target===this) closeModal('detailModal')">
+        <div class="modal">
+            <div class="modal-grabber"></div>
+            <div class="modal-header">
+                <h3 class="modal-title">Kelime Detayı</h3>
+                <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="detailBody"></div>
+        </div>
+    </div>
+
+    <!-- Edit/Add Modal -->
+    <div class="modal-overlay" id="editModal" onclick="if(event.target===this) closeModal('editModal')">
+        <div class="modal">
+            <div class="modal-grabber"></div>
+            <div class="modal-header">
+                <h3 class="modal-title" id="editModalTitle">Yeni Kelime</h3>
+                <button class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="editId">
+
+            <div class="paste-section" id="pasteSection">
+                <div class="paste-head">
+                    <span class="paste-label"><i class="fas fa-paste"></i> Hızlı Yapıştır</span>
+                </div>
+                <textarea id="pasteArea" placeholder="Tüm metni buraya yapıştır. Otomatik olarak Kelime / Kökeni / Anlamı / Örnek Cümle alanlarına dağıtılacak."></textarea>
+                <div class="paste-actions">
+                    <button type="button" class="paste-btn" onclick="parseAndFill()">
+                        <i class="fas fa-wand-magic-sparkles"></i> Otomatik Ayır
+                    </button>
+                    <button type="button" class="paste-btn ghost" onclick="clearPaste()">
+                        <i class="fas fa-eraser"></i> Temizle
+                    </button>
+                </div>
+                <div class="paste-status" id="pasteStatus"></div>
+                <div class="paste-hint">
+                    Etiketler: <code>Kelime:</code> <code>Kökeni:</code> <code>Anlamı:</code> <code>Örnek Cümle:</code>
+                </div>
+            </div>
+
+            <div class="divider-or">veya elle düzenle</div>
+
+            <div class="field">
+                <div class="field-label"><i class="fas fa-font"></i> Kelime</div>
+                <input type="text" id="fldWord" placeholder="örn. Şeş" autocomplete="off">
+            </div>
+            <div class="field">
+                <div class="field-label"><i class="fas fa-seedling"></i> Kökeni</div>
+                <textarea id="fldOrigin" placeholder="örn. Farsça kökenlidir..."></textarea>
+            </div>
+            <div class="field">
+                <div class="field-label"><i class="fas fa-book"></i> Anlamı</div>
+                <textarea id="fldMeaning" placeholder="Kelimenin anlamını yaz..."></textarea>
+            </div>
+            <div class="field">
+                <div class="field-label"><i class="fas fa-quote-left"></i> Örnek Cümle</div>
+                <textarea id="fldExample" placeholder="Örnek bir cümle..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('editModal')">İptal</button>
+                <button class="btn btn-primary" onclick="saveWord()"><i class="fas fa-check"></i> Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const STORAGE_KEY = 'sozlukKelimeler';
+        let words = [];
+        let currentDetailId = null;
+        let activeTab = 'recent'; // 'recent' | 'index'
+
+        function uid() {
+            return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+
+        function loadWords() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                words = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(words)) words = [];
+            } catch (e) { words = []; }
+
+            // Seed default entry on first run
+            if (!localStorage.getItem(STORAGE_KEY + '_seeded')) {
+                if (words.length === 0) {
+                    words.push({
+                        id: uid(),
+                        word: 'Şeş',
+                        origin: 'Farsça kökenlidir. Farsçada "altı" anlamına gelen "şeş" kelimesinden Türkçeye geçmiştir.',
+                        meaning: '"Şeş", özellikle tavla ve zar oyunlarında "altı" sayısını ifade eder. Osmanlıca ve klasik metinlerde de doğrudan "altı" anlamında kullanılmıştır. Güncel Türkçede ise daha çok "şeş beş", "şeşhane" veya tavla zarı bağlamlarında karşımıza çıkar. Zarın altı gelmesi ya da altı sayısının belirtilmesi için kullanılır.',
+                        example: 'Tavlada son hamlede şeş atınca oyunu kazanmayı başardı.',
+                        createdAt: Date.now()
+                    });
+                    saveWords();
+                }
+                localStorage.setItem(STORAGE_KEY + '_seeded', '1');
+            }
+        }
+
+        function saveWords() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function filterWords(q) {
+            if (!q) return words.slice();
+            const qq = q.toLocaleLowerCase('tr');
+            return words.filter(w =>
+                (w.word || '').toLocaleLowerCase('tr').includes(qq) ||
+                (w.meaning || '').toLocaleLowerCase('tr').includes(qq) ||
+                (w.origin || '').toLocaleLowerCase('tr').includes(qq)
+            );
+        }
+
+        function renderList() {
+            const counter = document.getElementById('wordCount');
+            const q = (document.getElementById('searchInput').value || '').trim();
+            counter.textContent = words.length;
+
+            const filtered = filterWords(q);
+
+            renderRecentList(filtered);
+            renderIndexList(filtered);
+
+            const empty = document.getElementById('emptyState');
+            if (filtered.length === 0) {
+                empty.style.display = 'block';
+                if (words.length === 0) {
+                    empty.querySelector('h3').textContent = 'Henüz kelime yok';
+                    empty.querySelector('p').innerHTML = 'Yukarıdaki <b>+ Yeni Kelime Ekle</b> butonuyla<br>ilk kelimeni ekleyebilirsin.';
+                } else {
+                    empty.querySelector('h3').textContent = 'Sonuç bulunamadı';
+                    empty.querySelector('p').innerHTML = 'Aramanla eşleşen kelime yok.<br>Farklı bir kelime deneyebilirsin.';
+                }
+            } else {
+                empty.style.display = 'none';
+            }
+        }
+
+        function renderRecentList(filtered) {
+            const list = document.getElementById('wordList');
+            // Eklenme sırasına göre: en yeniden en eskiye
+            const sorted = filtered.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            list.innerHTML = sorted.map(w => {
+                const letter = (w.word || '?').trim().charAt(0).toLocaleUpperCase('tr');
+                const meaningShort = (w.meaning || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+                const originShort = (w.origin || '').replace(/\s+/g, ' ').trim().split(/[.,]/)[0].slice(0, 40);
+                let meta = '';
+                if (originShort) meta += escapeHtml(originShort);
+                if (originShort && meaningShort) meta += '<span class="dot"></span>';
+                if (meaningShort) meta += escapeHtml(meaningShort) + (meaningShort.length >= 80 ? '…' : '');
+                return `
+                    <div class="word-card" onclick="openDetail('${w.id}')">
+                        <div class="word-letter">${escapeHtml(letter)}</div>
+                        <div class="word-card-body">
+                            <h3 class="word-card-title">${escapeHtml(w.word || '')}</h3>
+                            <div class="word-card-meta">${meta || '<i>Detay yok</i>'}</div>
+                        </div>
+                        <i class="fas fa-chevron-right word-arrow"></i>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderIndexList(filtered) {
+            const list = document.getElementById('indexList');
+            const sorted = filtered.slice().sort((a, b) => {
+                const av = (a.word || '').toLocaleLowerCase('tr');
+                const bv = (b.word || '').toLocaleLowerCase('tr');
+                return av.localeCompare(bv, 'tr');
+            });
+
+            // Harf gruplarına ayır
+            const groups = {};
+            sorted.forEach(w => {
+                let letter = ((w.word || '?').trim().charAt(0) || '?').toLocaleUpperCase('tr');
+                if (!/[A-ZÇĞİÖŞÜ]/.test(letter)) letter = '#';
+                if (!groups[letter]) groups[letter] = [];
+                groups[letter].push(w);
+            });
+
+            const letters = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'tr'));
+            list.innerHTML = letters.map(letter => `
+                <div class="alpha-group" id="alpha-${escapeHtml(letter)}">
+                    <span class="alpha-letter">${escapeHtml(letter)}</span>
+                    <div class="alpha-items">
+                        ${groups[letter].map(w => {
+                            const oneLine = ((w.meaning || w.origin || '').replace(/\s+/g, ' ').trim().slice(0, 60));
+                            return `
+                                <div class="alpha-item" onclick="openDetail('${w.id}')">
+                                    <span class="ai-word">${escapeHtml(w.word || '')}</span>
+                                    <span class="ai-meta">${escapeHtml(oneLine)}${oneLine.length >= 60 ? '…' : ''}</span>
+                                    <i class="fas fa-chevron-right ai-arrow"></i>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tab === tab);
+            });
+            document.getElementById('tab-recent').classList.toggle('active', tab === 'recent');
+            document.getElementById('tab-index').classList.toggle('active', tab === 'index');
+            const helper = document.getElementById('tabHelper');
+            helper.textContent = tab === 'recent' ? 'Eklenme sırasına göre' : 'Alfabetik (A → Z)';
+        }
+
+        function openDetail(id) {
+            const w = words.find(x => x.id === id);
+            if (!w) return;
+            currentDetailId = id;
+            const body = document.getElementById('detailBody');
+            body.innerHTML = `
+                <div class="detail-head">
+                    <h2>${escapeHtml(w.word)}</h2>
+                    ${w.origin ? `<span class="origin-chip"><i class="fas fa-seedling"></i> ${escapeHtml((w.origin.split(/[.,]/)[0] || '').trim()) || 'Köken'}</span>` : ''}
+                </div>
+                ${w.origin ? `
+                <div class="detail-section">
+                    <div class="detail-section-label"><i class="fas fa-seedling"></i> Kökeni</div>
+                    <div class="detail-section-body">${escapeHtml(w.origin)}</div>
+                </div>` : ''}
+                ${w.meaning ? `
+                <div class="detail-section">
+                    <div class="detail-section-label"><i class="fas fa-book"></i> Anlamı</div>
+                    <div class="detail-section-body">${escapeHtml(w.meaning)}</div>
+                </div>` : ''}
+                ${w.example ? `
+                <div class="detail-section">
+                    <div class="detail-section-label"><i class="fas fa-quote-left"></i> Örnek Cümle</div>
+                    <div class="detail-section-body example">${escapeHtml(w.example)}</div>
+                </div>` : ''}
+                <div class="detail-actions">
+                    <button class="btn btn-danger" onclick="deleteWord('${w.id}')"><i class="fas fa-trash"></i> Sil</button>
+                    <button class="btn btn-secondary" onclick="editWord('${w.id}')"><i class="fas fa-pen"></i> Düzenle</button>
+                </div>
+            `;
+            openModal('detailModal');
+        }
+
+        function openAddModal() {
+            document.getElementById('editModalTitle').textContent = 'Yeni Kelime';
+            document.getElementById('editId').value = '';
+            document.getElementById('fldWord').value = '';
+            document.getElementById('fldOrigin').value = '';
+            document.getElementById('fldMeaning').value = '';
+            document.getElementById('fldExample').value = '';
+            clearPaste();
+            document.getElementById('pasteSection').style.display = '';
+            document.querySelector('.divider-or').style.display = '';
+            openModal('editModal');
+            setTimeout(() => document.getElementById('pasteArea').focus(), 280);
+        }
+
+        function editWord(id) {
+            const w = words.find(x => x.id === id);
+            if (!w) return;
+            document.getElementById('editModalTitle').textContent = 'Kelimeyi Düzenle';
+            document.getElementById('editId').value = w.id;
+            document.getElementById('fldWord').value = w.word || '';
+            document.getElementById('fldOrigin').value = w.origin || '';
+            document.getElementById('fldMeaning').value = w.meaning || '';
+            document.getElementById('fldExample').value = w.example || '';
+            // Düzenlemede hızlı yapıştır alanını gizle (kullanıcının istemediği bir override olmasın diye)
+            clearPaste();
+            document.getElementById('pasteSection').style.display = 'none';
+            document.querySelector('.divider-or').style.display = 'none';
+            closeModal('detailModal');
+            setTimeout(() => openModal('editModal'), 240);
+        }
+
+        /**
+         * Metni "Kelime:", "Kökeni:", "Anlamı:", "Örnek Cümle:" etiketlerine göre ayırır.
+         * Etiket yazımındaki büyük/küçük harf, "i/ı", aksanlı tırnak ve fazla boşluk durumlarına dayanıklıdır.
+         */
+        function parseWordText(raw) {
+            if (!raw) return { word: '', origin: '', meaning: '', example: '' };
+            // Akıllı tırnakları normalize et — kullanıcının metnindeki “ ” ’ ‘ vb. etiketlere zarar vermez ama içerikte kalır
+            let text = raw.replace(/\r\n/g, '\n').trim();
+
+            // Etiket varyasyonları
+            const labelDefs = [
+                { key: 'word',    re: /(?:^|\n)\s*kelime\s*[:：]\s*/i },
+                { key: 'origin',  re: /(?:^|\n)\s*k[öo]k[eıi]?ni?\s*[:：]\s*/i },
+                { key: 'meaning', re: /(?:^|\n)\s*anlam[ıi]?\s*[:：]\s*/i },
+                { key: 'example', re: /(?:^|\n)\s*[öo]rnek\s*c[üu]mle(?:si)?\s*[:：]\s*/i },
+            ];
+
+            // Her etiketin pozisyonunu bul
+            const hits = [];
+            labelDefs.forEach(def => {
+                const m = def.re.exec(text);
+                if (m) {
+                    hits.push({
+                        key: def.key,
+                        start: m.index + (m[0].startsWith('\n') ? 1 : 0),
+                        contentStart: m.index + m[0].length
+                    });
+                }
+            });
+            hits.sort((a, b) => a.start - b.start);
+
+            const out = { word: '', origin: '', meaning: '', example: '' };
+
+            if (hits.length === 0) {
+                // Etiket yoksa: ilk satır = kelime, kalanı anlam olarak göster
+                const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
+                if (lines.length) {
+                    out.word = lines[0];
+                    if (lines.length > 1) out.meaning = lines.slice(1).join('\n').trim();
+                }
+                return out;
+            }
+
+            for (let i = 0; i < hits.length; i++) {
+                const curr = hits[i];
+                const next = hits[i + 1];
+                const slice = text.slice(curr.contentStart, next ? next.start : text.length).trim();
+                out[curr.key] = slice;
+            }
+            return out;
+        }
+
+        function parseAndFill() {
+            const raw = document.getElementById('pasteArea').value;
+            const status = document.getElementById('pasteStatus');
+            if (!raw || !raw.trim()) {
+                status.className = 'paste-status warn';
+                status.innerHTML = '<i class="fas fa-circle-exclamation"></i> Önce metni yapıştır.';
+                return;
+            }
+            const p = parseWordText(raw);
+
+            const filled = [];
+            if (p.word)    { document.getElementById('fldWord').value    = p.word;    filled.push('Kelime'); }
+            if (p.origin)  { document.getElementById('fldOrigin').value  = p.origin;  filled.push('Kökeni'); }
+            if (p.meaning) { document.getElementById('fldMeaning').value = p.meaning; filled.push('Anlamı'); }
+            if (p.example) { document.getElementById('fldExample').value = p.example; filled.push('Örnek Cümle'); }
+
+            if (filled.length === 0) {
+                status.className = 'paste-status warn';
+                status.innerHTML = '<i class="fas fa-circle-exclamation"></i> Etiketler bulunamadı. Aşağıdan elle doldurabilirsin.';
+            } else {
+                status.className = 'paste-status ok';
+                status.innerHTML = '<i class="fas fa-check-circle"></i> ' + filled.join(', ') + ' alanına yazıldı.';
+            }
+        }
+
+        function clearPaste() {
+            document.getElementById('pasteArea').value = '';
+            const status = document.getElementById('pasteStatus');
+            status.className = 'paste-status';
+            status.textContent = '';
+        }
+
+        function saveWord() {
+            const id = document.getElementById('editId').value;
+            const word = document.getElementById('fldWord').value.trim();
+            const origin = document.getElementById('fldOrigin').value.trim();
+            const meaning = document.getElementById('fldMeaning').value.trim();
+            const example = document.getElementById('fldExample').value.trim();
+
+            if (!word) {
+                showToast('Lütfen bir kelime gir.');
+                document.getElementById('fldWord').focus();
+                return;
+            }
+
+            if (id) {
+                const idx = words.findIndex(x => x.id === id);
+                if (idx >= 0) {
+                    words[idx] = { ...words[idx], word, origin, meaning, example, updatedAt: Date.now() };
+                }
+                showToast('Kelime güncellendi');
+            } else {
+                words.push({ id: uid(), word, origin, meaning, example, createdAt: Date.now() });
+                showToast('Kelime eklendi');
+            }
+            saveWords();
+            try { if (window.queueSync) window.queueSync(); } catch(e){}
+            closeModal('editModal');
+            renderList();
+        }
+
+        function deleteWord(id) {
+            if (!confirm('Bu kelimeyi silmek istediğine emin misin?')) return;
+            words = words.filter(x => x.id !== id);
+            saveWords();
+            try { if (window.queueSync) window.queueSync(); } catch(e){}
+            closeModal('detailModal');
+            renderList();
+            showToast('Kelime silindi');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(window._toastT);
+            window._toastT = setTimeout(() => t.classList.remove('show'), 1800);
+        }
+
+        function goHome() {
+            if (document.referrer && document.referrer.includes(location.host)) {
+                history.back();
+            } else {
+                location.href = 'index.html';
+            }
+        }
+
+        /**
+         * Yatay swipe ile ana sayfaya dön.
+         * Hem sola hem de sağa kayma (geniş yatay hareket) ana sayfaya yönlendirir.
+         * Tetikleme: hızlı + yeterince uzun (>70px) ve dikey hareketten en az 2 kat daha fazla yatay hareket.
+         * Modal açıkken veya input/textarea üzerinde başlayan dokunuşlar yok sayılır.
+         */
+        (function setupSwipe() {
+            let sx = 0, sy = 0, st = 0, active = false;
+
+            function isInputTarget(el) {
+                if (!el) return false;
+                const tag = (el.tagName || '').toLowerCase();
+                return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+            }
+            function modalOpen() {
+                return document.querySelector('.modal-overlay.active') !== null;
+            }
+
+            document.addEventListener('touchstart', (e) => {
+                if (modalOpen()) return;
+                if (isInputTarget(e.target)) return;
+                const t = e.touches[0];
+                sx = t.clientX; sy = t.clientY; st = Date.now();
+                active = true;
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                if (!active) return;
+                active = false;
+                if (modalOpen()) return;
+                const t = (e.changedTouches && e.changedTouches[0]);
+                if (!t) return;
+                const dx = t.clientX - sx;
+                const dy = t.clientY - sy;
+                const dt = Date.now() - st;
+                const absX = Math.abs(dx), absY = Math.abs(dy);
+                // Yeterli yatay hareket, baskın yatay yön, makul süre
+                if (absX > 80 && absX > absY * 2 && dt < 700) {
+                    goHome();
+                }
+            }, { passive: true });
+        })();
+
+        // Yapıştırınca otomatik ayır
+        document.addEventListener('DOMContentLoaded', () => {
+            const pa = document.getElementById('pasteArea');
+            if (pa) {
+                pa.addEventListener('paste', () => {
+                    setTimeout(parseAndFill, 30);
+                });
+            }
+        });
+
+        // Init
+        loadWords();
+        renderList();
+        switchTab('recent');
+    </script>
+</body>
+</html>
