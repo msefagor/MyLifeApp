@@ -37,12 +37,14 @@ const SESSION_FILE = '_session.json';
 const NEVER_SYNC_PREFIXES = ['101_v', 'devam_', '_dbsync_'];
 
 // LocalStorage'da saklanan ayarlar (Drive'a YÜKLENMEZ)
-const LS_FOLDER_ID    = '_dbsync_folder_id';
-const LS_FOLDER_NAME  = '_dbsync_folder_name';
-const LS_FILE_IDS     = '_dbsync_file_ids';      // { domain: fileId }
-const LS_DEVICE_ID    = '_dbsync_device_id';
-const LS_USER_EMAIL   = '_dbsync_user_email';
-const LS_LAST_PULL    = '_dbsync_last_pull';     // { domain: timestamp }
+const LS_FOLDER_ID        = '_dbsync_folder_id';
+const LS_FOLDER_NAME      = '_dbsync_folder_name';
+const LS_FILE_IDS         = '_dbsync_file_ids';        // { domain: fileId }
+const LS_DEVICE_ID        = '_dbsync_device_id';
+const LS_USER_EMAIL       = '_dbsync_user_email';
+const LS_LAST_PULL        = '_dbsync_last_pull';       // { domain: timestamp }
+const LS_ACCESS_TOKEN     = '_dbsync_access_token';    // cached access token
+const LS_ACCESS_TOKEN_EXP = '_dbsync_access_token_exp';// access token expiry (ms)
 
 // =============================================================================
 //  HANGİ ANAHTAR HANGİ DOMAIN'E AİT?
@@ -181,6 +183,24 @@ let _accessTokenExp = 0;
 let _userEmail = window.localStorage.getItem(LS_USER_EMAIL) || null;
 let _tokenClient = null;
 
+// Sayfa açılışında localStorage'daki token'ı geri yükle (1 dk buffer ile geçerliyse)
+(function restoreCachedToken() {
+    try {
+        const t = window.localStorage.getItem(LS_ACCESS_TOKEN);
+        const exp = parseInt(window.localStorage.getItem(LS_ACCESS_TOKEN_EXP) || '0', 10);
+        if (t && exp > Date.now() + 60_000) {
+            _accessToken = t;
+            _accessTokenExp = exp;
+            console.log('[drive-sync] cached token restored, exp in ' +
+                Math.round((exp - Date.now()) / 60000) + 'dk');
+        } else if (t) {
+            // Süresi dolmuş, temizle
+            window.localStorage.removeItem(LS_ACCESS_TOKEN);
+            window.localStorage.removeItem(LS_ACCESS_TOKEN_EXP);
+        }
+    } catch (_) {}
+})();
+
 function tokenValid() {
     return _accessToken && Date.now() < _accessTokenExp - 60_000; // 1dk buffer
 }
@@ -216,6 +236,11 @@ async function requestToken({ interactive = true, forceConsent = false } = {}) {
             }
             _accessToken = resp.access_token;
             _accessTokenExp = Date.now() + (resp.expires_in || 3600) * 1000;
+            // Token'ı kalıcı sakla (sayfa geçişlerinde silent refresh gerekmeden devam etsin)
+            try {
+                window.localStorage.setItem(LS_ACCESS_TOKEN, _accessToken);
+                window.localStorage.setItem(LS_ACCESS_TOKEN_EXP, String(_accessTokenExp));
+            } catch (_) {}
 
             // Email'i çek (whitelist kontrolü)
             try {
@@ -266,6 +291,8 @@ function signOut() {
     _accessTokenExp = 0;
     _userEmail = null;
     window.localStorage.removeItem(LS_USER_EMAIL);
+    window.localStorage.removeItem(LS_ACCESS_TOKEN);
+    window.localStorage.removeItem(LS_ACCESS_TOKEN_EXP);
     setStatus('warn', 'Çıkış yapıldı');
     dispatchAuthState();
 }
@@ -919,10 +946,28 @@ async function autoInit() {
     ensureStatusBadge();
     setStatus('idle', 'Drive sync hazır');
 
-    // Sessiz token denemesi (eğer kullanıcı daha önce giriş yaptıysa)
+    const folderId = window.localStorage.getItem(LS_FOLDER_ID);
+
+    // Token cache'i geçerliyse silent refresh'i atla — direkt çalış
+    // (Aksi takdirde iOS PWA gibi ortamlarda GIS prompt:'none' takılabilir.)
+    if (tokenValid() && folderId) {
+        setStatus('syncing', 'Veriler indiriliyor…');
+        try {
+            await pullAllForPage();
+        } catch (_) {}
+        try { await claimSession(); } catch (_) {}
+        startPolling();
+        scheduleDailyBackup();
+        dispatchAuthState();
+        window.__dbSyncLoading = false;
+        window.dispatchEvent(new CustomEvent('dbauthready'));
+        return;
+    }
+
+    // Token yok ya da süresi dolmuş — sessiz refresh dene
     try {
         await requestToken({ interactive: false });
-        if (tokenValid() && window.localStorage.getItem(LS_FOLDER_ID)) {
+        if (tokenValid() && folderId) {
             setStatus('syncing', 'Veriler indiriliyor…');
             await pullAllForPage();
             await claimSession();
