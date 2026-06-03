@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v19';
+const CACHE_NAME = 'glass-planner-v20';
 const urlsToCache = [
   './',
   './index.html',
@@ -9,12 +9,14 @@ const urlsToCache = [
   './yatirim1.html',
   './devam.html',
   './tabela.html',
+  './sozluk.html',
   './drive-sync.js',
   './sureler.json',
   './db.json',
   './manifest.json',
   './app-icon.png',
-  './splash-screen.png'
+  './splash-screen.png',
+  './sozluk-icon.png'
 ];
 
 // Yükleme (Install)
