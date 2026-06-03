@@ -30,7 +30,8 @@ const DOMAINS = {
     notlar:    { file: 'notlar.json',    keys: ['glassProTasks'] },
     kitap:     { file: 'kitap.json',     keys: ['liquid_lib_pro_v1'] },
     yatirim:   { file: 'yatirim.json',   keys: ['liquid_trader_db_v3', 'liquid_trader_settings_v3'] },
-    ingilizce: { file: 'ingilizce.json', prefixes: ['eng_day_', 'eng_done_'] }
+    ingilizce: { file: 'ingilizce.json', prefixes: ['eng_day_', 'eng_done_'] },
+    sozluk:    { file: 'sozluk.json',    keys: ['sozlukKelimeler'] }
 };
 const SESSION_FILE = '_session.json';
 const NEVER_SYNC_PREFIXES = ['101_v', 'devam_', '_dbsync_'];
