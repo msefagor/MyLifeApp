@@ -114,33 +114,42 @@
   }
 
   // ----- JSON'dan OKU (ziyaretçi, ya da boş cihazdaki sahip) -----
-  async function pullIntoLocal() {
-    try {
-      const url = `./${GH.file}?t=${Date.now()}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) return false;
-      const data = await res.json();
-      const orig = localStorage.setItem.bind(localStorage); // interceptor'ı atla
-      let count = 0;
-      Object.keys(data || {}).forEach((k) => {
-        if (matches(k)) { orig(k, data[k]); count++; }
-      });
-      if (count) refreshUI();
-      return count > 0;
-    } catch (e) {
-      console.warn('[gh-publish] okuma hatası:', e);
-      return false;
+  // GitHub Pages CDN'i dosyayı önbelleğe alabildiği için önce raw.githubusercontent
+  // (daha güncel) denenir; başarısız olursa Pages'teki yerel dosyaya düşülür.
+  async function fetchData() {
+    const sources = [
+      `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.file}?t=${Date.now()}`,
+      `./${GH.file}?t=${Date.now()}`
+    ];
+    for (const url of sources) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && typeof data === 'object') return data;
+      } catch (_) { /* sonraki kaynağı dene */ }
     }
+    return null;
+  }
+
+  async function pullIntoLocal() {
+    const data = await fetchData();
+    if (!data) return false;
+    const orig = _origSetItem;                 // interceptor'ı atla
+    let count = 0;
+    Object.keys(data).forEach((k) => {
+      if (matches(k)) { orig(k, data[k]); count++; }
+    });
+    if (count) refreshUI();
+    return count > 0;
   }
 
   // ----- Yazma müdahalesi: her eng_ kaydında otomatik yayınla (sahip) -----
-  (function hookSetItem() {
-    const orig = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = function (k, v) {
-      orig(k, v);
-      if (isOwner() && matches(k)) schedulePublish();
-    };
-  })();
+  const _origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function (k, v) {
+    _origSetItem(k, v);
+    if (isOwner() && matches(k)) schedulePublish();
+  };
 
   // ----- Ziyaretçi için salt-okunur kilit -----
   function lockForVisitor() {
