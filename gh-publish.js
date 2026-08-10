@@ -19,7 +19,8 @@
     repo: 'MyLifeApp',
     branch: 'main',                 // Pages farklı dal kullanıyorsa değiştir
     file: 'ingilizce-data.json',
-    prefixes: ['eng_day_', 'eng_done_'],
+    prefixes: ['eng_day_', 'eng_done_', 'eng_img_'],
+    imgDir: 'ingilizce-gorseller',   // görsellerin depoda tutulduğu klasör
     tokenKey: 'gh_pat'
   };
 
@@ -261,6 +262,101 @@
       alert('Token kaldırıldı.'); location.reload();
     }
   }
+
+  /* ==========================================================================
+   *  GÖRSEL YÜKLEME — görseller JSON'a gömülmez, depoya AYRI DOSYA olarak yazılır
+   *  (JSON'da sadece dosya yolu tutulur; böylece localStorage ve JSON şişmez)
+   * ========================================================================== */
+
+  const imgApi = (path) => `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`;
+
+  // Tarayıcıda küçült + JPEG'e çevir → depoda dosya boyutu makul kalsın
+  function compressImage(file, maxEdge = 1800, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Görsel çözümlenemedi. Dosya bozuk olabilir.'));
+        img.onload = () => {
+          let { width: w, height: h } = img;
+          const scale = Math.min(1, maxEdge / Math.max(w, h));
+          w = Math.round(w * scale); h = Math.round(h * scale);
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          const ctx = cv.getContext('2d');
+          ctx.fillStyle = '#ffffff';            // şeffaf PNG'ler siyah çıkmasın
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = cv.toDataURL('image/jpeg', quality);
+          resolve({ base64: dataUrl.split(',')[1], dataUrl, width: w, height: h });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function putBinary(token, path, base64, message) {
+    let sha = null;
+    const head = await fetch(`${imgApi(path)}?ref=${GH.branch}&t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (head.ok) { sha = (await head.json()).sha; }
+    else if (head.status !== 404) {
+      const e = new Error('GET'); e.status = head.status; e.raw = await head.text(); throw e;
+    }
+
+    const res = await fetch(imgApi(path), {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      body: JSON.stringify({ message, content: base64, branch: GH.branch, ...(sha ? { sha } : {}) })
+    });
+    if (!res.ok) {
+      const e = new Error('PUT'); e.status = res.status; e.raw = await res.text(); throw e;
+    }
+    return true;
+  }
+
+  // Görseli depoya yükle → localStorage'a yolunu yaz (otomatik yayın tetiklenir)
+  async function uploadImage(date, file, onProgress) {
+    const token = getToken();
+    if (!token) throw new Error('Görsel yüklemek için sahip modunda olmalısın (token gerekli).');
+    if (!/^image\//.test(file.type)) throw new Error('Seçilen dosya bir görsel değil.');
+
+    onProgress && onProgress('Görsel küçültülüyor…');
+    const { base64, dataUrl } = await compressImage(file);
+
+    const approxKB = Math.round(base64.length * 0.75 / 1024);
+    if (approxKB > 4000) throw new Error('Görsel çok büyük (' + approxKB + ' KB). Daha küçük bir dosya seç.');
+
+    const path = `${GH.imgDir}/${date}.jpg`;
+    onProgress && onProgress('GitHub\'a yükleniyor (' + approxKB + ' KB)…');
+    try {
+      await putBinary(token, path, base64, `Görsel güncellendi: ${date}`);
+    } catch (e) {
+      throw new Error(explain(e.status || 0, e.raw));
+    }
+
+    // ?v= ile önbellek kırılır; yeniden yüklediğinde eski görsel takılı kalmaz
+    localStorage.setItem('eng_img_' + date, `${path}?v=${Date.now()}`);
+    onProgress && onProgress('Tamamlandı.');
+    return { path, dataUrl };
+  }
+
+  // Görsel kaydını kaldır (depodaki dosya durur, derste görünmez olur)
+  function removeImage(date) {
+    localStorage.removeItem('eng_img_' + date);
+    schedulePublish();
+  }
+
+  window.ghImages = {
+    upload: uploadImage,
+    remove: removeImage,
+    get: (date) => { try { return localStorage.getItem('eng_img_' + date) || ''; } catch (_) { return ''; } },
+    isOwner
+  };
 
   // ----- Token sağlık testi -----
   async function testToken() {
