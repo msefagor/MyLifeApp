@@ -11,7 +11,7 @@
     <!-- Cloud sync -->
     <script>
         // İngilizce sayfası birden çok dinamik anahtar kullanır (her tarihe bir kayıt)
-        window.SYNC_PREFIXES = ['eng_day_', 'eng_done_'];
+        window.SYNC_PREFIXES = ['eng_day_', 'eng_done_', 'eng_img_'];
         window.addEventListener('dbsynced', () => {
             try {
                 if (typeof renderCalendar === 'function') renderCalendar();
@@ -329,6 +329,117 @@
         .card.theme-dialog .section-icon { background: var(--warm-gradient); }
         .card.theme-pron .section-icon { background: linear-gradient(135deg, #ffafbd, #ffc3a0); }
         .card.theme-hw .section-icon { background: var(--gold-gradient); }
+        .card.theme-image .section-icon { background: linear-gradient(135deg, #43cea2, #185a9d); }
+
+        /* ---------- Görsel kartı (ders içi ayrı bölüm) ---------- */
+        .img-card-hint {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; color: var(--text-secondary);
+            margin-bottom: 14px; line-height: 1.5;
+        }
+        .img-card-hint svg { width: 15px; height: 15px; flex-shrink: 0; color: #43cea2; }
+        .img-thumb-wrap {
+            position: relative; border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--glass-border); cursor: zoom-in;
+            background: rgba(255,255,255,0.04);
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+        .img-thumb-wrap:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(0,0,0,.35); }
+        .img-thumb-wrap img { display: block; width: 100%; height: auto; }
+        .img-thumb-overlay {
+            position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center;
+            padding: 14px; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.75));
+            pointer-events: none;
+        }
+        .img-thumb-overlay span {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: 0.82rem; font-weight: 700; color: #fff; letter-spacing: .3px;
+            background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25);
+            padding: 7px 14px; border-radius: 999px; backdrop-filter: blur(6px);
+        }
+        .img-thumb-overlay svg { width: 14px; height: 14px; }
+        .img-missing {
+            padding: 22px; text-align: center; border-radius: 16px;
+            border: 1px dashed var(--glass-border); color: var(--text-muted); font-size: 0.88rem;
+        }
+
+        /* ---------- Tam ekran görüntüleyici ---------- */
+        .img-viewer {
+            position: fixed; inset: 0; z-index: 100000; display: none;
+            background: rgba(4,6,16,.94);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+        }
+        .img-viewer.open { display: block; }
+        .img-viewer-stage {
+            position: absolute; inset: 0; overflow: auto;
+            display: flex; align-items: center; justify-content: center;
+            padding: 64px 12px 20px; -webkit-overflow-scrolling: touch;
+        }
+        .img-viewer-stage img {
+            max-width: 100%; height: auto; border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.6);
+            transform-origin: center center; transition: transform .2s ease;
+            background: #fff;
+        }
+        .img-viewer-bar {
+            position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 12px 14px;
+            background: linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,0));
+        }
+        .img-viewer-title { font-size: 0.85rem; font-weight: 700; color: #fff; opacity: .9; }
+        .img-viewer-actions { display: flex; gap: 8px; }
+        .img-viewer-actions button {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            min-width: 38px; height: 38px; padding: 0 12px;
+            border-radius: 12px; cursor: pointer; font-size: 0.82rem; font-weight: 700;
+            color: #fff; background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(8px);
+        }
+        .img-viewer-actions button:hover { background: rgba(255,255,255,.22); }
+        .img-viewer-actions svg { width: 16px; height: 16px; }
+
+        /* ---------- Editör: görsel yükleme bloğu ---------- */
+        .upload-block {
+            margin-top: 22px; padding: 18px 16px; border-radius: 18px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+        }
+        .upload-block h3 {
+            display: flex; align-items: center; gap: 9px;
+            margin: 0 0 6px; font-size: 1rem; font-weight: 800; color: #fff;
+        }
+        .upload-block h3 svg { width: 17px; height: 17px; color: #43cea2; }
+        .upload-block p { margin: 0 0 14px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5; }
+        .upload-drop {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 26px 16px; border-radius: 14px; cursor: pointer; text-align: center;
+            border: 1.5px dashed rgba(255,255,255,.22); color: var(--text-secondary);
+            font-size: 0.86rem; transition: border-color .2s ease, background .2s ease;
+        }
+        .upload-drop:hover, .upload-drop.dragover { border-color: #43cea2; background: rgba(67,206,162,.08); }
+        .upload-drop svg { width: 26px; height: 26px; color: #43cea2; }
+        .upload-preview { margin-top: 14px; display: none; }
+        .upload-preview.show { display: block; }
+        .upload-preview img {
+            display: block; width: 100%; height: auto; border-radius: 12px;
+            border: 1px solid var(--glass-border); background: #fff;
+        }
+        .upload-status {
+            margin-top: 10px; font-size: 0.82rem; line-height: 1.5;
+            color: var(--text-secondary); min-height: 1.2em;
+        }
+        .upload-status.ok  { color: #4ade80; }
+        .upload-status.err { color: #f87171; }
+        .upload-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .upload-actions button {
+            flex: 1 1 140px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 11px 14px; border-radius: 12px; cursor: pointer;
+            font-size: 0.86rem; font-weight: 700; border: 1px solid var(--glass-border);
+            color: #fff; background: rgba(255,255,255,.08);
+        }
+        .upload-actions button.primary { background: linear-gradient(135deg, #43cea2, #185a9d); border-color: transparent; }
+        .upload-actions button:disabled { opacity: .5; cursor: not-allowed; }
+        .upload-actions svg { width: 15px; height: 15px; }
 
         /* Tema kartı (1. başlık) */
         .topic-block {
@@ -788,9 +899,46 @@
             <textarea id="content-input" placeholder="Örn: 1. 📅 GÜNÜN TEMASI..."></textarea>
             <button class="btn-accent" onclick="saveContent()">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-                Kaydet
+                Metni Kaydet
             </button>
-            <button class="btn-secondary" onclick="goHome()">
+
+            <!-- ---------- Görsel yükleme (metinden bağımsız) ---------- -->
+            <div class="upload-block">
+                <h3>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Günün Görsel Kartı
+                </h3>
+                <p>
+                    Bu tarihe ait el yazısı/çizim kartını yükle. Görsel derste
+                    <b>GÜNLÜK KALIPLAR bölümünden hemen sonra</b> ayrı bir adım olarak açılır.
+                    Metinden bağımsızdır — sadece görsel de yükleyebilirsin.
+                </p>
+
+                <label class="upload-drop" id="uploadDrop" for="image-input">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v13"/></svg>
+                    <span><b>Görsel seç</b> veya buraya sürükle</span>
+                    <span style="font-size:0.78rem; opacity:.7;">JPG / PNG · otomatik küçültülür</span>
+                </label>
+                <input type="file" id="image-input" accept="image/*" style="display:none;">
+
+                <div class="upload-preview" id="uploadPreview">
+                    <img id="uploadPreviewImg" alt="Görsel önizleme">
+                </div>
+                <div class="upload-status" id="uploadStatus"></div>
+
+                <div class="upload-actions">
+                    <button class="primary" id="uploadBtn" onclick="uploadDayImage()" disabled>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                        Görseli Yükle
+                    </button>
+                    <button id="removeImgBtn" onclick="removeDayImage()" disabled>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                        Görseli Kaldır
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn-secondary" style="margin-top:16px;" onclick="goHome()">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
                 İptal
             </button>
@@ -810,6 +958,28 @@
             <div class="lesson-progress" id="lesson-progress"></div>
             <div id="lesson-content"></div>
             <div style="height: 80px;"></div>
+        </div>
+    </div>
+
+    <!-- ---------- Tam ekran görsel görüntüleyici ---------- -->
+    <div class="img-viewer" id="imgViewer" role="dialog" aria-modal="true" aria-label="Görsel kartı">
+        <div class="img-viewer-bar">
+            <span class="img-viewer-title" id="imgViewerTitle">Görsel Kartı</span>
+            <div class="img-viewer-actions">
+                <button type="button" onclick="viewerZoom(-1)" title="Uzaklaştır" aria-label="Uzaklaştır">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-3.5-3.5"/></svg>
+                </button>
+                <button type="button" onclick="viewerZoom(1)" title="Yakınlaştır" aria-label="Yakınlaştır">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-3.5-3.5"/></svg>
+                </button>
+                <button type="button" onclick="closeImgViewer()" title="Kapat" aria-label="Kapat">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    Kapat
+                </button>
+            </div>
+        </div>
+        <div class="img-viewer-stage" id="imgViewerStage" onclick="if(event.target===this) closeImgViewer()">
+            <img id="imgViewerImg" alt="Günün görsel kartı">
         </div>
     </div>
 
@@ -891,12 +1061,15 @@
             renderCalendar();
         }
         function getMarkedDates() {
-            const marked = [];
+            const marked = new Set();
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && key.startsWith('eng_day_')) marked.push(key.replace('eng_day_', ''));
+                if (!key) continue;
+                if (key.startsWith('eng_day_')) marked.add(key.replace('eng_day_', ''));
+                // Sadece görsel yüklenmiş günler de takvimde işaretlensin
+                else if (key.startsWith('eng_img_')) marked.add(key.replace('eng_img_', ''));
             }
-            return marked;
+            return [...marked];
         }
 
         function updateSelectedDateCard() {
@@ -916,13 +1089,17 @@
                     ? `${d} ${TR_MONTHS_LONG[m-1]} · ${TR_WEEKDAYS[obj.getDay()]}`
                     : TR_WEEKDAYS[obj.getDay()];
 
-            // İçerik var mı?
+            // İçerik var mı? (metin ve görsel ayrı ayrı)
             const hasContent = !!localStorage.getItem('eng_day_' + v);
+            const hasImage   = hasDayImage(v);
             const status = document.getElementById('sdStatus');
             const statusText = document.getElementById('sdStatusText');
-            if (hasContent) {
+            if (hasContent || hasImage) {
                 status.className = 'sd-status has-content';
-                statusText.textContent = 'İçerik hazır';
+                statusText.textContent =
+                    hasContent && hasImage ? 'İçerik + görsel hazır'
+                    : hasContent           ? 'İçerik hazır'
+                    :                        'Sadece görsel var';
             } else {
                 status.className = 'sd-status no-content';
                 statusText.textContent = 'İçerik yok';
@@ -983,6 +1160,7 @@
             if (!date) { showToast('Lütfen takvimden bir tarih seçin.', { type: 'warn', title: 'Tarih gerekli' }); return; }
             const saved = localStorage.getItem('eng_day_' + date);
             document.getElementById('content-input').value = saved || "";
+            resetUploadUI(date);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('editor-screen').classList.add('active');
             window.scrollTo(0, 0);
@@ -998,11 +1176,152 @@
             showToast('Ders içeriği kaydedildi.', { type: 'success', title: 'Kaydedildi' });
             setTimeout(goHome, 700);
         }
+
+        /* ===========================================================
+         *  GÜNÜN GÖRSEL KARTI — metinden tamamen bağımsız
+         *  localStorage'da sadece DOSYA YOLU tutulur (eng_img_TARİH).
+         *  Görselin kendisi depoda ingilizce-gorseller/ klasöründedir.
+         * =========================================================== */
+        let _pendingImageFile = null;
+
+        function getDayImage(date) {
+            try { return localStorage.getItem('eng_img_' + date) || ''; } catch (_) { return ''; }
+        }
+        // Pages önbelleği gecikirse doğrudan depodan çekmek için yedek adres
+        function rawImageUrl(relPath) {
+            if (!relPath) return '';
+            return 'https://raw.githubusercontent.com/msefagor/MyLifeApp/main/' + relPath;
+        }
+        function hasDayImage(date) { return !!getDayImage(date); }
+        function isImageOwner() {
+            return !!(window.ghImages && window.ghImages.isOwner && window.ghImages.isOwner());
+        }
+        function setUploadStatus(msg, kind) {
+            const el = document.getElementById('uploadStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.className = 'upload-status' + (kind ? ' ' + kind : '');
+        }
+
+        // Editör açılınca yükleme alanını o tarihin durumuna göre hazırla
+        function resetUploadUI(date) {
+            _pendingImageFile = null;
+            const input   = document.getElementById('image-input');
+            const prev    = document.getElementById('uploadPreview');
+            const prevImg = document.getElementById('uploadPreviewImg');
+            const upBtn   = document.getElementById('uploadBtn');
+            const rmBtn   = document.getElementById('removeImgBtn');
+            if (input) input.value = '';
+
+            const existing = getDayImage(date);
+            if (existing) {
+                prevImg.src = existing;
+                prev.classList.add('show');
+                setUploadStatus('Bu tarihte kayıtlı bir görsel var. Yeni dosya seçersen üzerine yazılır.');
+            } else {
+                prevImg.removeAttribute('src');
+                prev.classList.remove('show');
+                setUploadStatus('');
+            }
+            upBtn.disabled = true;
+            rmBtn.disabled = !existing;
+
+            if (!isImageOwner()) {
+                upBtn.disabled = true;
+                rmBtn.disabled = true;
+                setUploadStatus('Görsel yüklemek için sahip modu gerekli (sol alttaki GitHub rozetinden token tanıt).', 'err');
+            }
+        }
+
+        // Dosya seçimi / sürükle-bırak
+        function handleImagePick(file) {
+            if (!file) return;
+            if (!/^image\//.test(file.type)) {
+                setUploadStatus('Seçilen dosya bir görsel değil.', 'err');
+                return;
+            }
+            if (!isImageOwner()) {
+                setUploadStatus('Sahip modunda değilsin; yükleme yapılamaz.', 'err');
+                return;
+            }
+            _pendingImageFile = file;
+            const prev    = document.getElementById('uploadPreview');
+            const prevImg = document.getElementById('uploadPreviewImg');
+            const reader  = new FileReader();
+            reader.onload = () => { prevImg.src = reader.result; prev.classList.add('show'); };
+            reader.readAsDataURL(file);
+            document.getElementById('uploadBtn').disabled = false;
+            setUploadStatus(`Seçildi: ${file.name} (${Math.round(file.size / 1024)} KB). "Görseli Yükle"ye bas.`);
+        }
+
+        async function uploadDayImage() {
+            const date = datePicker.value;
+            if (!date) { showToast('Önce takvimden bir tarih seç.', { type: 'warn' }); return; }
+            if (!_pendingImageFile) { setUploadStatus('Önce bir görsel seç.', 'err'); return; }
+
+            const upBtn = document.getElementById('uploadBtn');
+            upBtn.disabled = true;
+            try {
+                const res = await window.ghImages.upload(date, _pendingImageFile, (m) => setUploadStatus(m));
+                _pendingImageFile = null;
+                document.getElementById('image-input').value = '';
+                document.getElementById('removeImgBtn').disabled = false;
+                // Önizlemede yerel kopyayı bırak — Pages yayını birkaç sn gecikebilir
+                if (res && res.dataUrl) document.getElementById('uploadPreviewImg').src = res.dataUrl;
+                setUploadStatus('✅ Görsel yüklendi ve yayınlandı.', 'ok');
+                showToast('Görsel kartı kaydedildi.', { type: 'success', title: 'Yüklendi' });
+                updateSelectedDateCard();
+            } catch (e) {
+                setUploadStatus('❌ ' + (e.message || 'Yükleme başarısız.'), 'err');
+                upBtn.disabled = false;
+            }
+        }
+
+        async function removeDayImage() {
+            const date = datePicker.value;
+            if (!hasDayImage(date)) return;
+            const ok = await customConfirm({
+                title: 'Görsel kaldırılsın mı?',
+                message: 'Bu tarihin görsel kartı derste artık gösterilmeyecek.',
+                confirmText: 'Kaldır',
+                cancelText: 'Vazgeç'
+            });
+            if (!ok) return;
+            window.ghImages.remove(date);
+            resetUploadUI(date);
+            setUploadStatus('Görsel kaydı kaldırıldı.', 'ok');
+            updateSelectedDateCard();
+        }
+
+        /* ---------- Tam ekran görüntüleyici ---------- */
+        let _viewerScale = 1;
+        function openImgViewer(src, title) {
+            const v = document.getElementById('imgViewer');
+            const img = document.getElementById('imgViewerImg');
+            document.getElementById('imgViewerTitle').textContent = title || 'Görsel Kartı';
+            _viewerScale = 1;
+            img.style.transform = 'scale(1)';
+            img.src = src;
+            v.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeImgViewer() {
+            document.getElementById('imgViewer').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function viewerZoom(dir) {
+            _viewerScale = Math.min(4, Math.max(1, _viewerScale + dir * 0.4));
+            document.getElementById('imgViewerImg').style.transform = `scale(${_viewerScale})`;
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeImgViewer();
+        });
         async function startLesson() {
             const date = datePicker.value;
             if (!date) { showToast('Lütfen takvimden bir tarih seçin.', { type: 'warn' }); return; }
             const content = localStorage.getItem('eng_day_' + date);
-            if (!content) {
+            // Metin yoksa ama görsel varsa ders yine de açılır (sadece görsel kartı gösterilir)
+            if (!content && !hasDayImage(date)) {
                 const ok = await customConfirm({
                     title: 'İçerik bulunamadı',
                     message: 'Bu tarih için kayıtlı bir ders yok. Şimdi eklemek ister misin?',
@@ -1012,7 +1331,7 @@
                 if (ok) openEditor();
                 return;
             }
-            renderLesson(content, date);
+            renderLesson(content || '', date);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('lesson-screen').classList.add('active');
             window.scrollTo(0, 0);
@@ -1309,17 +1628,90 @@
 
             const sections = splitSections(text);
 
+            /* --- Adım listesi: metin bölümleri + (varsa) görsel kartı ---
+               Görsel kartı, GÜNLÜK KALIPLAR bölümünün hemen ARDINA ayrı bir
+               adım olarak yerleştirilir; ilerleme çubuğunda da ayrı sayılır. */
+            const steps = sections.filter(s => s.trim()).map(raw => ({ type: 'section', raw }));
+            const imgSrc = getDayImage(date);
+            if (imgSrc) {
+                const phraseIdx = steps.findIndex(it => {
+                    const ls = it.raw.replace(/\r/g, '').split('\n');
+                    const f = ls.findIndex(l => l.trim() !== '');
+                    if (f < 0) return false;
+                    const t = ls[f].replace(/^\s*\d+\.\s*/, '').trim();
+                    return detectSectionTheme(t).key === 'phrase';
+                });
+                // Kalıplar bölümü yoksa görseli en sona (bitiş kartından önce) koy
+                const insertAt = phraseIdx >= 0 ? phraseIdx + 1 : steps.length;
+                steps.splice(insertAt, 0, { type: 'image', src: imgSrc });
+            }
+
             // Progress steps
             const prog = document.getElementById('lesson-progress');
             prog.innerHTML = '';
-            sections.forEach((_, i) => {
+            steps.forEach((_, i) => {
                 const sp = document.createElement('div');
                 sp.className = 'step' + (i === 0 ? ' active' : '');
                 sp.id = `step-${i}`;
                 prog.appendChild(sp);
             });
 
-            sections.forEach((sectionRaw, index) => {
+            steps.forEach((item, index) => {
+                const isLast = index === steps.length - 1;
+
+                /* ---------- GÖRSEL KARTI ADIMI ---------- */
+                if (item.type === 'image') {
+                    const card = document.createElement('div');
+                    card.className = 'card theme-image';
+                    card.id = `card-${index}`;
+                    if (index === 0) card.classList.add('visible');
+                    card.innerHTML = `
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </div>
+                            <div class="section-title-text">
+                                Görsel Kart
+                                <small>VISUAL CARD</small>
+                            </div>
+                        </div>
+                        <div class="img-card-hint">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+                            <span>Kalıpları çalıştın. Şimdi görsel kartla tekrar et — büyütmek için görsele dokun.</span>
+                        </div>
+                        <div class="img-thumb-wrap" id="imgThumb-${index}">
+                            <img src="${item.src}" alt="Günün görsel kartı" loading="lazy">
+                            <div class="img-thumb-overlay">
+                                <span>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-3.5-3.5"/></svg>
+                                    Tam ekran aç
+                                </span>
+                            </div>
+                        </div>`;
+
+                    const thumb = card.querySelector('.img-thumb-wrap');
+                    const thumbImg = thumb.querySelector('img');
+                    let shownSrc = item.src;
+                    thumb.onclick = () => openImgViewer(shownSrc, `Görsel Kart — ${dd}.${mm}.${yy}`);
+                    // Pages yayını 30-60 sn gecikebilir → raw.githubusercontent'e düş
+                    thumbImg.onerror = () => {
+                        const raw = rawImageUrl(item.src);
+                        if (raw && thumbImg.src.indexOf('raw.githubusercontent') < 0) {
+                            shownSrc = raw;
+                            thumbImg.src = raw;
+                            return;
+                        }
+                        thumb.outerHTML = '<div class="img-missing">Görsel henüz yayına alınmamış olabilir. ' +
+                            'Bir dakika sonra sayfayı yenileyip tekrar dene.</div>';
+                    };
+
+                    appendStepButton(card, index, isLast, date);
+                    container.appendChild(card);
+                    return;
+                }
+
+                /* ---------- METİN BÖLÜMÜ ---------- */
+                const sectionRaw = item.raw;
                 const lines = sectionRaw.replace(/\r/g,'').split('\n');
                 const firstNonEmpty = lines.findIndex(l => l.trim() !== '');
                 if (firstNonEmpty < 0) return;
@@ -1492,38 +1884,43 @@
                 }
 
                 // Adım butonu / bitiş
-                if (index < sections.length - 1) {
-                    const btn = document.createElement('button');
-                    btn.className = 'nav-btn';
-                    btn.innerHTML = `Bu bölümü tamamladım, sıradaki <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-                    btn.onclick = function() {
-                        this.disabled = true;
-                        this.style.opacity = '0.6';
-                        const cur = document.getElementById(`step-${index}`);
-                        const nxt = document.getElementById(`step-${index+1}`);
-                        if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
-                        if (nxt) nxt.classList.add('active');
-                        const next = document.getElementById(`card-${index+1}`);
-                        next.classList.add('visible');
-                        setTimeout(() => next.scrollIntoView({behavior:'smooth', block:'start'}), 120);
-                    };
-                    card.appendChild(btn);
-                } else {
-                    const btn = document.createElement('button');
-                    btn.className = 'finish-btn';
-                    btn.innerHTML = `Dersi Bitir <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
-                    btn.onclick = () => {
-                        const cur = document.getElementById(`step-${index}`);
-                        if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
-                        // Tamamlandı işareti — yıllık analizde sayım için
-                        try { localStorage.setItem('eng_done_' + date, '1'); } catch (e) {}
-                        showToast('Bugünün dersini başarıyla tamamladın.', { type: 'success', title: 'Tebrikler!' });
-                        setTimeout(goHome, 1300);
-                    };
-                    card.appendChild(btn);
-                }
+                appendStepButton(card, index, isLast, date);
                 container.appendChild(card);
             });
+        }
+
+        /* Bir karta "sıradaki" ya da "dersi bitir" butonunu ekler */
+        function appendStepButton(card, index, isLast, date) {
+            const btn = document.createElement('button');
+            if (!isLast) {
+                btn.className = 'nav-btn';
+                btn.innerHTML = `Bu bölümü tamamladım, sıradaki <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+                btn.onclick = function() {
+                    this.disabled = true;
+                    this.style.opacity = '0.6';
+                    const cur = document.getElementById(`step-${index}`);
+                    const nxt = document.getElementById(`step-${index+1}`);
+                    if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
+                    if (nxt) nxt.classList.add('active');
+                    const next = document.getElementById(`card-${index+1}`);
+                    if (next) {
+                        next.classList.add('visible');
+                        setTimeout(() => next.scrollIntoView({behavior:'smooth', block:'start'}), 120);
+                    }
+                };
+            } else {
+                btn.className = 'finish-btn';
+                btn.innerHTML = `Dersi Bitir <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>`;
+                btn.onclick = () => {
+                    const cur = document.getElementById(`step-${index}`);
+                    if (cur) { cur.classList.remove('active'); cur.classList.add('done'); }
+                    // Tamamlandı işareti — yıllık analizde sayım için
+                    try { localStorage.setItem('eng_done_' + date, '1'); } catch (e) {}
+                    showToast('Bugünün dersini başarıyla tamamladın.', { type: 'success', title: 'Tebrikler!' });
+                    setTimeout(goHome, 1300);
+                };
+            }
+            card.appendChild(btn);
         }
 
         /* ===========================================================
@@ -1628,6 +2025,32 @@
             window.scrollTo(0, 0);
         }
 
+        /* ---------- Görsel yükleme alanı olay bağlantıları ---------- */
+        (function bindImageUpload() {
+            const input = document.getElementById('image-input');
+            const drop  = document.getElementById('uploadDrop');
+            if (!input || !drop) return;
+
+            input.addEventListener('change', (e) => handleImagePick(e.target.files[0]));
+
+            ['dragenter', 'dragover'].forEach(ev =>
+                drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('dragover'); }));
+            ['dragleave', 'drop'].forEach(ev =>
+                drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('dragover'); }));
+            drop.addEventListener('drop', (e) => {
+                const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (f) handleImagePick(f);
+            });
+
+            // Panodan doğrudan görsel yapıştırma (Ctrl/Cmd+V)
+            document.addEventListener('paste', (e) => {
+                const editorOpen = document.getElementById('editor-screen').classList.contains('active');
+                if (!editorOpen || document.activeElement === document.getElementById('content-input')) return;
+                const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+                if (item) { e.preventDefault(); handleImagePick(item.getAsFile()); }
+            });
+        })();
+
         // İlk yükleme
         renderCalendar();
         updateSelectedDateCard();
@@ -1652,6 +2075,6 @@
     </script>
 
     <!-- GitHub üzerinden içerik paylaşımı (sahip yayınlar, ziyaretçi salt-okur) -->
-    <script src="./gh-publish.js?v=3"></script>
+    <script src="./gh-publish.js?v=4"></script>
 </body>
 </html>
