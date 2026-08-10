@@ -63,6 +63,52 @@
   // ----- GitHub'a YAYINLA (sadece sahip) -----
   let _publishTimer = null;
   let _publishing = false;
+  let _lastError = '';                               // rozete tıklayınca gösterilir
+
+  // HTTP durum kodunu anlaşılır Türkçe açıklamaya çevir
+  function explain(status, raw) {
+    switch (status) {
+      case 401: return 'Token geçersiz veya SÜRESİ DOLMUŞ (401).\n\nÇözüm: GitHub → Settings → Developer settings → ' +
+                       'Personal access tokens → Fine-grained tokens → yeni token üret, sonra rozete tıklayıp ' +
+                       '"2 = Token\'ı kaldır" de ve yeni token\'ı yapıştır.';
+      case 403: return 'Token\'ın yetkisi yetersiz veya istek limiti aşıldı (403).\n\nÇözüm: Token ayarlarında ' +
+                       'Repository access = MyLifeApp ve Permissions → Contents = "Read and write" olmalı.';
+      case 404: return 'Depo/dal/dosya bulunamadı (404).\n\nKontrol et: ' + GH.owner + '/' + GH.repo +
+                       ' deposu, "' + GH.branch + '" dalı ve "' + GH.file + '" dosyası mevcut mu? ' +
+                       'Ayrıca token bu depoya kapsamlı mı?';
+      case 409:
+      case 422: return 'Dosya bu sırada başka yerden değişti (' + status + ').\n\nOtomatik tekrar denendi; ' +
+                       'yine olmadıysa sayfayı yenileyip "1 = Şimdi yayınla" de.';
+      default:  return 'HTTP ' + status + '\n' + (raw || '').slice(0, 300);
+    }
+  }
+
+  async function getSha(token) {
+    const head = await fetch(`${api}?ref=${GH.branch}&t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (head.ok) { const j = await head.json(); return j.sha; }
+    if (head.status === 404) return null;            // dosya henüz yok, sorun değil
+    const txt = await head.text();
+    const err = new Error('GET'); err.status = head.status; err.raw = txt; throw err;
+  }
+
+  async function putFile(token, body, sha) {
+    const res = await fetch(api, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      body: JSON.stringify({
+        message: `İngilizce içerik güncellendi — ${new Date().toISOString()}`,
+        content: b64encode(body),
+        branch: GH.branch,
+        ...(sha ? { sha } : {})
+      })
+    });
+    if (res.ok) return true;
+    const txt = await res.text();
+    const err = new Error('PUT'); err.status = res.status; err.raw = txt; throw err;
+  }
 
   async function publishNow() {
     const token = getToken();
@@ -74,33 +120,36 @@
       const data = collect();
       const body = JSON.stringify(data, null, 0);
 
-      // Mevcut dosyanın SHA'sını al (varsa)
-      let sha = null;
-      const head = await fetch(`${api}?ref=${GH.branch}&t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
-      });
-      if (head.ok) { const j = await head.json(); sha = j.sha; }
-      else if (head.status !== 404) { throw new Error('GET ' + head.status); }
-
-      const put = await fetch(api, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
-        body: JSON.stringify({
-          message: `İngilizce içerik güncellendi — ${new Date().toISOString()}`,
-          content: b64encode(body),
-          branch: GH.branch,
-          ...(sha ? { sha } : {})
-        })
-      });
-
-      if (!put.ok) {
-        const txt = await put.text();
-        throw new Error('PUT ' + put.status + ' ' + txt.slice(0, 140));
+      // GÜVENLİK: elde veri yokken depodaki dolu dosyanın üzerine boş {} yazma
+      if (Object.keys(data).length === 0) {
+        const remote = await fetchData();
+        if (remote && Object.keys(remote).length > 0) {
+          _lastError = 'Yerelde içerik yok; depodaki dolu dosya korunmak için yayın iptal edildi.';
+          ghStatus('err', 'GitHub: yayın iptal (veri boş)');
+          return;
+        }
       }
-      ghStatus('ok', 'GitHub: yayınlandı');
+
+      try {
+        await putFile(token, body, await getSha(token));
+      } catch (e) {
+        if (e.status === 409 || e.status === 422) {   // SHA çakışması → tazele ve bir kez daha dene
+          await putFile(token, body, await getSha(token));
+        } else { throw e; }
+      }
+
+      _lastError = '';
+      ghStatus('ok', 'GitHub: yayınlandı ' + new Date().toLocaleTimeString('tr-TR'));
     } catch (e) {
-      console.warn('[gh-publish] yayın hatası:', e);
-      ghStatus('err', 'GitHub: yayın hatası');
+      const status = e.status || 0;
+      _lastError = explain(status, e.raw);
+      console.warn('[gh-publish] yayın hatası:', status, e.raw || e.message);
+      ghStatus('err', 'GitHub: hata ' + (status || '(ağ)') + ' — tıkla');
+      if (!status) {
+        _lastError = 'Sunucuya ulaşılamadı.\n\nOlası sebepler: internet yok, sayfayı file:// ile ' +
+                     '(çift tıklayarak) açtın, ya da bir eklenti/ağ isteği engelliyor. ' +
+                     'Sayfayı https://msefagor.github.io/MyLifeApp/ingilizce.html adresinden aç.';
+      }
     } finally {
       _publishing = false;
     }
@@ -195,16 +244,46 @@
       }
       return;
     }
+    if (_lastError) {
+      alert('SON HATA\n\n' + _lastError);
+    }
     const choice = prompt(
       'SAHİP MODU\n' +
       '1 = Şimdi yayınla\n' +
       '2 = Token\'ı kaldır (ziyaretçi moduna dön)\n' +
+      '3 = Token\'ı test et\n' +
       'İptal = kapat'
     );
     if (choice === '1') publishNow();
+    else if (choice === '3') testToken();
     else if (choice === '2') {
       try { localStorage.removeItem(GH.tokenKey); } catch (_) {}
       alert('Token kaldırıldı.'); location.reload();
+    }
+  }
+
+  // ----- Token sağlık testi -----
+  async function testToken() {
+    const token = getToken();
+    if (!token) { alert('Token yok — ziyaretçi modundasın.'); return; }
+    try {
+      const res = await fetch(`${api}?ref=${GH.branch}&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+      });
+      if (res.ok || res.status === 404) {
+        alert('✅ Token geçerli. Depoya yazma yolu açık.\n\nDosya durumu: ' +
+              (res.ok ? 'mevcut' : 'henüz yok (ilk yayında oluşturulacak)'));
+        _lastError = '';
+        ghStatus('ok', 'GitHub: sahip modu');
+      } else {
+        const txt = await res.text();
+        _lastError = explain(res.status, txt);
+        alert('❌ Token sorunu\n\n' + _lastError);
+        ghStatus('err', 'GitHub: hata ' + res.status + ' — tıkla');
+      }
+    } catch (e) {
+      alert('❌ Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.');
     }
   }
 
@@ -214,6 +293,17 @@
       // Sahip: localStorage gerçek kaynaktır. Yeni/boş cihazsa JSON'dan çek.
       if (!hasAnyLocal()) await pullIntoLocal();
       ghStatus('ok', 'GitHub: sahip modu');
+      // Token'ı sessizce doğrula; süresi dolmuşsa hemen uyar (yayın anını bekleme)
+      try {
+        const res = await fetch(`${api}?ref=${GH.branch}&t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${getToken()}`, Accept: 'application/vnd.github+json' }
+        });
+        if (!res.ok && res.status !== 404) {
+          _lastError = explain(res.status, await res.text());
+          ghStatus('err', 'GitHub: token sorunu ' + res.status + ' — tıkla');
+        }
+      } catch (_) {}
     } else {
       // Ziyaretçi: içeriği JSON'dan oku, salt-okunur kilit uygula.
       lockForVisitor();
