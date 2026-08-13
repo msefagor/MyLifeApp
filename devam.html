@@ -40,7 +40,8 @@
         .nav-item.logout { margin-top: auto; color: #FF416C; }
         .main-content { flex: 1; overflow-y: auto; padding: 30px; position: relative; display: flex; flex-direction: column; transition: all 0.3s ease; }
         .dashboard-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        #sidebarToggle { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; margin-right: 15px; }
+        #sidebarToggle { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; margin-right: 15px; padding: 6px 10px; border-radius: 10px; transition: background 0.2s, transform 0.2s; }
+        #sidebarToggle:hover { background: rgba(255,255,255,0.12); transform: scale(1.05); }
         
         /* Ders Kartları Modernizasyon */
         .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
@@ -59,7 +60,8 @@
         .course-card:hover .cc-icon { transform: rotate(0deg) scale(1.1); opacity: 0.25; }
 
         .detail-layout { display: flex; gap: 20px; height: 100%; overflow: hidden; }
-        .detail-sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+        .detail-sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden; transition: width 0.3s ease, opacity 0.25s ease, margin-right 0.3s ease; }
+        .detail-sidebar.collapsed { width: 0; min-width: 0; opacity: 0; pointer-events: none; margin-right: -20px; }
         .detail-main { flex: 1; background: var(--glass-bg); border: var(--glass-border); border-radius: 20px; padding: 30px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
         .tab-content:not(#tab-table) { overflow-y: auto; flex: 1; }
         .detail-tab-btn { padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; text-align: left; cursor: pointer; transition: 0.2s; border: 1px solid transparent; font-weight: 600; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
@@ -237,8 +239,8 @@
     <div id="screen-admin-dash" class="dashboard-container hidden">
         <aside class="sidebar collapsed" id="sidebar">
             <div class="brand"><i class="fas fa-cube"></i> Kontrol Paneli</div>
-            <div class="nav-item active" onclick="showPanel('courses')"><i class="fas fa-th-large"></i> Dersler</div>
-            <div class="nav-item" onclick="showPanel('upload')"><i class="fas fa-file-upload"></i> Veri Yükle</div>
+            <div class="nav-item active" onclick="showPanel('courses', true)"><i class="fas fa-th-large"></i> Dersler</div>
+            <div class="nav-item" onclick="showPanel('upload', true)"><i class="fas fa-file-upload"></i> Veri Yükle</div>
             <div class="nav-item logout" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</div>
         </aside>
 
@@ -282,23 +284,23 @@
             </div>
 
             <div id="courseDetailPanel" class="detail-layout hidden">
-                <div class="detail-sidebar">
+                <div class="detail-sidebar" id="detailSidebar">
                     <button class="secondary action-btn" onclick="closeCourse()" style="width:100%; justify-content: flex-start;">
                         <i class="fas fa-arrow-left"></i> Geri Dön
                     </button>
-                    <div class="detail-tab-btn btn-color-1 active" onclick="setTab('scan')">
+                    <div class="detail-tab-btn btn-color-1 active" onclick="setTab('scan', true)">
                         <span><i class="fas fa-qrcode"></i> Yoklama & Oturum</span>
                         <i class="fas fa-chevron-right" style="font-size:12px; opacity:0.5;"></i>
                     </div>
-                    <div class="detail-tab-btn btn-color-2" onclick="setTab('list')">
+                    <div class="detail-tab-btn btn-color-2" onclick="setTab('list', true)">
                         <span><i class="fas fa-users"></i> Öğrenci Listesi</span>
                         <i class="fas fa-chevron-right" style="font-size:12px; opacity:0.5;"></i>
                     </div>
-                    <div class="detail-tab-btn btn-color-3" onclick="setTab('settings')">
+                    <div class="detail-tab-btn btn-color-3" onclick="setTab('settings', true)">
                         <span><i class="fas fa-cog"></i> Ders Ayarları</span>
                         <i class="fas fa-chevron-right" style="font-size:12px; opacity:0.5;"></i>
                     </div>
-                    <div class="detail-tab-btn btn-color-4" onclick="setTab('table')">
+                    <div class="detail-tab-btn btn-color-4" onclick="setTab('table', true)">
                         <span><i class="fas fa-table"></i> Devam Tablosu</span>
                         <i class="fas fa-chevron-right" style="font-size:12px; opacity:0.5;"></i>
                     </div>
@@ -557,7 +559,14 @@
             document.getElementById(id).classList.remove('hidden');
         }
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+        // ☰ düğmesi bulunduğunuz ekranın panelini açıp kapatır:
+        // ders detayındaysanız sekme panelini, değilseniz ana menüyü
+        function toggleSidebar() {
+            const detay = document.getElementById('courseDetailPanel');
+            const dersIcinde = detay && !detay.classList.contains('hidden');
+            if (dersIcinde) document.getElementById('detailSidebar').classList.toggle('collapsed');
+            else document.getElementById('sidebar').classList.toggle('collapsed');
+        }
         function showLoader() { document.getElementById('loader').classList.remove('hidden'); }
         function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
         function showToast(msg) {
@@ -706,6 +715,7 @@
                 document.getElementById('courseListPanel').classList.add('hidden');
                 document.getElementById('termTabs').classList.add('hidden');
                 document.getElementById('courseDetailPanel').classList.remove('hidden');
+                document.getElementById('detailSidebar').classList.remove('collapsed');
                 document.getElementById('dash-title').innerText = id + (res.settings.term ? '  ·  ' + res.settings.term : '');
                 document.getElementById('setLimitPct').value = res.settings.limitPct || 30;
                 document.getElementById('setWeeklyHours').value = res.settings.weeklyHours;
@@ -904,7 +914,7 @@
         function showStaticQR() { document.getElementById('fs-static-qr').classList.remove('hidden'); const d = document.getElementById('static-qrcode'); d.innerHTML=""; new QRCode(d, {text:SITE_URL, width:800, height:800}); }
         function closeCourse() { showPanel('courses'); }
 
-        function setTab(t) {
+        function setTab(t, fromUser) {
             document.querySelectorAll('.tab-content').forEach(e => e.classList.add('hidden'));
             document.getElementById('tab-'+t).classList.remove('hidden');
             document.querySelectorAll('.detail-tab-btn').forEach(b => b.classList.remove('active'));
@@ -913,6 +923,8 @@
             document.querySelectorAll('.detail-tab-btn')[idx].classList.add('active');
             if(t === 'table') refreshAttendanceTable();
             if(t === 'list') renderStudentListFromTable();
+            // Sekmeye kullanıcı tıkladıysa sol paneli kapat (☰ ile geri açılır)
+            if(fromUser) document.getElementById('detailSidebar').classList.add('collapsed');
         }
 
         async function checkStudentName() {
@@ -1014,7 +1026,7 @@
             });
         }
 
-        async function showPanel(panelName) {
+        async function showPanel(panelName, fromUser) {
             document.getElementById('courseListPanel').classList.add('hidden');
             document.getElementById('courseDetailPanel').classList.add('hidden');
             document.getElementById('uploadPanel').classList.add('hidden');
@@ -1033,6 +1045,8 @@
                 document.querySelectorAll('.nav-item')[1].classList.add('active');
                 fillTermSelect();
             }
+            // Menüden seçim yapıldıysa sol paneli kapat (☰ ile geri açılır)
+            if(fromUser) document.getElementById('sidebar').classList.add('collapsed');
         }
 
         // ===== Yükleme ekranı dönem seçimi =====
