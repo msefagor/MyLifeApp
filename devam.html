@@ -129,6 +129,27 @@
         /* Pasif Hafta Şifre Ekranı Glassmorphism */
         #pass-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 11000; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
 
+        /* ===================== DÖNEM SEKMELERİ ===================== */
+        .term-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 25px; align-items: center; }
+        .term-chip {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 18px; border-radius: 50px; cursor: pointer;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
+            transition: all 0.25s ease; white-space: nowrap; user-select: none;
+        }
+        .term-chip:hover { background: rgba(255,255,255,0.12); color: #fff; transform: translateY(-2px); }
+        .term-chip.active { background: var(--accent-grad); color: #fff; border-color: transparent; box-shadow: 0 6px 18px rgba(0,242,96,0.25); }
+        .term-chip.locked { color: rgba(255,255,255,0.4); filter: grayscale(100%); border-style: dashed; }
+        .term-chip.locked.active { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); border: 1px dashed rgba(255,255,255,0.35); box-shadow: none; filter: grayscale(100%); }
+        .term-count { background: rgba(0,0,0,0.3); border-radius: 20px; padding: 1px 9px; font-size: 11px; font-weight: 700; }
+        .term-hint { font-size: 12px; opacity: 0.5; margin-left: 4px; display: flex; align-items: center; gap: 6px; }
+        .course-card.locked-term { filter: grayscale(100%) brightness(0.6); opacity: 0.6; }
+        .course-card.locked-term:hover { filter: grayscale(100%) brightness(0.75); transform: translateY(-4px) scale(1.01); }
+        .cc-lock { position: absolute; top: 18px; right: 20px; font-size: 18px; opacity: 0.85; z-index: 3; }
+        .course-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; opacity: 0.5; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; }
+        /* ============================================================ */
+
         /* ===================== DEVAM TABLOSU STİLLERİ ===================== */
         #tab-table { overflow: hidden; }
         .attendance-table-wrapper { overflow: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); height: 100%; }
@@ -178,8 +199,8 @@
     <div id="pass-overlay" class="hidden">
         <div class="mobile-card">
             <h3>Güvenlik Doğrulaması</h3>
-            <p style="opacity:0.7; font-size:13px; margin-bottom:15px;">Hafta kilidini açmak için yönetici şifresini giriniz.</p>
-            <input type="password" id="weekUnlockPass" placeholder="Şifre" style="text-align:center; font-size:20px; letter-spacing:5px;">
+            <p style="opacity:0.7; font-size:13px; margin-bottom:15px;" id="pass-overlay-msg">Kilidi açmak için yönetici şifresini giriniz.</p>
+            <input type="password" id="weekUnlockPass" placeholder="Şifre" style="text-align:center; font-size:20px; letter-spacing:5px;" onkeydown="if(event.key==='Enter') confirmUnlock()">
             <div style="display:flex; gap:10px;">
                 <button class="action-btn" style="flex:1;" onclick="confirmUnlock()">Onayla</button>
                 <button class="secondary action-btn" style="flex:1;" onclick="document.getElementById('pass-overlay').classList.add('hidden')">İptal</button>
@@ -232,6 +253,7 @@
                 </div>
             </div>
 
+            <div id="termTabs" class="term-tabs"></div>
             <div id="courseListPanel" class="course-grid"></div>
 
             <div id="uploadPanel" class="hidden" style="max-width: 600px; margin: 0 auto;">
@@ -239,6 +261,10 @@
                     <h2 style="margin-bottom:20px;">Yeni Veri Yükleme (PDF)</h2>
                     <p style="opacity:0.7; margin-bottom:20px;">Lütfen önce Ders Kodu ve Adını giriniz, ardından Sınıf Listesi PDF dosyasını yükleyiniz.</p>
                     <div style="margin-bottom:20px;">
+                        <label class="input-label" style="font-size:12px; opacity:0.7; display:block; margin-bottom:6px;">
+                            <i class="fas fa-calendar-alt" style="color:#00f260;"></i> Dönem
+                        </label>
+                        <select id="uploadTerm" onchange="onUploadTermChange()" style="margin-bottom:14px;"></select>
                         <input type="text" id="manualCourseCode" placeholder="Ders Kodu (Örn: DHFS-522)" style="margin-bottom:10px;">
                         <input type="text" id="manualCourseName" placeholder="Ders Adı (Örn: Bilgisayar Destekli Tasarım)">
                     </div>
@@ -447,6 +473,83 @@
         let uploadFileContent = null;
         let pendingWeek = null;
 
+        // ===================== DÖNEM (TERM) ALTYAPISI =====================
+        // Veritabanında dönem bilgisi olmayan eski dersler bu döneme atanır.
+        const DEFAULT_TERM = "2025-2026 Bahar";
+        const LS_CUSTOM_TERMS = "devam_custom_terms";
+        const TERM_RE = /^(\d{4})-(\d{4})\s+(Güz|Bahar)$/;
+
+        let allCourses = [];      // [{id, name, term}]
+        let selectedTerm = null;  // ekranda seçili dönem
+        let unlockedTerms = [];   // şifreyle açılmış geçmiş dönemler (oturum boyunca)
+        let pendingTerm = null;   // şifre bekleyen dönem
+        let passMode = 'week';    // 'week' | 'term'
+
+        // Ağustos–Ocak → Güz,  Şubat–Temmuz → Bahar
+        function getCurrentTerm(d) {
+            d = d || new Date();
+            const y = d.getFullYear(), m = d.getMonth() + 1;
+            if (m >= 8) return `${y}-${y+1} Güz`;
+            if (m === 1) return `${y-1}-${y} Güz`;
+            return `${y-1}-${y} Bahar`;
+        }
+
+        // Sıralama anahtarı: büyük = daha yeni. Güz, aynı yılın Bahar'ından önce gelir.
+        function termSortKey(t) {
+            const m = TERM_RE.exec((t || '').trim());
+            if (!m) return -1;
+            return parseInt(m[1], 10) * 10 + (m[3] === 'Güz' ? 0 : 1);
+        }
+
+        function getCustomTerms() {
+            try { return JSON.parse(localStorage.getItem(LS_CUSTOM_TERMS) || '[]'); }
+            catch (_) { return []; }
+        }
+        function addCustomTerm(t) {
+            const l = getCustomTerms();
+            if (t && !l.includes(t)) { l.push(t); localStorage.setItem(LS_CUSTOM_TERMS, JSON.stringify(l)); }
+        }
+
+        // Bugüne göre otomatik dönem listesi (3 yıl geri, 1 yıl ileri)
+        function generateTermList() {
+            const m = TERM_RE.exec(getCurrentTerm());
+            const startY = m ? parseInt(m[1], 10) : new Date().getFullYear();
+            const out = [];
+            for (let y = startY - 3; y <= startY + 1; y++) { out.push(`${y}-${y+1} Güz`); out.push(`${y}-${y+1} Bahar`); }
+            return out;
+        }
+
+        // Otomatik liste + manuel eklenenler + derslerden gelenler → yeniden eskiye
+        function allKnownTerms(extra) {
+            const set = new Set(generateTermList());
+            getCustomTerms().forEach(t => set.add(t));
+            set.add(DEFAULT_TERM); set.add(getCurrentTerm());
+            (extra || []).forEach(t => { if (t) set.add(t); });
+            return [...set].sort((a, b) => termSortKey(b) - termSortKey(a));
+        }
+
+        // Backend hangi alan adını gönderirse göndersin dönemi çöz
+        function normalizeTerm(c) {
+            const raw = (c && (c.term || c.donem || c.dönem || c.Dönem || c.Donem)) || '';
+            const v = raw.toString().trim();
+            return v || DEFAULT_TERM;
+        }
+
+        // Geçmiş dönemler kilitli; aktif ve gelecek dönemler açık
+        function isTermLocked(t) {
+            return termSortKey(t) < termSortKey(getCurrentTerm()) && !unlockedTerms.includes(t);
+        }
+
+        function openPassOverlay(mode, msg) {
+            passMode = mode;
+            document.getElementById('pass-overlay-msg').innerText = msg || 'Kilidi açmak için yönetici şifresini giriniz.';
+            const inp = document.getElementById('weekUnlockPass');
+            inp.value = "";
+            document.getElementById('pass-overlay').classList.remove('hidden');
+            setTimeout(() => inp.focus(), 100);
+        }
+        // ==================================================================
+
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString('tr-TR', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
         function nav(id) {
@@ -477,11 +580,60 @@
             if(res && res.success) {
                 realAdminPass = res.realPass;
                 nav('screen-admin-dash');
-                renderCourseGrid(res.courses);
+                initCourses(res.courses);
             } else showToast("Hatalı Şifre");
         }
 
-        function renderCourseGrid(courses) {
+        // Giriş sonrası dersleri dönemlere ayır ve varsayılan dönemi seç
+        function initCourses(courses) {
+            allCourses = (courses || []).map(c => ({ ...c, term: normalizeTerm(c) }));
+            unlockedTerms = [];
+            const cur = getCurrentTerm();
+            const termsWithCourses = [...new Set(allCourses.map(c => c.term))]
+                .sort((a, b) => termSortKey(b) - termSortKey(a));
+            // Aktif dönemde ders varsa onu; yoksa ders bulunan en yeni dönemi göster
+            selectedTerm = termsWithCourses.includes(cur) ? cur : (termsWithCourses[0] || cur);
+            renderTermTabs();
+            renderCourseGrid();
+        }
+
+        function renderTermTabs() {
+            const box = document.getElementById('termTabs');
+            if (!box) return;
+            const counts = {};
+            allCourses.forEach(c => { counts[c.term] = (counts[c.term] || 0) + 1; });
+            const cur = getCurrentTerm();
+            // Kalabalık olmasın: dersi olan dönemler + aktif dönem + seçili dönem
+            const visible = allKnownTerms(Object.keys(counts))
+                .filter(t => counts[t] || t === cur || t === selectedTerm);
+
+            box.innerHTML = "";
+            visible.forEach(t => {
+                const locked = isTermLocked(t);
+                const chip = document.createElement('div');
+                chip.className = 'term-chip' + (t === selectedTerm ? ' active' : '') + (locked ? ' locked' : '');
+                chip.title = locked ? 'Geçmiş dönem — açmak için yönetici şifresi gerekir' : (t === cur ? 'Aktif dönem' : t);
+                chip.innerHTML = `${locked ? '<i class="fas fa-lock"></i>' : (t === cur ? '<i class="fas fa-circle" style="font-size:7px; color:#00f260;"></i>' : '')} ${t} <span class="term-count">${counts[t] || 0}</span>`;
+                chip.onclick = () => selectTerm(t);
+                box.appendChild(chip);
+            });
+
+            if (isTermLocked(selectedTerm)) {
+                const hint = document.createElement('div');
+                hint.className = 'term-hint';
+                hint.innerHTML = `<i class="fas fa-lock" style="color:#FF416C;"></i> Bu dönem pasif — bir derse tıklayıp şifreyle açabilirsiniz.`;
+                box.appendChild(hint);
+            }
+        }
+
+        function selectTerm(t) {
+            if (isTermLocked(t)) { pendingTerm = t; openPassOverlay('term', `"${t}" geçmiş bir dönem. Açmak için yönetici şifresini giriniz.`); return; }
+            selectedTerm = t;
+            renderTermTabs();
+            renderCourseGrid();
+        }
+
+        function renderCourseGrid() {
             const p = document.getElementById('courseListPanel'); p.innerHTML = "";
             const grads = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -490,17 +642,39 @@
                 'linear-gradient(135deg, #2c3e50 0%, #000000 100%)',
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
             ];
-            courses.forEach((c, idx) => {
-                const el = document.createElement('div'); el.className = "course-card";
+            const locked = isTermLocked(selectedTerm);
+            const list = allCourses.filter(c => c.term === selectedTerm);
+
+            if (list.length === 0) {
+                p.innerHTML = `<div class="course-empty">
+                    <i class="fas fa-folder-open" style="font-size:40px; display:block; margin-bottom:12px;"></i>
+                    <b>${selectedTerm}</b> döneminde kayıtlı ders yok.<br>
+                    <span style="font-size:13px;">Soldaki menüden <b>Veri Yükle</b> ile bu döneme ders ekleyebilirsiniz.</span>
+                </div>`;
+                return;
+            }
+
+            list.forEach((c, idx) => {
+                const el = document.createElement('div');
+                el.className = "course-card" + (locked ? " locked-term" : "");
                 el.style.background = grads[idx % grads.length];
                 el.innerHTML = `
                     <div class="cc-info-wrapper">
                         <span class="cc-code">${c.id}</span>
                         <div class="cc-name">${c.name}</div>
                     </div>
+                    ${locked ? '<i class="fas fa-lock cc-lock"></i>' : ''}
                     <i class="fas fa-book cc-icon"></i>
                 `;
-                el.onclick = () => loadCourse(c.id); p.appendChild(el);
+                el.onclick = () => {
+                    if (isTermLocked(selectedTerm)) {
+                        pendingTerm = selectedTerm;
+                        openPassOverlay('term', `"${selectedTerm}" geçmiş bir dönem. Derslere erişmek için yönetici şifresini giriniz.`);
+                        return;
+                    }
+                    loadCourse(c.id);
+                };
+                p.appendChild(el);
             });
         }
 
@@ -530,8 +704,9 @@
             if(res && res.success) {
                 cData = res;
                 document.getElementById('courseListPanel').classList.add('hidden');
+                document.getElementById('termTabs').classList.add('hidden');
                 document.getElementById('courseDetailPanel').classList.remove('hidden');
-                document.getElementById('dash-title').innerText = id;
+                document.getElementById('dash-title').innerText = id + (res.settings.term ? '  ·  ' + res.settings.term : '');
                 document.getElementById('setLimitPct').value = res.settings.limitPct || 30;
                 document.getElementById('setWeeklyHours').value = res.settings.weeklyHours;
                 document.getElementById('setQrTime').value = res.settings.qrTime;
@@ -592,8 +767,7 @@
                         selectedWeekNo = w.weekNo;
                         if(lockedState) {
                             pendingWeek = w;
-                            document.getElementById('weekUnlockPass').value = "";
-                            document.getElementById('pass-overlay').classList.remove('hidden');
+                            openPassOverlay('week', `${w.weekNo}. hafta kilidini açmak için yönetici şifresini giriniz.`);
                         } else { openWeekFocus(w, isPast || isUnlocked || isCompleted); }
                     };
                 }
@@ -603,14 +777,23 @@
 
         function confirmUnlock() {
             const pass = document.getElementById('weekUnlockPass').value;
-            if(pass === realAdminPass) {
-                unlockedWeeks.push(pendingWeek.weekNo);
-                document.getElementById('pass-overlay').classList.add('hidden');
-                renderWeeksList(cData.weeks);
-                openWeekFocus(pendingWeek, true);
-            } else {
-                showToast("Şifre Hatalı");
+            if(pass !== realAdminPass) { showToast("Şifre Hatalı"); return; }
+            document.getElementById('pass-overlay').classList.add('hidden');
+
+            if(passMode === 'term') {
+                if(pendingTerm && !unlockedTerms.includes(pendingTerm)) unlockedTerms.push(pendingTerm);
+                selectedTerm = pendingTerm || selectedTerm;
+                pendingTerm = null;
+                renderTermTabs();
+                renderCourseGrid();
+                showToast(`${selectedTerm} dönemi açıldı`);
+                return;
             }
+
+            // passMode === 'week'
+            unlockedWeeks.push(pendingWeek.weekNo);
+            renderWeeksList(cData.weeks);
+            openWeekFocus(pendingWeek, true);
         }
 
         async function openWeekFocus(week, showManual) {
@@ -835,16 +1018,61 @@
             document.getElementById('courseListPanel').classList.add('hidden');
             document.getElementById('courseDetailPanel').classList.add('hidden');
             document.getElementById('uploadPanel').classList.add('hidden');
+            document.getElementById('termTabs').classList.add('hidden');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             if(panelName === 'courses') {
+                document.getElementById('termTabs').classList.remove('hidden');
                 document.getElementById('courseListPanel').classList.remove('hidden');
                 document.getElementById('dash-title').innerText = "Dersler";
                 document.querySelectorAll('.nav-item')[0].classList.add('active');
+                renderTermTabs();
+                renderCourseGrid();
             } else if (panelName === 'upload') {
                 document.getElementById('uploadPanel').classList.remove('hidden');
                 document.getElementById('dash-title').innerText = "Veri Yükle (PDF)";
                 document.querySelectorAll('.nav-item')[1].classList.add('active');
+                fillTermSelect();
             }
+        }
+
+        // ===== Yükleme ekranı dönem seçimi =====
+        function fillTermSelect(keep) {
+            const sel = document.getElementById('uploadTerm');
+            if (!sel) return;
+            const cur = getCurrentTerm();
+            const terms = allKnownTerms(allCourses.map(c => c.term));
+            const want = keep || sel.value || cur;
+            sel.innerHTML = "";
+            terms.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t;
+                o.text = t + (t === cur ? '   • aktif dönem' : '');
+                sel.add(o);
+            });
+            const o2 = document.createElement('option');
+            o2.value = '__new__'; o2.text = '➕  Yeni dönem ekle…';
+            sel.add(o2);
+            sel.value = terms.includes(want) ? want : cur;
+        }
+
+        function onUploadTermChange() {
+            const sel = document.getElementById('uploadTerm');
+            if (sel.value !== '__new__') return;
+            const val = (prompt('Yeni dönem (biçim: 2027-2028 Güz veya 2027-2028 Bahar)') || '').trim();
+            if (!TERM_RE.test(val)) {
+                if (val) showToast('Geçersiz biçim. Örnek: 2027-2028 Güz');
+                fillTermSelect(getCurrentTerm());
+                return;
+            }
+            const m = TERM_RE.exec(val);
+            if (parseInt(m[2], 10) !== parseInt(m[1], 10) + 1) {
+                showToast('Yıllar ardışık olmalı. Örnek: 2027-2028 Güz');
+                fillTermSelect(getCurrentTerm());
+                return;
+            }
+            addCustomTerm(val);
+            fillTermSelect(val);
+            showToast(`"${val}" dönemi eklendi`);
         }
 
         async function saveSettings() {
@@ -893,8 +1121,10 @@
         async function uploadData() {
             const code = document.getElementById('manualCourseCode').value;
             const name = document.getElementById('manualCourseName').value;
+            const term = document.getElementById('uploadTerm').value;
             if(!code || !name || !uploadFileContent) return alert("Bilgileri kontrol edin.");
-            const res = await api({ action: 'upload_pdf_data', fileData: uploadFileContent, courseCode: code, courseName: name });
+            if(!term || term === '__new__') return alert("Lütfen bir dönem seçiniz.");
+            const res = await api({ action: 'upload_pdf_data', fileData: uploadFileContent, courseCode: code, courseName: name, term: term });
             if(res && res.success) { alert(res.msg); location.reload(); } else { alert("Hata: " + (res ? res.error : "Bilinmiyor")); }
         }
 
@@ -917,7 +1147,7 @@
             const students = cData.students || [];
 
             // Sadece NORMAL ders haftaları devamsızlığa sayılır (Tatil, Vize, Final, Bütünleme SAYILMAZ)
-            const lessonWeeks = weeks.filter(w => !w.type || w.type === 'Normal');
+            const lessonWeeks = weeks.filter(w => isNormalWeek(w));
             const totalLessonHours = lessonWeeks.length * weeklyHours;
             const maxAbsentHoursRaw = totalLessonHours * (limitPct / 100);
             const maxAbsentHours = Math.ceil(maxAbsentHoursRaw);
@@ -966,25 +1196,32 @@
             buildAttendanceTable(_attTableData);
         }
 
+        // Ders haftası mı? (Tatil/Vize/Final/Bütünleme devamsızlığa sayılmaz)
+        function isNormalWeek(w) { return !w.type || w.type === 'Normal'; }
+
+        // O hafta fiilen kaç saat işlendi? (backend'in hesabı; kimse gelmediyse haftalık saat)
+        function weekHeldHours(w, data) {
+            const logsForWeek = data.allWeekLogs[w.weekNo] || {};
+            const hasAttendees = Object.keys(logsForWeek).length > 0;
+            const sessionExists = hasAttendees
+                || (data.sessionOpenedWeeks && data.sessionOpenedWeeks.has(Number(w.weekNo)))
+                || (w.completedHours && w.completedHours > 0);
+            if (!sessionExists) return 0;                       // henüz oturum açılmamış
+            let held = Number(w.completedHours || 0);
+            if (!held) held = data.weeklyHours;                 // oturum açıldı, kimse gelmedi
+            return Math.min(held, data.weeklyHours);
+        }
+
+        // Backend'deki dersIstatistik_() ile BİREBİR aynı formül
         function calcStudentAbsence(sid, data) {
-            const { weeks, allWeekLogs, weeklyHours, maxAbsentHours, sessionOpenedWeeks } = data;
+            const { weeks, allWeekLogs, maxAbsentHours } = data;
             let totalAbsent = 0;
             weeks.forEach(w => {
-                const isExcluded = ['Vize', 'Final', 'Bütünleme', 'Tatil'].includes(w.type);
-                if (isExcluded) return;
-                const logsForWeek = allWeekLogs[w.weekNo] || {};
-                const attended = logsForWeek[sid];
-                // Oturum açılmış sayılır:
-                // 1. Bu haftada kayıt var (biri gelmiş)
-                // 2. sessionOpenedWeeks setinde bu hafta var (oturum açılmış, kimse gelmemiş olabilir)
-                // 3. completedHours > 0 (backend yoklama tablosundan hesapladı)
-                const hasAttendees = Object.keys(logsForWeek).length > 0;
-                const sessionExists = hasAttendees 
-                    || (sessionOpenedWeeks && sessionOpenedWeeks.has(Number(w.weekNo)))
-                    || (w.completedHours && w.completedHours > 0);
-                if (attended === undefined && sessionExists) {
-                    totalAbsent += weeklyHours;
-                }
+                if (!isNormalWeek(w)) return;
+                const held = weekHeldHours(w, data);
+                if (!held) return;
+                const att = Number((allWeekLogs[w.weekNo] || {})[sid] || 0);
+                if (held > att) totalAbsent += (held - att);
             });
             return { totalAbsent, remaining: maxAbsentHours - totalAbsent };
         }
@@ -1027,24 +1264,24 @@
                 weeks.forEach(w => {
                     const isExam = ['Vize', 'Final', 'Bütünleme'].includes(w.type);
                     const isHoliday = w.type === 'Tatil';
-                    const logsForWeek = allWeekLogs[w.weekNo] || {};
-                    const attended = logsForWeek[sid];
-                    const hasAttendees = Object.keys(logsForWeek).length > 0;
-                    const sessionExists = hasAttendees 
-                        || (data.sessionOpenedWeeks && data.sessionOpenedWeeks.has(Number(w.weekNo)))
-                        || (w.completedHours && w.completedHours > 0);
+                    const attended = (allWeekLogs[w.weekNo] || {})[sid];
+                    const held = weekHeldHours(w, data);
 
                     if (isExam) {
                         html += `<td class="att-cell-exam">✏</td>`;
                     } else if (isHoliday) {
                         html += `<td class="att-cell-holiday">—</td>`;
                     } else if (attended !== undefined) {
-                        html += `<td class="att-cell-present">${attended}</td>`;
-                    } else if (sessionExists) {
-                        // Oturum açılmış, öğrenci gelmedi → DEVAMSIZ
-                        html += `<td class="att-cell-absent" title="${weeklyHours}s devamsız">✗</td>`;
+                        const att = Number(attended || 0);
+                        if (held > att) {
+                            // Kısmi katılım: derse geldi ama tüm saatlerde yok
+                            html += `<td class="att-cell-exam" title="${att}/${held} saat — ${held - att}s devamsız">${att}</td>`;
+                        } else {
+                            html += `<td class="att-cell-present">${att}</td>`;
+                        }
+                    } else if (held > 0) {
+                        html += `<td class="att-cell-absent" title="${held}s devamsız">✗</td>`;
                     } else {
-                        // Henüz oturum açılmadı
                         html += `<td style="color:rgba(255,255,255,0.1); font-size:11px;">·</td>`;
                     }
                 });
@@ -1089,15 +1326,11 @@
                 weeks.forEach(w => {
                     const isExam = ['Vize','Final','Bütünleme'].includes(w.type);
                     const isHoliday = w.type === 'Tatil';
-                    const logsForWeek = allWeekLogs[w.weekNo] || {};
-                    const attended = logsForWeek[sid];
+                    const attended = (allWeekLogs[w.weekNo] || {})[sid];
+                    const held = weekHeldHours(w, _attTableData);
                     if (isExam || isHoliday) row.push('-');
-                    else if (attended !== undefined) row.push(attended);
-                    else {
-                        const hasAttendees = Object.keys(logsForWeek).length > 0;
-                        const sessionOpenedEmpty = w.completedHours && w.completedHours > 0 && !hasAttendees;
-                        row.push((hasAttendees || sessionOpenedEmpty) ? 0 : '');
-                    }
+                    else if (attended !== undefined) row.push(Number(attended || 0));
+                    else row.push(held > 0 ? 0 : '');
                 });
                 row.push(totalAbsent, remaining);
                 rows.push(row);
@@ -1141,17 +1374,18 @@
                 weeks.forEach(w => {
                     const isExam = ['Vize','Final','Bütünleme'].includes(w.type);
                     const isHoliday = w.type === 'Tatil';
-                    const logsForWeek = allWeekLogs[w.weekNo] || {};
-                    const attended = logsForWeek[sid];
+                    const attended = (allWeekLogs[w.weekNo] || {})[sid];
+                    const held = weekHeldHours(w, _attTableData);
                     let cell = '';
                     if (isExam) cell = `<span style="color:#ccaa00;">✏</span>`;
                     else if (isHoliday) cell = `<span style="color:#333;">—</span>`;
-                    else if (attended !== undefined) cell = `<span style="color:#00cc55; font-weight:700;">${attended}</span>`;
-                    else {
-                        const hasAtt = Object.keys(logsForWeek).length > 0;
-                        const openedEmpty = w.completedHours && w.completedHours > 0 && !hasAtt;
-                        cell = (hasAtt || openedEmpty) ? `<span style="color:#cc3333;">✗</span>` : `<span style="color:#222;">·</span>`;
+                    else if (attended !== undefined) {
+                        const att = Number(attended || 0);
+                        cell = held > att
+                            ? `<span style="color:#ccaa00; font-weight:700;">${att}</span>`
+                            : `<span style="color:#00cc55; font-weight:700;">${att}</span>`;
                     }
+                    else cell = held > 0 ? `<span style="color:#cc3333;">✗</span>` : `<span style="color:#222;">·</span>`;
                     tableHTML += `<td style="text-align:center; padding:4px 2px; font-size:12px; border:1px solid #1a2a3a;">${cell}</td>`;
                 });
                 const absColor = totalAbsent >= maxAbsentHours ? '#ff4444' : (totalAbsent > 0 ? '#ffcc00' : '#555');
