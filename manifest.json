@@ -19,29 +19,3 @@
         }
     ]
 }
-
-{
-  "name": "Otonom Yoklama",
-  "short_name": "Yoklama",
-  "description": "Akademik yoklama ve devam takip sistemi",
-  "start_url": "./devam.html",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0f2027",
-  "theme_color": "#0f2027",
-  "icons": [
-    {
-      "src": "./yoklama-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./yoklama-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
-}
