@@ -10,16 +10,9 @@
   "theme_color": "#0f2027",
   "icons": [
     {
-      "src": "./yoklama-icon.png",
+      "src": "./giris-icon.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./yoklama-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }
