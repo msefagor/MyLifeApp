@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glass-planner-v20';
+const CACHE_NAME = 'glass-planner-v21';
 const urlsToCache = [
   './',
   './index.html',
@@ -60,6 +60,15 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // devam.html (Yoklama) için her zaman taze ağ isteği — sürüm takılmasını önler
+  if (url.pathname.endsWith('/devam.html') || url.pathname.endsWith('devam.html')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(new Request(url.origin + url.pathname)))
+    );
+    return;
+  }
 
   // drive-sync.js (ve eski db-sync.js fallback'i) için her zaman ağ.
   // Eski sürümlerin takılı kalmasını önler.
