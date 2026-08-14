@@ -101,7 +101,7 @@
         #fs-static-qr .qr-content { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(30px); padding: 30px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; max-height: 90vh; }
         #static-qrcode img { max-height: 60vh !important; width: auto !important; border: 10px solid white; border-radius: 15px; }
         .fs-session-container { display: flex; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; gap: 20px; overflow: hidden; flex-direction: row; }
-        .fs-list-area { width: 350px; min-width: 300px; background: rgba(20,20,20,0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .fs-list-area { width: 430px; min-width: 360px; background: rgba(20,20,20,0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
         .fs-qr-area { flex: 1; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 10px; height: 100%; box-sizing: border-box; min-height: 0; }
         .qr-wrapper { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
         #qrcode { display: flex; justify-content: center; align-items: center; width: 100%; height: auto; flex: 1; }
@@ -112,16 +112,15 @@
         .lsi-right { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
         .lsi-time { opacity: 0.55; font-size: 13px; font-variant-numeric: tabular-nums; }
 
-        /* Mesafe kademeleri: 1 yakın (yeşil) → 5 uzak (kırmızı) */
-        .dist-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px;
-            font-size: 11px; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap; border: 1px solid; font-variant-numeric: tabular-nums; }
-        .dist-chip .dc-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; flex-shrink: 0; }
-        .dist-1 { color: #00E676; background: rgba(0,230,118,0.12);  border-color: rgba(0,230,118,0.38); }
-        .dist-2 { color: #9CCC2A; background: rgba(156,204,42,0.12); border-color: rgba(156,204,42,0.38); }
-        .dist-3 { color: #FFCE56; background: rgba(255,206,86,0.12); border-color: rgba(255,206,86,0.38); }
-        .dist-4 { color: #FF8A3D; background: rgba(255,138,61,0.12); border-color: rgba(255,138,61,0.38); }
-        .dist-5 { color: #FF416C; background: rgba(255,65,108,0.15); border-color: rgba(255,65,108,0.45); }
-        .dist-manual { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+        /* Mesafe kademeleri: 1 yakın (yeşil) → 5 uzak (kırmızı). Sadece renk noktası. */
+        .dist-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; background: currentColor;
+            box-shadow: 0 0 9px currentColor, inset 0 0 0 2px rgba(255,255,255,0.22); cursor: help; }
+        .dist-1 { color: #00E676; }
+        .dist-2 { color: #9CCC2A; }
+        .dist-3 { color: #FFCE56; }
+        .dist-4 { color: #FF8A3D; }
+        .dist-5 { color: #FF416C; }
+        .dist-manual { color: rgba(255,255,255,0.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3); background: transparent; }
 
         .dist-legend { display: flex; align-items: center; gap: 4px; padding: 8px 2px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px; }
         .dist-legend .dl-lbl { font-size: 9.5px; opacity: 0.4; margin-right: 4px; letter-spacing: 0.3px; }
@@ -405,8 +404,8 @@
     <div id="loader" class="hidden">
         <div class="loader-content">
             <div class="spinner"></div>
-            <h3>İşleniyor</h3>
-            <p style="opacity:0.7;">Lütfen Bekleyiniz.</p>
+            <h3 id="loader-title">İşleniyor</h3>
+            <p style="opacity:0.7;" id="loader-sub">Lütfen Bekleyiniz.</p>
         </div>
     </div>
 
@@ -710,7 +709,7 @@
             <h2 class="auth-title">QR Kodu Okutun</h2>
             <p class="auth-desc">Kamerayı tahtadaki QR koduna doğrultun.<br>Kod okunduğunda yoklamanız otomatik alınır.</p>
             <div class="scan-frame"><div id="reader"></div></div>
-            <p class="scan-hint"><i class="fas fa-location-dot"></i> Konumunuz doğrulanacaktır</p>
+            <p class="scan-hint"><i class="fas fa-location-dot"></i> Konumunuz doğrulanacaktır — en hassas ölçüm için birkaç saniye bekleyin</p>
             <button class="auth-back" onclick="stopScan()">
                 <i class="fas fa-xmark" style="font-size:12px;"></i> İptal et
             </button>
@@ -815,6 +814,7 @@
             SURE_DOLDU:    'Bu oturumun geçerlilik süresi dolmuş.',
             OTURUM_YOK:    'Bu ders için açık bir yoklama oturumu bulunmuyor.',
             KONUM_UZAK:    'Konumunuz dersliğin dışında görünüyor.',
+            KONUM_BELIRSIZ:'Konum ölçümünüz yeterince hassas değil. Pencere kenarına yaklaşıp birkaç saniye bekleyerek tekrar deneyin.',
             CIHAZ_TEKRAR:  'Bu cihazdan bu hafta başka bir öğrenci numarasıyla yoklama alınmış.'
         };
 
@@ -1017,8 +1017,73 @@
             bd.classList.toggle('hidden', !(isMobileView() && (anaAcik || detayAcik)));
         }
         window.addEventListener('resize', syncDrawerBackdrop);
-        function showLoader() { document.getElementById('loader').classList.remove('hidden'); }
-        function hideLoader() { document.getElementById('loader').classList.add('hidden'); }
+        function showLoader(baslik, altYazi) {
+            if (baslik) document.getElementById('loader-title').innerText = baslik;
+            if (altYazi !== undefined) document.getElementById('loader-sub').innerText = altYazi;
+            document.getElementById('loader').classList.remove('hidden');
+        }
+        function setLoaderSub(t) { const e = document.getElementById('loader-sub'); if (e) e.innerText = t; }
+
+        // ===================== KONUM (GPS) =====================
+        // Tek bir getCurrentPosition çağrısı çoğu zaman Wi-Fi tabanlı, yüzlerce metre
+        // sapabilen bir sonuç döndürür. Burada watchPosition ile birkaç saniye ölçüm
+        // toplanır ve EN DÜŞÜK hata payına sahip olan kullanılır.
+        function gpsHataMetni(err) {
+            if (!err) return 'Konum alınamadı.';
+            if (err.code === 1) return 'Konum izni verilmedi. Tarayıcı ayarlarından konum erişimine izin verin.';
+            if (err.code === 2) return 'Konum belirlenemedi. Pencere kenarına yaklaşıp tekrar deneyin.';
+            if (err.code === 3) return 'Konum alma zaman aşımına uğradı.';
+            return 'Konum hatası.';
+        }
+
+        function konumAl(ayar) {
+            ayar = ayar || {};
+            const hedefAcc = ayar.hedefAcc || 25;      // bu hassasiyete ulaşınca erken bitir
+            const maxSure  = ayar.maxSure  || 12000;   // en fazla bu kadar bekle
+            const minSure  = ayar.minSure  || 2000;    // en az bu kadar ölçüm topla
+            const onProgress = ayar.onProgress;
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) { reject(new Error('Bu cihaz konum servisini desteklemiyor.')); return; }
+                let best = null, watchId = null, bitti = false, sonHata = null;
+                const t0 = Date.now();
+                const bitir = () => {
+                    if (bitti) return; bitti = true;
+                    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                    clearTimeout(zaman);
+                    if (typeof kontrol !== 'undefined') clearInterval(kontrol);
+                    if (best) resolve(best);
+                    else reject(new Error(gpsHataMetni(sonHata)));
+                };
+                const zaman = setTimeout(bitir, maxSure);
+                // Cihaz yeni ölçüm göndermeyi kesse bile, hedefe ulaşıldıysa bekletme
+                const kontrol = setInterval(() => {
+                    if (bitti) { clearInterval(kontrol); return; }
+                    if (best && best.acc <= hedefAcc && (Date.now() - t0) >= minSure) { clearInterval(kontrol); bitir(); }
+                }, 250);
+                watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const o = {
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            acc: Math.round(pos.coords.accuracy || 9999)
+                        };
+                        if (!best || o.acc < best.acc) best = o;
+                        if (onProgress) onProgress(best);
+                        if (best.acc <= hedefAcc && (Date.now() - t0) >= minSure) bitir();
+                    },
+                    (err) => { sonHata = err; if (!best) bitir(); },
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: maxSure }
+                );
+            });
+        }
+        // Hassasiyet çok kötüyse ölçüm anlamsızdır
+        const MAX_KABUL_HASSASIYET = 150;  // metre
+        // =======================================================
+        function hideLoader() {
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('loader-title').innerText = 'İşleniyor';
+            document.getElementById('loader-sub').innerText = 'Lütfen Bekleyiniz.';
+        }
         function showToast(msg) {
             const c = document.getElementById('toast-container'); const e = document.createElement('div'); e.className='toast'; e.innerText=msg; c.appendChild(e);
             setTimeout(()=>{e.style.opacity='0'; setTimeout(()=>e.remove(),300)}, 3000);
@@ -1330,10 +1395,22 @@
             if(!selectedWeekNo) return;
             const hrs = document.getElementById('sessHours').value;
             if(isNaN(hrs)) return;
-            showLoader();
-            navigator.geolocation.getCurrentPosition(async (pos)=>{
-                const res=await api({action:'start_session', courseId:currCourse, weekNo:selectedWeekNo, hoursVal:hrs, lat:pos.coords.latitude, lng:pos.coords.longitude});
+            showLoader('Derslik konumu alınıyor', 'GPS hassasiyeti bekleniyor…');
+            let anchor;
+            try {
+                anchor = await konumAl({ hedefAcc: 20, maxSure: 15000, minSure: 3000,
+                    onProgress: b => setLoaderSub(`En iyi ölçüm: ±${b.acc} m — daha hassası bekleniyor…`) });
+            } catch(e) { hideLoader(); showToast(e.message); return; }
+            if (anchor.acc > MAX_KABUL_HASSASIYET) {
+                hideLoader();
+                showToast(`Konum hassasiyeti yetersiz (±${anchor.acc} m). Pencere kenarına yaklaşıp tekrar deneyin.`);
+                return;
+            }
+            {
+                const res=await api({action:'start_session', courseId:currCourse, weekNo:selectedWeekNo, hoursVal:hrs,
+                                     lat:anchor.lat, lng:anchor.lng, acc:anchor.acc});
                 if(res&&res.success) {
+                    showToast(`Derslik konumu sabitlendi (±${anchor.acc} m)`);
                     // Her oturumun kendine ait jetonu var: QR = "DERSKODU|jeton"
                     sessionToken = res.token || "";
                     document.getElementById('fs-dynamic-session').classList.remove('hidden');
@@ -1346,7 +1423,7 @@
                     if(liveListInt) clearInterval(liveListInt);
                     updateLiveList(); liveListInt = setInterval(updateLiveList, 3000);
                 }
-            },()=>{hideLoader(); showToast("GPS Hatası");},{enableHighAccuracy:true});
+            }
         }
 
         // ===================== MESAFE KADEMELERİ =====================
@@ -1361,12 +1438,14 @@
             return          { lvl: 5, ad: 'Çok uzak', aralik: '301 m ve üzeri' };
         }
 
-        // Mesafe rozetinin HTML'i (manuel eklenenlerde konum yoktur)
+        // Mesafe göstergesi: sadece renk noktası, ayrıntı ipucu (tooltip) içinde
         function mesafeRozeti(log) {
-            if (log && log.manual) return `<span class="dist-chip dist-manual" title="Manuel eklendi — konum bilgisi yok"><i class="fas fa-hand" style="font-size:9px;"></i> Manuel</span>`;
+            if (log && log.manual) return `<span class="dist-dot dist-manual" title="Manuel eklendi — konum bilgisi yok"></span>`;
             const k = mesafeKademe(log ? log.dist : null);
             if (!k) return '';
-            return `<span class="dist-chip dist-${k.lvl}" title="${k.lvl}. kademe · ${k.ad} · ${k.aralik}"><span class="dc-dot"></span>${Math.round(log.dist)} m</span>`;
+            const hassas = (log.acc !== null && log.acc !== undefined && !isNaN(Number(log.acc)) && Number(log.acc) > 0)
+                ? ` · GPS hassasiyeti ±${Math.round(log.acc)} m` : '';
+            return `<span class="dist-dot dist-${k.lvl}" title="${Math.round(log.dist)} m — ${k.lvl}. kademe (${k.ad}, ${k.aralik})${hassas}"></span>`;
         }
 
         function saatMetni(zaman) {
@@ -1450,13 +1529,24 @@
             const id = document.getElementById('stuId').value; nav('screen-student-scan');
             qrScanner = new Html5Qrcode("reader");
             qrScanner.start({ facingMode: "environment" }, { fps:10, qrbox:250 }, async (txt) => {
-                qrScanner.stop(); showLoader();
-                navigator.geolocation.getCurrentPosition(async (pos) => {
+                qrScanner.stop();
+                showLoader('Konum doğrulanıyor', 'GPS hassasiyeti bekleniyor…');
+                let konum;
+                try {
+                    konum = await konumAl({ hedefAcc: 25, maxSure: 12000, minSure: 2000,
+                        onProgress: b => setLoaderSub(`En iyi ölçüm: ±${b.acc} m — daha hassası bekleniyor…`) });
+                } catch(e) { hideLoader(); showToast(e.message); nav('screen-home'); return; }
+                if (konum.acc > MAX_KABUL_HASSASIYET) {
+                    hideLoader();
+                    showToast(`Konum hassasiyeti yetersiz (±${konum.acc} m). Pencere kenarına yaklaşıp tekrar deneyin.`);
+                    nav('screen-home'); return;
+                }
+                {
                     const res = await api({
                         action:'student_scan', studentId:id,
                         qrText: txt, qrCourseId: (txt || '').split('|')[0],
                         deviceId: getDeviceId(),
-                        lat:pos.coords.latitude, lng:pos.coords.longitude
+                        lat:konum.lat, lng:konum.lng, acc:konum.acc
                     });
                     if(res && res.violation) { showViolation(res, id); return; }
                     if(res && res.stale) { showToast(res.error); setTimeout(()=>location.reload(), 2500); return; }
@@ -1469,7 +1559,7 @@
                         card.innerHTML = `<i class="fas fa-check-circle res-icon" style="color:${color}"></i><h2 class="res-title">${s.remaining <= 0 ? 'Devamsızlık Sınırı!' : 'Yoklama Alındı'}</h2><div class="res-main-box"><div class="res-main-lbl">KALAN HAK</div><div class="res-main-val" style="color:${color}">${s.remaining}s</div></div><div class="res-grid"><div class="res-sub-box"><span class="res-sub-lbl">TOPLAM</span><span class="res-sub-val">${s.absent}s</span></div><div class="res-sub-box"><span class="res-sub-lbl">LİMİT</span><span class="res-sub-val">${s.max}s</span></div></div><button class="action-btn" onclick="location.reload()">KAPAT</button>`;
                         modal.classList.remove('hidden');
                     } else { showToast(res?res.error:"Hata"); nav('screen-home'); }
-                }, ()=>{hideLoader(); showToast("GPS Açın!"); nav('screen-home');});
+                }
             });
         }
 
@@ -1666,6 +1756,7 @@
             SURE_DOLDU:    { t: 'Süresi dolmuş oturum',      i: 'fa-hourglass-end' },
             OTURUM_YOK:    { t: 'Oturum yok',                i: 'fa-ban' },
             KONUM_UZAK:    { t: 'Uzak konum',                i: 'fa-location-crosshairs' },
+            KONUM_BELIRSIZ:{ t: 'Hassasiyet yetersiz',        i: 'fa-satellite-dish' },
             CIHAZ_TEKRAR:  { t: 'Aynı cihaz, farklı numara', i: 'fa-mobile-screen' }
         };
 
