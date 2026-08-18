@@ -59,9 +59,9 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background:
-                radial-gradient(60% 50% at 50% 30%, rgba(76, 110, 245, 0.45) 0%, transparent 70%),
-                radial-gradient(80% 60% at 80% 90%, rgba(247, 37, 133, 0.28) 0%, transparent 70%),
-                linear-gradient(180deg, #0b0f24 0%, #0a0918 100%);
+                radial-gradient(60% 50% at 50% 30%, rgba(109, 76, 255, 0.42) 0%, transparent 70%),
+                radial-gradient(80% 60% at 80% 92%, rgba(255, 122, 0, 0.14) 0%, transparent 70%),
+                linear-gradient(180deg, #0b0a20 0%, #0a0817 100%);
             z-index: 999999;
             display: flex; flex-direction: column; align-items: center;
             padding: calc(env(safe-area-inset-top) + 44px) 24px calc(env(safe-area-inset-bottom) + 28px);
@@ -76,7 +76,7 @@
         }
         @keyframes smokeHue {
             0%   { filter: hue-rotate(0deg); }
-            50%  { filter: hue-rotate(28deg); }
+            50%  { filter: hue-rotate(12deg); }
             100% { filter: hue-rotate(0deg); }
         }
         .smoke {
@@ -87,22 +87,22 @@
         }
         .smoke-1 {
             width: 70%; height: 70%; top: -10%; left: -18%;
-            background: radial-gradient(circle, rgba(76, 201, 240, 0.55) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.55) 0%, transparent 65%);
             animation: smokeDrift1 18s ease-in-out infinite alternate;
         }
         .smoke-2 {
             width: 75%; height: 75%; top: 25%; right: -22%;
-            background: radial-gradient(circle, rgba(247, 37, 133, 0.45) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(255, 138, 0, 0.22) 0%, transparent 65%);
             animation: smokeDrift2 22s ease-in-out infinite alternate;
         }
         .smoke-3 {
             width: 60%; height: 60%; bottom: -10%; left: 10%;
-            background: radial-gradient(circle, rgba(115, 9, 183, 0.50) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(109, 40, 217, 0.52) 0%, transparent 65%);
             animation: smokeDrift3 20s ease-in-out infinite alternate;
         }
         .smoke-4 {
             width: 55%; height: 55%; top: 50%; left: 35%;
-            background: radial-gradient(circle, rgba(67, 97, 238, 0.42) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(107, 91, 255, 0.42) 0%, transparent 65%);
             animation: smokeDrift4 16s ease-in-out infinite alternate;
         }
         @keyframes smokeDrift1 {
@@ -133,14 +133,33 @@
             border: 1px solid rgba(255,255,255,0.18);
             backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
-            animation: logoPulse 2.6s ease-in-out infinite, splashIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+            box-shadow: 0 22px 48px rgba(109, 76, 255, 0.42), inset 0 1px 0 rgba(255,255,255,0.25);
+            animation: logoPulse 2.8s ease-in-out infinite, logoFadeIn 0.28s ease both;
             flex-shrink: 0;
+            will-change: transform;
         }
-        .splash-logo img { width: 62px; height: 62px; border-radius: 18px; object-fit: cover; }
+        .splash-logo img {
+            width: 62px; height: 62px; border-radius: 18px; object-fit: cover;
+            animation: logoImgPulse 2.8s ease-in-out infinite;
+        }
+        /* Yükleme sürerken logo nefes alır: hafif büyüyüp küçülür */
         @keyframes logoPulse {
-            0%, 100% { box-shadow: 0 22px 48px rgba(67,97,238,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
-            50%      { box-shadow: 0 28px 64px rgba(76,201,240,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 22px 48px rgba(109, 76, 255, 0.42), inset 0 1px 0 rgba(255,255,255,0.25);
+            }
+            50% {
+                transform: scale(1.075);
+                box-shadow: 0 30px 68px rgba(255, 154, 30, 0.45), inset 0 1px 0 rgba(255,255,255,0.32);
+            }
+        }
+        @keyframes logoImgPulse {
+            0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(255,154,30,0)); }
+            50%      { transform: scale(1.04); filter: drop-shadow(0 0 12px rgba(255,154,30,0.35)); }
+        }
+        @keyframes logoFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
         @keyframes splashIn {
             from { opacity: 0; transform: translateY(6px); }
@@ -150,12 +169,10 @@
         .neon-lines {
             position: relative; z-index: 2;
             flex: 1 1 auto;                     /* Logo ile splash-content arasındaki tüm alanı kaplar */
-            width: 94%; max-width: 520px;
+            width: 100vw; max-width: none;      /* Ekranın tam solundan tam sağına */
             min-height: 200px; max-height: 460px;
             margin: 28px 0 24px;
             overflow: hidden;
-            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
-                    mask-image: linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
             animation: neonFadeIn 0.4s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         @keyframes neonFadeIn {
@@ -168,7 +185,7 @@
             position: absolute;
             top: 0; bottom: 0; left: 0;
             width: 35%;
-            background: linear-gradient(90deg, transparent 0%, rgba(76,201,240,0.06) 50%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.07) 50%, transparent 100%);
             mix-blend-mode: screen;
             animation: scanBeam 7s linear infinite;
             pointer-events: none;
@@ -186,46 +203,50 @@
             will-change: transform, opacity;
             transform: translateX(-110%);
         }
-        /* === 10 ÇİZGİ — farklı renk/kalınlık/hız/boy === */
-        .neon-line-1 {  /* cyan kalın, orta üst */
+        /* === 11 ÇİZGİ — ikon paleti: mor / indigo / turuncu / beyaz === */
+        /* Renk sözlüğü:
+           mor      #8b5cf6   indigo #6b5bff
+           turuncu  #ff9a1e   amber  #ffb02e
+           beyaz    #ffffff                          */
+        .neon-line-1 {  /* mor kalın, üst */
             top: 6%;  width: 70%; height: 3px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(76,201,240,0) 22%,
-                rgba(76,201,240,0.85) 65%, #ffffff 92%, rgba(76,201,240,0.4) 100%);
-            box-shadow: 0 0 14px rgba(76,201,240,1), 0 0 32px rgba(76,201,240,0.6), 0 0 64px rgba(76,201,240,0.3);
+                transparent 0%, rgba(139,92,246,0) 22%,
+                rgba(139,92,246,0.9) 65%, #ffffff 92%, rgba(139,92,246,0.4) 100%);
+            box-shadow: 0 0 14px rgba(139,92,246,1), 0 0 32px rgba(139,92,246,0.6), 0 0 64px rgba(139,92,246,0.3);
             animation: neonScan 3.6s -0.0s linear infinite;
         }
-        .neon-line-2 {  /* mor ince uzun, arka katman */
+        .neon-line-2 {  /* açık mor ince uzun, arka katman */
             top: 14%; width: 92%; height: 1px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(179,136,255,0.5) 30%,
-                rgba(179,136,255,0.95) 75%, #ffffff 95%, transparent 100%);
-            box-shadow: 0 0 10px rgba(179,136,255,0.9), 0 0 24px rgba(179,136,255,0.5);
+                transparent 0%, rgba(183,160,255,0.5) 30%,
+                rgba(183,160,255,0.95) 75%, #ffffff 95%, transparent 100%);
+            box-shadow: 0 0 10px rgba(183,160,255,0.9), 0 0 24px rgba(183,160,255,0.5);
             filter: blur(0.6px);
             animation: neonScan 5.4s -1.7s linear infinite;
         }
-        .neon-line-3 {  /* pembe kalın, vurgu */
+        .neon-line-3 {  /* turuncu kalın, vurgu */
             top: 22%; width: 56%; height: 3px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(247,37,133,0) 20%,
-                rgba(247,37,133,0.9) 65%, #ffffff 92%, rgba(247,37,133,0.4) 100%);
-            box-shadow: 0 0 14px rgba(247,37,133,1), 0 0 30px rgba(247,37,133,0.6), 0 0 60px rgba(247,37,133,0.28);
+                transparent 0%, rgba(255,154,30,0) 20%,
+                rgba(255,154,30,0.92) 65%, #ffffff 92%, rgba(255,154,30,0.4) 100%);
+            box-shadow: 0 0 14px rgba(255,154,30,1), 0 0 30px rgba(255,154,30,0.6), 0 0 60px rgba(255,122,0,0.28);
             animation: neonScan 3.0s -2.1s linear infinite;
         }
-        .neon-line-4 {  /* mavi orta */
+        .neon-line-4 {  /* indigo orta */
             top: 30%; width: 78%; height: 2px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(67,97,238,0) 22%,
-                rgba(67,97,238,0.92) 70%, #ffffff 94%, rgba(67,97,238,0.35) 100%);
-            box-shadow: 0 0 12px rgba(67,97,238,1), 0 0 28px rgba(67,97,238,0.55), 0 0 50px rgba(67,97,238,0.25);
+                transparent 0%, rgba(107,91,255,0) 22%,
+                rgba(107,91,255,0.92) 70%, #ffffff 94%, rgba(107,91,255,0.35) 100%);
+            box-shadow: 0 0 12px rgba(107,91,255,1), 0 0 28px rgba(107,91,255,0.55), 0 0 50px rgba(107,91,255,0.25);
             animation: neonScan 4.0s -0.5s linear infinite;
         }
-        .neon-line-5 {  /* açık mavi — flash hızlı */
+        .neon-line-5 {  /* amber — flash hızlı */
             top: 38%; width: 48%; height: 2px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(72,149,239,0) 18%,
-                rgba(72,149,239,0.9) 60%, #ffffff 90%, rgba(72,149,239,0.35) 100%);
-            box-shadow: 0 0 12px rgba(72,149,239,0.95), 0 0 26px rgba(72,149,239,0.55), 0 0 48px rgba(72,149,239,0.25);
+                transparent 0%, rgba(255,176,46,0) 18%,
+                rgba(255,176,46,0.9) 60%, #ffffff 90%, rgba(255,176,46,0.35) 100%);
+            box-shadow: 0 0 12px rgba(255,176,46,0.95), 0 0 26px rgba(255,176,46,0.55), 0 0 48px rgba(255,154,30,0.25);
             animation: neonScan 2.4s -1.2s linear infinite;
         }
         .neon-line-6 {  /* beyaz vurgu — kısa hızlı */
@@ -233,48 +254,48 @@
             background: linear-gradient(90deg,
                 transparent 0%, rgba(255,255,255,0) 18%,
                 rgba(255,255,255,0.9) 65%, #ffffff 90%, rgba(255,255,255,0.4) 100%);
-            box-shadow: 0 0 10px rgba(255,255,255,0.9), 0 0 22px rgba(76,201,240,0.5), 0 0 40px rgba(76,201,240,0.25);
+            box-shadow: 0 0 10px rgba(255,255,255,0.9), 0 0 22px rgba(139,92,246,0.5), 0 0 40px rgba(255,154,30,0.25);
             animation: neonScan 2.6s -0.3s linear infinite;
         }
-        .neon-line-7 {  /* mor kalın orta-alt */
+        .neon-line-7 {  /* koyu mor kalın, orta-alt */
             top: 54%; width: 64%; height: 3px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(115,9,183,0) 22%,
-                rgba(115,9,183,0.9) 65%, #ffffff 92%, rgba(115,9,183,0.4) 100%);
-            box-shadow: 0 0 14px rgba(115,9,183,1), 0 0 30px rgba(115,9,183,0.55), 0 0 56px rgba(115,9,183,0.28);
+                transparent 0%, rgba(109,40,217,0) 22%,
+                rgba(124,58,237,0.92) 65%, #ffffff 92%, rgba(124,58,237,0.4) 100%);
+            box-shadow: 0 0 14px rgba(124,58,237,1), 0 0 30px rgba(124,58,237,0.55), 0 0 56px rgba(124,58,237,0.28);
             animation: neonScan 3.4s -2.7s linear infinite;
         }
-        .neon-line-8 {  /* cyan ince uzun, arka katman */
+        .neon-line-8 {  /* soluk turuncu ince uzun, arka katman */
             top: 62%; width: 88%; height: 1px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(76,201,240,0.5) 30%,
-                rgba(76,201,240,0.95) 75%, #ffffff 95%, transparent 100%);
-            box-shadow: 0 0 10px rgba(76,201,240,0.9), 0 0 22px rgba(76,201,240,0.45);
+                transparent 0%, rgba(255,176,46,0.45) 30%,
+                rgba(255,176,46,0.9) 75%, #ffffff 95%, transparent 100%);
+            box-shadow: 0 0 10px rgba(255,176,46,0.85), 0 0 22px rgba(255,154,30,0.45);
             filter: blur(0.6px);
             animation: neonScan 5.8s -1.0s linear infinite;
         }
-        .neon-line-9 {  /* pembe-mor karışım */
+        .neon-line-9 {  /* turuncu → mor geçiş */
             top: 72%; width: 52%; height: 2px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(247,37,133,0) 18%,
-                rgba(247,37,133,0.85) 50%, rgba(179,136,255,0.95) 70%, #ffffff 92%, rgba(179,136,255,0.4) 100%);
-            box-shadow: 0 0 12px rgba(247,37,133,0.85), 0 0 26px rgba(179,136,255,0.55), 0 0 48px rgba(179,136,255,0.22);
+                transparent 0%, rgba(255,122,0,0) 18%,
+                rgba(255,122,0,0.85) 50%, rgba(167,139,250,0.95) 72%, #ffffff 92%, rgba(167,139,250,0.4) 100%);
+            box-shadow: 0 0 12px rgba(255,122,0,0.8), 0 0 26px rgba(167,139,250,0.55), 0 0 48px rgba(167,139,250,0.22);
             animation: neonScan 3.2s -0.9s linear infinite;
         }
-        .neon-line-10 { /* mavi ince orta */
+        .neon-line-10 { /* indigo ince */
             top: 82%; width: 74%; height: 2px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(67,97,238,0) 22%,
-                rgba(67,97,238,0.9) 70%, #ffffff 92%, rgba(67,97,238,0.4) 100%);
-            box-shadow: 0 0 12px rgba(67,97,238,0.95), 0 0 26px rgba(67,97,238,0.5), 0 0 46px rgba(67,97,238,0.22);
+                transparent 0%, rgba(91,108,255,0) 22%,
+                rgba(91,108,255,0.9) 70%, #ffffff 92%, rgba(91,108,255,0.4) 100%);
+            box-shadow: 0 0 12px rgba(91,108,255,0.95), 0 0 26px rgba(91,108,255,0.5), 0 0 46px rgba(91,108,255,0.22);
             animation: neonScan 4.4s -3.1s linear infinite;
         }
-        .neon-line-11 { /* açık mavi flash en altta */
+        .neon-line-11 { /* turuncu flash en altta */
             top: 91%; width: 42%; height: 1.5px;
             background: linear-gradient(90deg,
-                transparent 0%, rgba(72,149,239,0) 18%,
-                rgba(72,149,239,0.92) 65%, #ffffff 90%, rgba(72,149,239,0.4) 100%);
-            box-shadow: 0 0 10px rgba(72,149,239,0.95), 0 0 22px rgba(72,149,239,0.5);
+                transparent 0%, rgba(255,154,30,0) 18%,
+                rgba(255,154,30,0.92) 65%, #ffffff 90%, rgba(255,154,30,0.4) 100%);
+            box-shadow: 0 0 10px rgba(255,154,30,0.95), 0 0 22px rgba(255,154,30,0.5);
             animation: neonScan 2.8s -1.6s linear infinite;
         }
         @keyframes neonScan {
@@ -294,15 +315,19 @@
             animation: splashIn 0.3s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         .splash-prefix {
-            font-size: 11.5px; font-weight: 700; color: #4cc9f0;
+            font-size: 11.5px; font-weight: 700; color: #ffa733;
             letter-spacing: 4px; text-transform: uppercase;
             display: inline-flex; align-items: center; gap: 12px;
             margin-bottom: 4px;
-            text-shadow: 0 0 14px rgba(76,201,240,0.5);
+            text-shadow: 0 0 14px rgba(255, 154, 30, 0.55);
         }
-        .splash-prefix::before, .splash-prefix::after {
+        .splash-prefix::before {
             content: ''; display: block; width: 28px; height: 1px;
-            background: linear-gradient(90deg, transparent, #4cc9f0, transparent);
+            background: linear-gradient(90deg, transparent, #b7a0ff, transparent);
+        }
+        .splash-prefix::after {
+            content: ''; display: block; width: 28px; height: 1px;
+            background: linear-gradient(90deg, transparent, #ff9a1e, transparent);
         }
         /* Harf-doldurma adı */
         .name-fill-wrap {
@@ -319,15 +344,15 @@
         }
         /* Doldurulmamış harfler — zemin tonuyla uyumlu (lacivert/mor ghost) */
         .name-bg {
-            color: rgba(140, 165, 230, 0.10);
-            -webkit-text-stroke: 1px rgba(160, 180, 240, 0.28);
+            color: rgba(150, 130, 235, 0.10);
+            -webkit-text-stroke: 1px rgba(168, 148, 245, 0.30);
         }
         .name-fg {
             position: absolute; top: 0; left: 0;
-            background: linear-gradient(90deg, #4cc9f0 0%, #4361ee 50%, #b388ff 100%);
+            background: linear-gradient(90deg, #b7a0ff 0%, #ffffff 46%, #ffb02e 78%, #ff8a00 100%);
             -webkit-background-clip: text; background-clip: text;
             -webkit-text-fill-color: transparent; color: transparent;
-            filter: drop-shadow(0 0 14px rgba(67, 97, 238, 0.55));
+            filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.55));
             clip-path: inset(0 100% 0 0);
             transition: clip-path 0.12s linear;
         }
@@ -340,10 +365,10 @@
             letter-spacing: -0.2px;
             color: #fff; font-variant-numeric: tabular-nums;
             padding: 4px 10px; border-radius: 999px;
-            background: linear-gradient(135deg, rgba(76, 201, 240, 0.22), rgba(67, 97, 238, 0.22));
-            border: 1px solid rgba(76, 201, 240, 0.4);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.26), rgba(255, 154, 30, 0.22));
+            border: 1px solid rgba(255, 154, 30, 0.45);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.32);
+            box-shadow: 0 6px 16px rgba(109, 76, 255, 0.35);
             transition: left 0.12s linear, transform 0.12s linear;
             white-space: nowrap;
         }
@@ -351,8 +376,8 @@
         .splash-tint {
             position: absolute; inset: 0; pointer-events: none; z-index: 1;
             background:
-                radial-gradient(55% 45% at 50% 60%, rgba(115, 9, 183, 0.42) 0%, transparent 70%),
-                radial-gradient(55% 45% at 25% 80%, rgba(76, 201, 240, 0.28) 0%, transparent 70%);
+                radial-gradient(55% 45% at 50% 60%, rgba(109, 40, 217, 0.45) 0%, transparent 70%),
+                radial-gradient(55% 45% at 25% 82%, rgba(255, 122, 0, 0.16) 0%, transparent 70%);
             opacity: 0;
             transition: opacity 0.3s linear;
         }
@@ -1082,10 +1107,18 @@
     <script>
         const APP_PASS = "120622";
         const SESSION_KEY = "app_splash_shown";
-        // PNG ikon yüklenemezse eski SVG ikona dön
+        // PNG ikon yüklenemezse: önce alternatif dosya adını dene
+        // (kitap_icon.png <-> kitap-icon.png), o da yoksa eski SVG ikona dön.
         function iconFallback(img) {
             const box = img.closest('.icon-box');
             if (!box) return;
+            if (!img.dataset.retried) {
+                img.dataset.retried = '1';
+                const src = img.getAttribute('src');
+                const alt = src.includes('_icon') ? src.replace('_icon', '-icon')
+                                                  : src.replace('-icon', '_icon');
+                if (alt !== src) { img.setAttribute('src', alt); return; }
+            }
             box.classList.remove('icon-img');
             img.remove();
         }
