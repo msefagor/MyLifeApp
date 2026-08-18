@@ -8,11 +8,10 @@
     <meta name="theme-color" content="#0f172a">
     <title>Liquid Library Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
-
     <!-- Cloud sync -->
     <script>window.SYNC_KEYS = ['liquid_lib_pro_v1'];</script>
     <script type="module" src="./drive-sync.js?v=1"></script>
-    
+
     <style>
         :root {
             --glass-bg: rgba(18, 22, 38, 0.55);
@@ -35,18 +34,15 @@
             --shadow-md: 0 8px 28px rgba(0,0,0,0.32);
             --shadow-lg: 0 18px 48px rgba(0,0,0,0.45);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Outfit', sans-serif; }
-
         body {
             background-color: #0f172a;
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(90px + var(--safe-bottom));
+            padding-bottom: calc(120px + var(--safe-bottom));
         }
-
         /* Arkaplan Animasyonu */
         .liquid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #0f0c29; overflow: hidden; }
         .blob { position: absolute; filter: blur(90px); opacity: 0.5; animation: move 20s infinite alternate; }
@@ -54,7 +50,6 @@
         .blob-2 { bottom: -10%; right: -10%; width: 70vw; height: 70vw; background: #d76d77; border-radius: 60% 40% 30% 70%; animation-duration: 30s; }
         .blob-3 { top: 40%; left: 30%; width: 50vw; height: 50vw; background: #23a6d5; border-radius: 30% 70% 70% 30%; animation-duration: 22s; }
         @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(30px, 50px) rotate(20deg); } }
-
         /* Cam Paneller */
         .glass-panel {
             position: relative;
@@ -70,9 +65,7 @@
             border-radius: inherit;
             background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 35%);
         }
-
         .container { max-width: 600px; margin: 0 auto; padding: 0 20px; }
-
         /* Başlık & Tarih */
         header { padding: 22px 0 14px; display: flex; justify-content: center; position: sticky; top: 0; z-index: 50; }
         .date-badge {
@@ -95,7 +88,6 @@
             letter-spacing: 0.3px;
             box-shadow: 0 6px 14px rgba(67, 97, 238, 0.40), inset 0 1px 0 rgba(255,255,255,0.22);
         }
-
         /* Kartlar & Listeler */
         .card { padding: 22px; margin-bottom: 18px; }
         .section-title {
@@ -107,7 +99,6 @@
             display: inline-block; width: 6px; height: 6px; border-radius: 50%;
             background: var(--accent); margin-right: 8px; box-shadow: 0 0 10px var(--accent);
         }
-
         /* Kitap Listesi Öğeleri */
         .book-item {
             display: flex; gap: 14px; padding: 14px; background: var(--glass-highlight);
@@ -121,7 +112,6 @@
             background: rgba(76, 201, 240, 0.08);
             transform: scale(0.99);
         }
-
         .book-cover-thumb {
             width: 52px; height: 78px; border-radius: 10px; background: #222; object-fit: cover; flex-shrink: 0;
             box-shadow: 0 6px 16px rgba(0,0,0,0.45);
@@ -136,7 +126,6 @@
             color: var(--accent); font-weight: 600; font-size: 10.5px;
         }
         .book-meta .pill.success { background: rgba(6, 214, 160, 0.15); color: var(--success); }
-
         /* İlerleme çubuğu */
         .progress-track {
             margin-top: 8px; height: 4px; border-radius: 999px;
@@ -148,7 +137,6 @@
             box-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
         }
         .progress-fill.success { background: var(--green-gradient); box-shadow: 0 0 10px rgba(6, 214, 160, 0.4); }
-
         /* Silme Butonu */
         .btn-delete-entry {
             width: 36px; height: 36px; border-radius: 12px; background: rgba(255, 95, 109, 0.14);
@@ -157,7 +145,6 @@
             transition: transform 0.2s ease, background 0.2s ease;
         }
         .btn-delete-entry:active { transform: scale(0.92); background: rgba(255, 95, 109, 0.24); }
-
         /* Arama */
         .search-box {
             width: 100%; padding: 14px 20px; border-radius: 16px; border: 1px solid var(--glass-border);
@@ -165,7 +152,6 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-
         /* İstatistik Halkaları */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
         .stat-card {
@@ -180,7 +166,6 @@
         }
         .stat-card .stat-value { font-size: 17px; font-weight: 700; }
         .stat-card .stat-value small { font-weight: 500; color: var(--text-muted); }
-
         .ring-container {
             width: 96px; height: 96px; position: relative; margin-bottom: 12px;
             display: flex; align-items: center; justify-content: center;
@@ -193,14 +178,13 @@
             transition: stroke-dashoffset 1s cubic-bezier(0.22, 1, 0.36, 1);
             filter: drop-shadow(0 0 6px currentColor);
         }
-
         .ring-percent-text {
             position: relative; z-index: 10; font-weight: 700; font-size: 17px; color: white;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             display: flex; flex-direction: column; align-items: center; line-height: 1;
         }
         .ring-percent-text small { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.5px; }
-        
+
         /* Form Elemanları */
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
@@ -208,7 +192,7 @@
             width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
             border-radius: 14px; color: white; font-size: 16px; outline: none; appearance: none;
         }
-        
+
         /* Kamera / Resim Yükleme */
         .cover-upload {
             width: 120px; height: 180px; border: 2px dashed var(--glass-border); border-radius: 12px;
@@ -218,7 +202,6 @@
         .cover-upload.has-img::after { content: ''; position: absolute; inset: 0; background: transparent; }
         .cover-upload svg { margin-bottom: 10px; color: var(--text-secondary); }
         .cover-upload span { font-size: 12px; color: var(--text-secondary); text-align: center; padding: 0 10px;}
-
         /* Butonlar */
         .btn {
             width: 100%; padding: 15px 18px; border-radius: 14px; border: none;
@@ -232,9 +215,8 @@
         .btn-secondary { background: rgba(255,255,255,0.08); color: white; border: 1px solid var(--glass-border); }
         .btn-secondary:active { background: rgba(255,255,255,0.14); }
         .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px dashed var(--glass-border); }
-
         .fab {
-            position: fixed; bottom: calc(96px + var(--safe-bottom)); right: 20px;
+            position: fixed; bottom: calc(126px + var(--safe-bottom)); right: 20px;
             width: 58px; height: 58px; border-radius: 50%; background: var(--accent-gradient);
             border: none; color: white; font-size: 28px; box-shadow: 0 10px 26px rgba(67, 97, 238, 0.45);
             display: flex; align-items: center; justify-content: center; z-index: 90;
@@ -242,20 +224,77 @@
         }
         .fab:active { transform: scale(0.92); }
 
-        /* Navigasyon */
-        nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: calc(80px + var(--safe-bottom));
-            background: rgba(13, 18, 33, 0.85); backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
-            border-top: 1px solid var(--glass-border);
-            display: flex; justify-content: space-around; padding-top: 14px; padding-bottom: var(--safe-bottom); z-index: 100;
+        /* ===================================================== */
+        /* ===  LIQUID DOCK (Meniscus) Navigasyon             === */
+        /* ===================================================== */
+        .liquid-nav {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+            padding: 0 18px calc(14px + var(--safe-bottom));
+            pointer-events: none;
         }
+        .liquid-nav::before {
+            content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+            height: calc(120px + var(--safe-bottom));
+            background: linear-gradient(180deg, rgba(11,14,26,0) 0%, rgba(11,14,26,0.55) 45%, rgba(11,14,26,0.9) 100%);
+            pointer-events: none; z-index: -1;
+        }
+        .dock {
+            position: relative; height: 66px;
+            max-width: 460px; margin: 0 auto;
+            pointer-events: auto;
+        }
+        .dock-skin {
+            position: absolute; left: 0; top: 0; overflow: visible;
+            filter: drop-shadow(0 16px 34px rgba(0,0,0,0.55));
+        }
+        .dock-glow {
+            position: absolute; top: -34px; left: 0; width: 92px; height: 92px;
+            border-radius: 50%; filter: blur(26px); opacity: 0.55;
+            pointer-events: none; will-change: transform;
+            transition: background 0.45s ease;
+        }
+        /* Kayan renkli daire (bead) */
+        .dock-bead {
+            position: absolute; top: -40px; left: 0;
+            width: 58px; height: 58px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            will-change: transform;
+            transition: background 0.45s ease, box-shadow 0.45s ease;
+        }
+        .dock-bead::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 55%);
+            pointer-events: none;
+        }
+        .dock-bead .bead-icon {
+            position: relative; z-index: 2; display: flex; color: #0d1220;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .dock-bead .bead-icon svg { width: 25px; height: 25px; stroke-width: 2.1; }
+        .dock-bead.pop .bead-icon { transform: scale(0.82) rotate(-8deg); }
+        /* Sekmeler */
+        .dock-tabs { position: absolute; inset: 0; display: flex; padding: 0 18px; }
         .nav-item {
-            background: none; border: none; color: var(--text-secondary);
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            font-size: 10.5px; opacity: 0.7; transition: 0.3s; letter-spacing: 0.3px;
+            flex: 1; background: none; border: none; padding: 0; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); cursor: pointer;
         }
-        .nav-item.active { color: var(--accent); opacity: 1; transform: translateY(-4px); }
-        .nav-item svg { width: 22px; height: 22px; }
+        .nav-item .tab-icon {
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .nav-item .tab-icon svg { width: 23px; height: 23px; stroke-width: 1.9; }
+        .nav-item .tab-label {
+            position: absolute; bottom: 9px; left: 0; right: 0;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+            opacity: 0; transform: translateY(6px);
+            transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none; white-space: nowrap;
+        }
+        .nav-item:active .tab-icon { transform: scale(0.86); }
+        .nav-item.active .tab-icon { opacity: 0; transform: translateY(-14px) scale(0.7); }
+        .nav-item.active .tab-label { opacity: 1; transform: translateY(0); }
+        /* ===================================================== */
 
         /* Modal */
         .modal {
@@ -269,11 +308,9 @@
             border-top: 1px solid var(--glass-border);
         }
         .modal.active .modal-content { transform: translateY(0); }
-
         .hidden { display: none !important; }
         .text-muted { color: var(--text-secondary); font-size: 12px; }
         .missed-day-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--glass-border); color: var(--danger); font-size: 14px; }
-
         /* === Soru Ekranı (Profesyonel Tasarım) === */
         .question-card {
             padding: 32px 22px 26px;
@@ -323,7 +360,6 @@
         .decision-btn .deco-icon svg { width: 22px; height: 22px; color: white; }
         .decision-btn .deco-title { font-size: 14.5px; font-weight: 700; letter-spacing: 0.1px; }
         .decision-btn .deco-sub { font-size: 11.5px; color: var(--text-muted); }
-
         .decision-btn.yes .deco-icon { background: var(--accent-gradient); }
         .decision-btn.yes:active {
             border-color: var(--accent);
@@ -335,13 +371,11 @@
             border-color: rgba(255,255,255,0.25);
             background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
         }
-
         /* Dinlenme günü ekranı */
         .rest-card { padding: 36px 22px; text-align: center; }
         .rest-emoji { font-size: 48px; margin-bottom: 10px; }
         .rest-title { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
         .rest-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 18px; }
-
         /* Stat kart renk varyantları */
         .stat-card.tone-blue .ring-val { stroke: #4cc9f0; }
         .stat-card.tone-pink .ring-val { stroke: #f72585; }
@@ -350,13 +384,11 @@
     </style>
 </head>
 <body>
-
     <div class="liquid-bg">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
         <div class="blob blob-3"></div>
     </div>
-
     <div id="view-daily">
         <header>
             <div class="date-badge" onclick="document.getElementById('datePicker').showPicker()">
@@ -365,7 +397,6 @@
                 <input type="date" id="datePicker" style="position:absolute; inset:0; opacity:0;">
             </div>
         </header>
-
         <div class="container">
             <div id="state-question" class="glass-panel question-card">
                 <div class="question-icon">
@@ -392,7 +423,6 @@
                     </button>
                 </div>
             </div>
-
             <div id="state-summary" class="hidden">
                 <div id="dailyList"></div>
                 <div class="glass-panel card" style="text-align:center; margin-top:8px; padding:28px 26px;">
@@ -404,7 +434,6 @@
             </div>
         </div>
     </div>
-
     <div id="view-library" class="hidden">
         <header><h2 style="font-size:20px;">Kitaplık</h2></header>
         <div class="container">
@@ -412,7 +441,6 @@
             <div id="libraryList" style="padding-bottom:100px;"></div>
         </div>
     </div>
-
     <div id="view-stats" class="hidden">
         <header>
             <h2 style="font-size:20px;">Analiz</h2>
@@ -465,7 +493,6 @@
                     <div class="stat-value"><span id="statYearlyVal">0</span> <small>/ <span id="statYearlyGoal">60</span> kitap</small></div>
                 </div>
             </div>
-
             <div class="glass-panel card">
                 <div class="section-title">
                     <span>⚠️ Okunmayan Günler</span>
@@ -475,31 +502,61 @@
             </div>
         </div>
     </div>
-
     <button class="fab" id="fabAddBook" onclick="openNewBookModal()">+</button>
 
-    <nav>
-        <button class="nav-item active" onclick="switchTab('daily', this)">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Günlük
-        </button>
-        <button class="nav-item" onclick="switchTab('library', this)">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>Kitaplık
-        </button>
-        <button class="nav-item" onclick="switchTab('stats', this)">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Analiz
-        </button>
+    <!-- ===== LIQUID DOCK NAVIGASYON ===== -->
+    <nav class="liquid-nav">
+        <div class="dock" id="liquidDock">
+            <div class="dock-glow" id="dockGlow"></div>
+            <svg class="dock-skin" id="dockSkin" aria-hidden="true">
+                <defs>
+                    <linearGradient id="dockFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#232a44"/>
+                        <stop offset="55%" stop-color="#171c2f"/>
+                        <stop offset="100%" stop-color="#121625"/>
+                    </linearGradient>
+                    <linearGradient id="dockStroke" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
+                        <stop offset="45%" stop-color="#ffffff" stop-opacity="0.09"/>
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04"/>
+                    </linearGradient>
+                </defs>
+                <path id="dockPath" fill="url(#dockFill)" stroke="url(#dockStroke)" stroke-width="1.3"/>
+            </svg>
+            <div class="dock-bead" id="dockBead"><span class="bead-icon" id="beadIcon"></span></div>
+            <div class="dock-tabs">
+                <button class="nav-item active" data-tab="daily" data-c1="#7fe3ff" data-c2="#3ba7f0" onclick="switchTab('daily', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </span>
+                    <span class="tab-label">Günlük</span>
+                </button>
+                <button class="nav-item" data-tab="library" data-c1="#b6f36a" data-c2="#5fd35a" onclick="switchTab('library', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </span>
+                    <span class="tab-label">Kitaplık</span>
+                </button>
+                <button class="nav-item" data-tab="stats" data-c1="#ff7ab0" data-c2="#f7256f" onclick="switchTab('stats', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </span>
+                    <span class="tab-label">Analiz</span>
+                </button>
+            </div>
+        </div>
     </nav>
+    <!-- ===== /LIQUID DOCK ===== -->
 
     <div id="modal-new-book" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom:20px;">Yeni Kitap Ekle</h3>
-            
+
             <div class="cover-upload" id="coverDropZone" onclick="document.getElementById('coverInput').click()">
                 <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span>Kapak Çek/Yükle</span>
                 <input type="file" id="coverInput" accept="image/*" hidden onchange="handleImage(this)">
             </div>
-
             <div class="form-group">
                 <label class="form-label">Kitap Adı</label>
                 <input type="text" id="newTitle" class="glass-input" onblur="this.value = formatTitle(this.value)">
@@ -516,7 +573,6 @@
             <button class="btn btn-secondary" onclick="closeModal('modal-new-book')">İptal</button>
         </div>
     </div>
-
     <div id="modal-reading" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom:20px;">Okuma Girişi</h3>
@@ -536,7 +592,6 @@
             <button class="btn btn-secondary" onclick="closeModal('modal-reading')">İptal</button>
         </div>
     </div>
-
     <div id="modal-update-reading" class="modal">
         <div class="modal-content">
             <h3 id="updateModalTitle" style="margin-bottom:6px;">Okumayı Güncelle</h3>
@@ -553,7 +608,6 @@
             <button class="btn btn-secondary" onclick="closeModal('modal-update-reading')">İptal</button>
         </div>
     </div>
-
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom:20px;">Ayarlar</h3>
@@ -569,7 +623,6 @@
             <button class="btn btn-secondary" onclick="closeModal('modal-settings')">Kapat</button>
         </div>
     </div>
-
     <script>
         const DB_KEY = 'liquid_lib_pro_v1';
         let data = {
@@ -577,35 +630,29 @@
             history: [],
             settings: { dailyGoal: 50, yearlyGoal: 60 }
         };
-        
+
         const getLocalDateStr = () => {
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             return new Date(now - offset).toISOString().split('T')[0];
         };
-
         // Tarih nesnesini YYYY-MM-DD'ye çevirir (yerel saat dilimine duyarlı)
         const ymd = (d) => {
             const off = d.getTimezoneOffset() * 60000;
             return new Date(d.getTime() - off).toISOString().split('T')[0];
         };
-
         let currentDate = getLocalDateStr();
         let tempCoverImg = null;
-
         function init() {
             reloadFromStorage();
-
             const datePicker = document.getElementById('datePicker');
             datePicker.value = currentDate;
             datePicker.addEventListener('change', (e) => {
                 currentDate = e.target.value;
                 updateUI();
             });
-
             updateUI();
         }
-
         // Bulut senkronu sonrası yerel state'i tazeleme
         function reloadFromStorage() {
             const stored = localStorage.getItem(DB_KEY);
@@ -617,18 +664,15 @@
             }
             if (!data.settings) data.settings = { dailyGoal: 50, yearlyGoal: 60 };
         }
-
         // drive-sync.js bulutdan veri getirdiğinde çağrılır
         window.addEventListener('dbsynced', () => {
             reloadFromStorage();
             if (typeof updateUI === 'function') updateUI();
         });
-
         function saveData() {
             localStorage.setItem(DB_KEY, JSON.stringify(data));
             updateUI();
         }
-
         function formatTitle(str) {
             if (!str) return '';
             const lowers = ['ve', 'ile', 'veya', 'ki', 'de', 'da', 'ama', 'fakat', 'lakin', 'ancak', 'için', 'üzere'];
@@ -639,26 +683,23 @@
                 return lower.charAt(0).toUpperCase() + lower.slice(1);
             }).join(' ');
         }
-
         function updateUI() {
             renderDaily();
             renderLibrary();
             renderStats();
-            
+
             const d = new Date(currentDate);
             const today = getLocalDateStr();
             document.getElementById('currentDateText').innerText = (currentDate === today) ? "Bugün" : d.toLocaleDateString('tr-TR', { day:'numeric', month:'long' });
             const dayNumEl = document.getElementById('currentDayNum');
             if (dayNumEl) dayNumEl.innerText = d.getDate();
         }
-
         function renderDaily() {
             const entries = data.history.filter(h => h.date === currentDate);
             const isRest = entries.some(h => h.bookId === -1);
-            
+
             const qState = document.getElementById('state-question');
             const sState = document.getElementById('state-summary');
-
             if(entries.length === 0) {
                 qState.classList.remove('hidden');
                 sState.classList.add('hidden');
@@ -675,7 +716,7 @@
             } else {
                 qState.classList.add('hidden');
                 sState.classList.remove('hidden');
-                
+
                 let total = 0;
                 let html = '<div class="section-title" style="padding:0 4px;"><span><span class="accent-dot"></span>Bugünün Okumaları</span></div>';
                 entries.forEach(e => {
@@ -708,16 +749,14 @@
                 document.getElementById('dailyTotalPages').innerText = total;
             }
         }
-
         function renderLibrary() {
             const search = document.getElementById('searchBar').value.toLowerCase();
             const list = document.getElementById('libraryList');
-            
-            const filtered = data.books.filter(b => 
-                b.title.toLowerCase().includes(search) || 
+
+            const filtered = data.books.filter(b =>
+                b.title.toLowerCase().includes(search) ||
                 (b.author && b.author.toLowerCase().includes(search))
             );
-
             // En son güncellenen kitap en üstte olacak şekilde sırala.
             // lastUpdated yoksa kitabın id'sini (oluşturma zamanı) fallback olarak kullan.
             filtered.sort((a, b) => {
@@ -725,12 +764,10 @@
                 const bTime = b.lastUpdated || b.id || 0;
                 return bTime - aTime;
             });
-
             if(filtered.length === 0) {
                 list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); margin-top:30px;">Kitap bulunamadı.</div>';
                 return;
             }
-
             list.innerHTML = filtered.map(b => {
                 const pct = Math.min(100, Math.round((b.currentPage / b.totalPages) * 100));
                 const isDone = b.status === 'completed';
@@ -740,7 +777,6 @@
                     const d2 = new Date(b.endDate).toLocaleDateString('tr-TR');
                     dateInfo = `<div style="font-size:10.5px; color:var(--text-muted); margin-top:6px;">📅 ${d1} – ${d2}</div>`;
                 }
-
                 return `
                 <div class="book-item">
                     <img src="${b.cover || ''}" class="book-cover-thumb" alt="">
@@ -757,23 +793,19 @@
                 </div>`;
             }).join('');
         }
-
         function renderStats() {
             const todayStr = getLocalDateStr();
             const todayEntries = data.history.filter(h => h.date === todayStr && h.bookId !== -1);
             const todayTotal = todayEntries.reduce((acc, curr) => acc + curr.pages, 0);
-
             updateRing('ringDaily', 'textDailyPct', todayTotal, data.settings.dailyGoal);
             document.getElementById('statDailyVal').innerText = todayTotal;
             document.getElementById('statDailyGoal').innerText = data.settings.dailyGoal;
-
             // Haftalık (Pazartesi - Pazar)
             const now = new Date();
             const weekStart = new Date(now);
             const weekDay = (now.getDay() + 6) % 7; // Pazartesi=0 olacak şekilde
             weekStart.setDate(now.getDate() - weekDay);
             weekStart.setHours(0,0,0,0);
-
             const weekTotal = data.history
                 .filter(h => h.bookId !== -1 && h.date >= ymd(weekStart) && h.date <= todayStr)
                 .reduce((a, c) => a + c.pages, 0);
@@ -781,7 +813,6 @@
             updateRing('ringWeekly', 'textWeeklyPct', weekTotal, weekGoal);
             document.getElementById('statWeeklyVal').innerText = weekTotal;
             document.getElementById('statWeeklyGoal').innerText = weekGoal;
-
             // Aylık (Ayın 1'inden bu yana)
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -792,42 +823,35 @@
             updateRing('ringMonthly', 'textMonthlyPct', monthTotal, monthGoal);
             document.getElementById('statMonthlyVal').innerText = monthTotal;
             document.getElementById('statMonthlyGoal').innerText = monthGoal;
-
             const thisYear = new Date().getFullYear();
             const finishedBooks = data.books.filter(b => b.status === 'completed' && b.endDate && b.endDate.startsWith(thisYear)).length;
-
             updateRing('ringYearly', 'textYearlyPct', finishedBooks, data.settings.yearlyGoal);
             document.getElementById('statYearlyVal').innerText = finishedBooks;
             document.getElementById('statYearlyGoal').innerText = data.settings.yearlyGoal;
-
             const missedDiv = document.getElementById('missedDaysList');
             let missedHtml = '';
-            
+
             const startOfYear = new Date(thisYear, 0, 1);
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-
             if (yesterday < startOfYear) {
                  missedDiv.innerHTML = '<div style="padding:10px; text-align:center; color:var(--success)">Henüz yılın başındayız!</div>';
                  return;
             }
-
             let loopDate = new Date(yesterday);
             while(loopDate >= startOfYear) {
                 const dStr = new Date(loopDate.getTime() - (loopDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 const hasEntry = data.history.some(h => h.date === dStr);
-                
+
                 if(!hasEntry) {
                     const formatted = loopDate.toLocaleDateString('tr-TR', {day:'numeric', month:'long', weekday:'long'});
                     missedHtml += `<div class="missed-day-item"><span>${formatted}</span><span>Okunmadı</span></div>`;
                 }
                 loopDate.setDate(loopDate.getDate() - 1);
             }
-
             if(missedHtml === '') missedHtml = '<div style="padding:10px; text-align:center; color:var(--success)">Harika! Bu yıl hiç boş günün yok.</div>';
             missedDiv.innerHTML = missedHtml;
         }
-
         function updateRing(ringId, textId, val, max) {
             const circle = document.getElementById(ringId);
             const textEl = document.getElementById(textId);
@@ -839,17 +863,13 @@
             circle.style.strokeDashoffset = offset;
             textEl.innerText = `%${pct}`;
         }
-
         // --- ACTIONS ---
-
         // SİLME İŞLEMİ
         function deleteEntry(entryId) {
             if(!confirm("Bu okuma kaydını silmek istediğinize emin misiniz?")) return;
-
             // Silinecek kaydı bul
             const entry = data.history.find(h => h.id === entryId);
             if(!entry) return;
-
             // Kitabı güncelle (Sayfa sayısını geri al)
             const book = data.books.find(b => b.id === entry.bookId);
             if(book) {
@@ -860,12 +880,10 @@
                 }
                 book.currentPage = Math.max(0, book.currentPage - entry.pages);
             }
-
             // Kaydı geçmişten sil
             data.history = data.history.filter(h => h.id !== entryId);
             saveData();
         }
-
         function handleImage(input) {
             const file = input.files[0];
             if(!file) return;
@@ -876,7 +894,7 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     const TARGET_W = 300;
-                    const TARGET_H = 450; 
+                    const TARGET_H = 450;
                     canvas.width = TARGET_W;
                     canvas.height = TARGET_H;
                     let sWidth = img.width, sHeight = img.height;
@@ -902,7 +920,6 @@
             }
             reader.readAsDataURL(file);
         }
-
         function openNewBookModal() {
             document.getElementById('newTitle').value = '';
             document.getElementById('newAuthor').value = '';
@@ -913,14 +930,11 @@
             drop.classList.remove('has-img');
             openModal('modal-new-book');
         }
-
         function saveNewBook() {
             const title = formatTitle(document.getElementById('newTitle').value);
             const author = formatTitle(document.getElementById('newAuthor').value);
             const pages = document.getElementById('newPages').value;
-
             if(!title || !pages) { alert('Lütfen kitap adı ve sayfa sayısını girin.'); return; }
-
             const newBook = {
                 id: Date.now(),
                 title: title,
@@ -933,23 +947,19 @@
                 endDate: null,
                 lastUpdated: Date.now()
             };
-            
+
             data.books.push(newBook);
             saveData();
             closeModal('modal-new-book');
         }
-
         function openReadingModal() {
             const select = document.getElementById('readingBookSelect');
             select.innerHTML = '';
-
             // O gün zaten okunmuş kitap ID'leri (aynı kitap için ekran üzerinden tıklayıp güncellenecek)
             const todayBookIds = data.history
                 .filter(h => h.date === currentDate && h.bookId !== -1)
                 .map(h => h.bookId);
-
             const activeBooks = data.books.filter(b => b.status === 'reading' && !todayBookIds.includes(b.id));
-
             if(activeBooks.length === 0) {
                 if(data.books.filter(b => b.status === 'reading').length > 0) {
                     alert('Bugün okumadığın başka bir kitap kalmadı. Mevcut kitabın sayfasını güncellemek için kart üzerine dokunabilirsin.');
@@ -961,7 +971,6 @@
             activeBooks.forEach(b => {
                 select.innerHTML += `<option value="${b.id}">${b.title}</option>`;
             });
-
             const input = document.getElementById('readingPages');
             input.value = '';
             // Sadece rakam kabul (mobil klavye numerik açılsa bile yapıştırılan metni filtrele)
@@ -971,11 +980,9 @@
                 refreshReadingHint();
             };
             select.onchange = refreshReadingHint;
-
             openModal('modal-reading');
             refreshReadingHint();
         }
-
         function refreshReadingHint() {
             const select = document.getElementById('readingBookSelect');
             const bookId = parseInt(select.value);
@@ -984,7 +991,6 @@
             const input = document.getElementById('readingPages');
             if (!hint) return;
             if (!book) { hint.innerHTML = ''; return; }
-
             const prev = book.currentPage;
             const target = parseInt(input.value);
             if (isNaN(target) || input.value === '') {
@@ -1002,16 +1008,13 @@
                 hint.innerHTML = `Önceki: <b>${prev}</b>. sayfa · Bugün okunan: <b style="color:#4cc9f0;">${delta}</b> sayfa`;
             }
         }
-
         function saveReading() {
             const bookId = parseInt(document.getElementById('readingBookSelect').value);
             const target = parseInt(document.getElementById('readingPages').value);
             if (!bookId) return;
             if (isNaN(target)) { alert('Geldiğin sayfa numarasını gir.'); return; }
-
             const book = data.books.find(b => b.id === bookId);
             if (!book) return;
-
             if (target > book.totalPages) {
                 alert(`Bu kitap ${book.totalPages} sayfa, daha fazla giremezsin.`);
                 return;
@@ -1019,7 +1022,6 @@
             if (target < book.currentPage) {
                 if (!confirm(`${book.currentPage}. sayfaya gelinmişti. Şimdi ${target}. sayfa diyorsun. Devam edilsin mi?`)) return;
             }
-
             const delta = target - book.currentPage;
             book.currentPage = target;
             if (book.currentPage >= book.totalPages) {
@@ -1029,7 +1031,6 @@
                 alert('Tebrikler! Kitabı bitirdin. 🎉');
             }
             book.lastUpdated = Date.now();
-
             // Kimlik (ID) eklenerek kaydediliyor — pages = günlük okunan delta
             data.history.push({
                 id: Date.now(),
@@ -1037,15 +1038,12 @@
                 bookId: bookId,
                 pages: delta
             });
-
             saveData();
             closeModal('modal-reading');
         }
-
         // Bugünün okumalarındaki bir kayda dokununca açılan güncelleme akışı
         let editingEntryId = null;
         let editingPrevPage = 0; // entry kaydedilmeden önceki currentPage
-
         function openUpdateReading(entryId) {
             const entry = data.history.find(h => h.id === entryId);
             if(!entry) return;
@@ -1053,11 +1051,9 @@
             if(!book) return;
             editingEntryId = entryId;
             editingPrevPage = book.currentPage - entry.pages; // entry öncesi sayfa
-
             document.getElementById('updateModalTitle').innerText = book.title;
             document.getElementById('updateModalSub').innerText = (book.author ? book.author + ' · ' : '')
                 + `Önceki: ${editingPrevPage}. sayfa · Mevcut: ${book.currentPage}. sayfa`;
-
             const input = document.getElementById('updateReadingPages');
             input.value = book.currentPage;  // entry sonrası gelinen sayfa (mevcut currentPage)
             input.oninput = () => {
@@ -1065,14 +1061,11 @@
                 if (cleaned !== input.value) input.value = cleaned;
                 refreshUpdateHint(book);
             };
-
             openModal('modal-update-reading');
             refreshUpdateHint(book);
-
             // Otomatik odaklan ve metni seç
             setTimeout(() => { input.focus(); input.select(); }, 250);
         }
-
         function refreshUpdateHint(book) {
             const hint = document.getElementById('updateReadingHint');
             const input = document.getElementById('updateReadingPages');
@@ -1093,15 +1086,12 @@
                 hint.innerHTML = `Önceki: <b>${editingPrevPage}</b>. sayfa · Bugün okunan: <b style="color:#4cc9f0;">${delta}</b> sayfa`;
             }
         }
-
         function saveUpdatedReading() {
             if(editingEntryId === null) return;
             const entry = data.history.find(h => h.id === editingEntryId);
             if(!entry) return;
-
             const target = parseInt(document.getElementById('updateReadingPages').value);
             if(isNaN(target) || target < 0) { alert('Lütfen geçerli bir sayfa numarası girin.'); return; }
-
             const book = data.books.find(b => b.id === entry.bookId);
             if(book) {
                 if (target > book.totalPages) {
@@ -1129,36 +1119,30 @@
                 book.lastUpdated = Date.now();
                 entry.pages = newDelta;
             }
-
             saveData();
             closeModal('modal-update-reading');
             editingEntryId = null;
         }
-
         function markRestDay() {
             data.history = data.history.filter(h => h.date !== currentDate);
             data.history.push({ id: Date.now(), date: currentDate, bookId: -1, pages: 0 });
             saveData();
         }
-
         function undoRest() {
             data.history = data.history.filter(h => !(h.date === currentDate && h.bookId === -1));
             saveData();
         }
-
         function openSettings() {
             document.getElementById('setDailyGoal').value = data.settings.dailyGoal;
             document.getElementById('setYearlyGoal').value = data.settings.yearlyGoal;
             openModal('modal-settings');
         }
-
         function saveSettings() {
             data.settings.dailyGoal = parseInt(document.getElementById('setDailyGoal').value);
             data.settings.yearlyGoal = parseInt(document.getElementById('setYearlyGoal').value);
             saveData();
             closeModal('modal-settings');
         }
-
         function switchTab(id, btn) {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             btn.classList.add('active');
@@ -1166,23 +1150,168 @@
             document.getElementById('view-library').classList.add('hidden');
             document.getElementById('view-stats').classList.add('hidden');
             document.getElementById('view-'+id).classList.remove('hidden');
-
             // "Yeni Kitap" FAB butonu sadece Günlük tab'ında görünsün
             const fab = document.getElementById('fabAddBook');
             if (fab) fab.style.display = (id === 'daily') ? '' : 'none';
+            // Liquid dock: renkli daireyi seçilen sekmeye kaydır
+            if (window.LiquidDock) window.LiquidDock.moveTo(btn);
         }
-
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
         init();
     </script>
+
+    <!-- ===== LIQUID DOCK: kayan daire + eriyen (meniscus) bar ===== -->
+    <script>
+    (function () {
+        const dock   = document.getElementById('liquidDock');
+        const svg    = document.getElementById('dockSkin');
+        const path   = document.getElementById('dockPath');
+        const bead   = document.getElementById('dockBead');
+        const glow   = document.getElementById('dockGlow');
+        const icon   = document.getElementById('beadIcon');
+        const tabs   = Array.from(dock.querySelectorAll('.nav-item'));
+        if (!dock || !path || tabs.length === 0) return;
+
+        // --- Geometri ---
+        const H  = 66;   // bar yüksekliği
+        const R  = 26;   // bar köşe yarıçapı
+        const BR = 29;   // dairenin yarıçapı (58px çap)
+        const GAP = 5;   // daire ile bar arasındaki boşluk
+        const SR = BR + GAP;          // soket yarıçapı (34)
+        const K  = 11;                // daire merkezinin bar üst kenarından yüksekliği
+        const HC = Math.sqrt(SR * SR - K * K); // soketin yarı genişliği (~32)
+        const SH = 22;                // omuz (meniscus) uzunluğu
+
+        let W = 0;              // bar genişliği
+        let cx = 0;             // dairenin anlık x konumu
+        let target = 0;         // hedef x
+        let vel = 0;
+        let raf = null;
+        let activeIndex = 0;
+
+        function buildPath(x) {
+            const tx = K / SR, ty = HC / SR;      // soket giriş teğeti
+            // Çok dar ekranlarda soketin köşeyi yemesini engelle
+            x = Math.min(Math.max(x, R + HC * 0.35), W - R - HC * 0.35);
+            const L = x - HC, Rt = x + HC;        // soketin bar üstündeki kesişim noktaları
+            // Köşelere yaklaşınca omuz kısalır (kırılma olmaması için)
+            const shL = Math.max(0, Math.min(SH, L - R));
+            const shR = Math.max(0, Math.min(SH, (W - R) - Rt));
+            const a = Math.max(R, L - shL);                    // sol omuz başlangıcı
+            const b = Math.min(W - R, Rt + shR);                   // sağ omuz bitişi
+
+            const c1x = a + shL * 0.55,       c1y = 0;
+            const c2x = L - shL * 0.55 * tx,  c2y = -shL * 0.55 * ty;
+            const d1x = Rt + shR * 0.55 * tx, d1y = -shR * 0.55 * ty;
+            const d2x = b - shR * 0.55,       d2y = 0;
+
+            return [
+                `M ${R} 0`,
+                `L ${a.toFixed(2)} 0`,
+                `C ${c1x.toFixed(2)} ${c1y}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${L.toFixed(2)} 0`,
+                `A ${SR} ${SR} 0 0 0 ${Rt.toFixed(2)} 0`,
+                `C ${d1x.toFixed(2)} ${d1y.toFixed(2)}, ${d2x.toFixed(2)} ${d2y}, ${b.toFixed(2)} 0`,
+                `L ${W - R} 0`,
+                `A ${R} ${R} 0 0 1 ${W} ${R}`,
+                `L ${W} ${H - R}`,
+                `A ${R} ${R} 0 0 1 ${W - R} ${H}`,
+                `L ${R} ${H}`,
+                `A ${R} ${R} 0 0 1 0 ${H - R}`,
+                `L 0 ${R}`,
+                `A ${R} ${R} 0 0 1 ${R} 0`,
+                'Z'
+            ].join(' ');
+        }
+
+        function draw() {
+            path.setAttribute('d', buildPath(cx));
+            bead.style.transform = `translate3d(${(cx - BR).toFixed(2)}px,0,0)`;
+            glow.style.transform = `translate3d(${(cx - 46).toFixed(2)}px,0,0)`;
+        }
+
+        function centerOf(el) {
+            const r = el.getBoundingClientRect();
+            const d = dock.getBoundingClientRect();
+            return r.left - d.left + r.width / 2;
+        }
+
+        function tick() {
+            const diff = target - cx;
+            vel += diff * 0.135;
+            vel *= 0.76;
+            cx += vel;
+            if (Math.abs(diff) < 0.25 && Math.abs(vel) < 0.25) {
+                cx = target; vel = 0; draw(); raf = null; return;
+            }
+            draw();
+            raf = requestAnimationFrame(tick);
+        }
+
+        function paint(tab) {
+            const c1 = tab.dataset.c1 || '#4cc9f0';
+            const c2 = tab.dataset.c2 || '#4361ee';
+            bead.style.background = `linear-gradient(160deg, ${c1} 0%, ${c2} 100%)`;
+            bead.style.boxShadow = `0 0 0 1px rgba(255,255,255,0.20), 0 12px 26px ${hexA(c2, 0.45)}, 0 0 30px ${hexA(c1, 0.40)}`;
+            glow.style.background = c1;
+            const lbl = tab.querySelector('.tab-label');
+            if (lbl) lbl.style.color = c1;
+            icon.innerHTML = tab.querySelector('.tab-icon').innerHTML;
+        }
+
+        function hexA(hex, a) {
+            const h = hex.replace('#', '');
+            const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+            return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+        }
+
+        function moveTo(tab, instant) {
+            const idx = tabs.indexOf(tab);
+            if (idx === -1) return;
+            activeIndex = idx;
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            paint(tab);
+            bead.classList.add('pop');
+            setTimeout(() => bead.classList.remove('pop'), 170);
+            target = centerOf(tab);
+            if (instant) { cx = target; vel = 0; draw(); return; }
+            if (!raf) raf = requestAnimationFrame(tick);
+        }
+
+        function measure(keepInstant) {
+            W = dock.clientWidth;
+            if (!W) return;
+            svg.setAttribute('width', W);
+            svg.setAttribute('height', H);
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            target = centerOf(tabs[activeIndex]);
+            if (keepInstant) { cx = target; vel = 0; }
+            draw();
+        }
+
+        window.LiquidDock = { moveTo: (tab) => moveTo(tab) };
+
+        // İlk kurulum
+        const startTab = tabs.find(t => t.classList.contains('active')) || tabs[0];
+        activeIndex = tabs.indexOf(startTab);
+        paint(startTab);
+        measure(true);
+
+        window.addEventListener('resize', () => measure(true));
+        window.addEventListener('orientationchange', () => setTimeout(() => measure(true), 250));
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measure(true));
+        if (window.ResizeObserver) new ResizeObserver(() => measure(true)).observe(dock);
+    })();
+    </script>
+    <!-- ===== /LIQUID DOCK ===== -->
+
 <script>
     (function syncDateFromUrl() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const externalDate = urlParams.get('date');
-            
+
             if (externalDate) {
                 // Olası tarih input ID'leri (Senin dosyalarındaki ID'ler)
                 const dateInputs = [
@@ -1190,20 +1319,18 @@
                     'date-picker',     // İngilizce
                     'input-date'       // Bütçe (Yatırım)
                 ];
-
                 let targetInput = null;
                 for (let id of dateInputs) {
                     targetInput = document.getElementById(id);
                     if (targetInput) break;
                 }
-
                 if (targetInput) {
                     targetInput.value = externalDate;
-                    
+
                     // Değişikliği tetikle (Uygulamaların veriyi yenilemesi için)
                     targetInput.dispatchEvent(new Event('change'));
                     targetInput.dispatchEvent(new Event('input'));
-                    
+
                     // Notlar uygulaması için özel tetikleyici
                     if(typeof openSelectedDate === 'function') {
                         // Notlar uygulamasında tarih seçilince otomatik ekranı aç
@@ -1219,5 +1346,4 @@
     })();
 </script>
 </body>
-
 </html>
