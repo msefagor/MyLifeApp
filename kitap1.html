@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Cloud sync -->
     <script>window.SYNC_KEYS = ['liquid_lib_pro_v1'];</script>
-    <script type="module" src="./drive-sync.js?v=1"></script>
+    <script type="module" src="./drive-sync.js?v=3"></script>
 
     <style>
         :root {
@@ -766,6 +766,16 @@
             const off = d.getTimezoneOffset() * 60000;
             return new Date(d.getTime() - off).toISOString().split('T')[0];
         };
+        // Bir kitabın tamamlanma zamanı (sıralama için).
+        // Eski kayıtlarda completedAt yoksa endDate, o da yoksa lastUpdated kullanılır.
+        const completedTime = (b) => {
+            if (b.completedAt) return Number(b.completedAt) || 0;
+            if (b.endDate) {
+                const t = new Date(b.endDate + 'T12:00:00').getTime();
+                if (!isNaN(t)) return t;
+            }
+            return Number(b.lastUpdated || b.id || 0);
+        };
         let currentDate = getLocalDateStr();
         let tempCoverImg = null;
         function init() {
@@ -782,11 +792,22 @@
         function reloadFromStorage() {
             const stored = localStorage.getItem(DB_KEY);
             if (stored) {
-                data = JSON.parse(stored);
-                if (Array.isArray(data.history)) {
-                    data.history.forEach(h => { if (!h.id) h.id = Date.now() + Math.random(); });
+                try {
+                    const parsed = JSON.parse(stored);
+                    // Sadece geçerli bir yapı gelirse üzerine yaz — bozuk kayıt
+                    // bellekteki sağlam veriyi ASLA silmesin.
+                    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.books)) {
+                        data = parsed;
+                    } else {
+                        console.warn('[kitap] bozuk kayıt formatı, mevcut veri korunuyor');
+                    }
+                } catch (e) {
+                    console.error('[kitap] kayıt okunamadı, mevcut veri korunuyor:', e);
                 }
             }
+            if (!Array.isArray(data.books)) data.books = [];
+            if (!Array.isArray(data.history)) data.history = [];
+            data.history.forEach(h => { if (!h.id) h.id = Date.now() + Math.random(); });
             if (!data.settings) data.settings = { dailyGoal: 50, yearlyGoal: 60 };
         }
         // drive-sync.js bulutdan veri getirdiğinde çağrılır
@@ -794,9 +815,33 @@
             reloadFromStorage();
             if (typeof updateUI === 'function') updateUI();
         });
+        // Her değişiklikte: önce cihaza yaz, hemen ardından buluta gönder.
         function saveData() {
-            localStorage.setItem(DB_KEY, JSON.stringify(data));
+            let json;
+            try {
+                json = JSON.stringify(data);
+            } catch (e) {
+                alert('⚠ Veri hazırlanamadı, değişiklik kaydedilmedi.\n' + (e && e.message ? e.message : e));
+                return false;
+            }
+            try {
+                localStorage.setItem(DB_KEY, json);
+            } catch (e) {
+                console.error('[kitap] localStorage yazma hatası:', e);
+                alert('⚠ DEĞİŞİKLİK CİHAZA KAYDEDİLEMEDİ!\n\n' +
+                      'Tarayıcı depolama alanı dolmuş olabilir (kitap kapakları yer kaplar).\n' +
+                      'Lütfen ekran görüntüsü alıp tekrar deneyin.\n\nHata: ' +
+                      (e && e.message ? e.message : e));
+                return false;
+            }
+            // Bekleme yok: senkron katmanına "şimdi gönder" de.
+            try {
+                if (window.dbSync && typeof window.dbSync.flushNow === 'function') {
+                    window.dbSync.flushNow('kitap');
+                }
+            } catch (_) {}
             updateUI();
+            return true;
         }
         function formatTitle(str) {
             if (!str) return '';
@@ -882,12 +927,16 @@
                 b.title.toLowerCase().includes(search) ||
                 (b.author && b.author.toLowerCase().includes(search))
             );
-            // En son güncellenen kitap en üstte olacak şekilde sırala.
-            // lastUpdated yoksa kitabın id'sini (oluşturma zamanı) fallback olarak kullan.
+            // Sıralama:
+            //  1) Okunmakta olanlar üstte — en son güncellenen en başta.
+            //  2) Tamamlananlar en aşağıda — kendi içlerinde en son
+            //     tamamlanan en üstte.
             filtered.sort((a, b) => {
-                const aTime = a.lastUpdated || a.id || 0;
-                const bTime = b.lastUpdated || b.id || 0;
-                return bTime - aTime;
+                const aDone = a.status === 'completed';
+                const bDone = b.status === 'completed';
+                if (aDone !== bDone) return aDone ? 1 : -1;
+                if (aDone) return completedTime(b) - completedTime(a);
+                return (b.lastUpdated || b.id || 0) - (a.lastUpdated || a.id || 0);
             });
             if(filtered.length === 0) {
                 list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); margin-top:30px;">Kitap bulunamadı.</div>';
@@ -1002,8 +1051,10 @@
                 if(book.status === 'completed' && (book.currentPage - entry.pages) < book.totalPages) {
                     book.status = 'reading';
                     book.endDate = null;
+                    book.completedAt = null;
                 }
                 book.currentPage = Math.max(0, book.currentPage - entry.pages);
+                book.lastUpdated = Date.now();
             }
             // Kaydı geçmişten sil
             data.history = data.history.filter(h => h.id !== entryId);
@@ -1153,6 +1204,7 @@
                 book.currentPage = book.totalPages;
                 book.status = 'completed';
                 book.endDate = currentDate;
+                book.completedAt = Date.now();   // sıralama için tamamlanma anı
                 alert('Tebrikler! Kitabı bitirdin. 🎉');
             }
             book.lastUpdated = Date.now();
@@ -1233,12 +1285,14 @@
                     if(book.status !== 'completed') {
                         book.status = 'completed';
                         book.endDate = currentDate;
+                        book.completedAt = Date.now();
                         alert('Tebrikler! Kitabı bitirdin. 🎉');
                     }
                 } else {
                     if(book.status === 'completed') {
                         book.status = 'reading';
                         book.endDate = null;
+                        book.completedAt = null;
                     }
                 }
                 book.lastUpdated = Date.now();
