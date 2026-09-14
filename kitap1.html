@@ -957,6 +957,7 @@
     <!-- ===== OKUMA MODU SAYACI ===== -->
     <audio id="focusAudio" src="okuma-muzigi.mp3" preload="none" loop playsinline
            x-webkit-airplay="allow" crossorigin="anonymous"></audio>
+    <audio id="focusCountdown" src="geri-sayim.mp3" preload="auto" playsinline></audio>
     <div id="modal-focus" class="modal">
         <div class="modal-content">
             <div class="fm-grip"></div>
@@ -1634,6 +1635,13 @@
         let focusTick     = null;
         let focusEndTimer = null;
         let focusWakeLock = null;
+        // Son 10 saniye: müzik kısılır, geri sayım sesi devreye girer
+        const FOCUS_CD_MS    = 10000;
+        const FOCUS_DUCK_VOL = 0.12;
+        let _fmCdStarted     = false;   // geri sayım sesi başladı mı
+        let _fmMusicSilenced = false;   // iPhone'da müzik tamamen susturuldu mu
+        let _fmVolumeOK      = null;    // tarayıcı JS ile ses seviyesi ayarlıyor mu
+        let _fmDuckTimer     = null;
 
         const focusEl = (id) => document.getElementById(id);
         function focusAudio() { return document.getElementById('focusAudio'); }
@@ -1723,28 +1731,46 @@
         // =================================================================
         //  KİLİT EKRANI (Media Session) — iPhone'da başlık ve kalan süre
         // =================================================================
-        let _fmArtwork = null;
-        function focusArtwork() {
-            if (_fmArtwork) return _fmArtwork;
+        // Kilit ekranı kapağı, sayacın ilerleme halkasını ve yüzdesini çizer.
+        // Her saniye yeniden üretilir (~9 KB JPEG, çizim 1-2 ms).
+        let _fmArtCanvas = null, _fmArtSrc = '';
+        function focusArtwork(pct, timeText) {
             try {
-                const c = document.createElement('canvas');
-                c.width = c.height = 256;
-                const g = c.getContext('2d');
-                const bg = g.createLinearGradient(0, 0, 256, 256);
-                bg.addColorStop(0, '#1d2440'); bg.addColorStop(1, '#0d1220');
-                g.fillStyle = bg; g.fillRect(0, 0, 256, 256);
-                const rg = g.createLinearGradient(40, 40, 216, 216);
-                rg.addColorStop(0, '#7fe3ff'); rg.addColorStop(1, '#3ba7f0');
-                g.strokeStyle = 'rgba(255,255,255,0.10)'; g.lineWidth = 12;
-                g.beginPath(); g.arc(128, 128, 84, 0, Math.PI * 2); g.stroke();
-                g.strokeStyle = rg; g.lineWidth = 12; g.lineCap = 'round';
-                g.beginPath(); g.arc(128, 128, 84, -Math.PI / 2, Math.PI * 0.95); g.stroke();
-                g.strokeStyle = '#e9f6ff'; g.lineWidth = 9;
-                g.beginPath(); g.moveTo(128, 96); g.lineTo(128, 130); g.lineTo(152, 144); g.stroke();
-                // JPEG: her saniye yeniden kurulan metadata için hafif kalsın (~8 KB)
-                _fmArtwork = c.toDataURL('image/jpeg', 0.82);
-            } catch (_) { _fmArtwork = ''; }
-            return _fmArtwork;
+                if (!_fmArtCanvas) {
+                    _fmArtCanvas = document.createElement('canvas');
+                    _fmArtCanvas.width = _fmArtCanvas.height = 240;
+                }
+                const S = 240, cx = 120, cy = 120, R = 86;
+                const g = _fmArtCanvas.getContext('2d');
+                const bg = g.createLinearGradient(0, 0, S, S);
+                bg.addColorStop(0, '#222a44'); bg.addColorStop(1, '#0d1220');
+                g.fillStyle = bg; g.fillRect(0, 0, S, S);
+
+                g.lineWidth = 14; g.lineCap = 'round';
+                g.strokeStyle = 'rgba(255,255,255,0.11)';
+                g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+
+                const p = Math.min(1, Math.max(0, (pct || 0) / 100));
+                if (p > 0.002) {
+                    const grd = g.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+                    grd.addColorStop(0, '#7fe3ff'); grd.addColorStop(1, '#3ba7f0');
+                    g.strokeStyle = grd;
+                    g.beginPath();
+                    g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+                    g.stroke();
+                }
+                const FONT = '-apple-system, system-ui, Helvetica, Arial, sans-serif';
+                g.textAlign = 'center';
+                g.fillStyle = '#ffffff';
+                g.font = '700 52px ' + FONT;
+                g.fillText('%' + Math.round(pct || 0), cx, cy + 6);
+                g.fillStyle = 'rgba(255,255,255,0.60)';
+                g.font = '600 23px ' + FONT;
+                g.fillText(timeText || '', cx, cy + 40);
+
+                _fmArtSrc = _fmArtCanvas.toDataURL('image/jpeg', 0.85);
+            } catch (_) {}
+            return _fmArtSrc;
         }
         function focusMediaSetup() {
             if (!('mediaSession' in navigator)) return;
@@ -1768,15 +1794,17 @@
                     return;
                 }
                 const remain = focusLiveRemain();
-                const title = fmtMMSS(remain) + ' kaldı';
-                const key = title + '|' + focusState;
+                const mm  = fmtMMSS(remain);
+                const pct = focusTotalMs > 0
+                    ? Math.round(Math.min(100, Math.max(0, (1 - remain / focusTotalMs) * 100))) : 0;
+                const key = mm + '|' + pct + '|' + focusState;
                 if (key !== _fmLastTitle && typeof MediaMetadata === 'function') {
                     _fmLastTitle = key;
                     ms.metadata = new MediaMetadata({
-                        title: title,
+                        title: mm + ' kaldı  ·  %' + pct,
                         artist: focusState === 'paused' ? 'Okuma Modu · duraklatıldı' : 'Okuma Modu',
-                        album: focusMinutes + ' dakikalık okuma seansı',
-                        artwork: [{ src: focusArtwork(), sizes: '256x256', type: 'image/jpeg' }]
+                        album: focusMinutes + ' dakikalık okuma seansı · %' + pct + ' tamamlandı',
+                        artwork: [{ src: focusArtwork(pct, mm), sizes: '240x240', type: 'image/jpeg' }]
                     });
                 }
                 ms.playbackState = (focusState === 'running') ? 'playing' : 'paused';
@@ -1797,13 +1825,107 @@
             } catch (_) {}
         }
 
+        // =================================================================
+        //  SON 10 SANİYE — müzik kısılır, geri sayım sesi çalar
+        // =================================================================
+        function focusCountdownEl() { return document.getElementById('focusCountdown'); }
+
+        // iPhone'da HTMLAudioElement.volume salt okunurdur (ses seviyesi
+        // yalnızca kullanıcının fiziksel tuşlarıyla değişir). Bir kez tespit et.
+        function focusVolumeSupported() {
+            if (_fmVolumeOK !== null) return _fmVolumeOK;
+            try {
+                const t = new Audio();
+                t.volume = 0.42;
+                _fmVolumeOK = Math.abs(t.volume - 0.42) < 0.02;
+            } catch (_) { _fmVolumeOK = false; }
+            return _fmVolumeOK;
+        }
+        // Müziği yumuşakça kıs; kısılamıyorsa (iPhone) tamamen sustur ki
+        // son 10 saniye net biçimde geri sayıma kalsın.
+        function focusDuckMusic() {
+            const a = focusAudio();
+            if (!a || _fmMusicSilenced) return;
+            if (!focusVolumeSupported()) {
+                _fmMusicSilenced = true;
+                try { a.pause(); } catch (_) {}
+                return;
+            }
+            if (_fmDuckTimer) clearInterval(_fmDuckTimer);
+            _fmDuckTimer = setInterval(() => {
+                try {
+                    const v = a.volume;
+                    if (v <= FOCUS_DUCK_VOL + 0.015) {
+                        a.volume = FOCUS_DUCK_VOL;
+                        clearInterval(_fmDuckTimer); _fmDuckTimer = null;
+                        return;
+                    }
+                    a.volume = Math.max(FOCUS_DUCK_VOL, v - 0.055);
+                } catch (_) { clearInterval(_fmDuckTimer); _fmDuckTimer = null; }
+            }, 70);
+        }
+        // Dosya henüz tamponlanmadıysa currentTime ataması sessizce yok sayılır;
+        // bu yüzden hazır olunca tekrar denenir.
+        function focusSeekCountdown(cd, off) {
+            const apply = () => { try { cd.currentTime = off; } catch (_) {} };
+            apply();
+            if (Math.abs(cd.currentTime - off) > 0.35) {
+                const again = () => {
+                    cd.removeEventListener('canplay', again);
+                    cd.removeEventListener('loadeddata', again);
+                    apply();
+                };
+                cd.addEventListener('canplay', again);
+                cd.addEventListener('loadeddata', again);
+            }
+        }
+        function focusStartCountdownSound(remainMs) {
+            const cd = focusCountdownEl();
+            if (!cd) return;
+            try {
+                cd.muted = false;
+                const off = Math.min(9.9, Math.max(0, (FOCUS_CD_MS - Math.max(0, remainMs)) / 1000));
+                focusSeekCountdown(cd, off);
+                const pr = cd.play();
+                if (pr && pr.catch) pr.catch(e => console.warn('[okuma modu] geri sayım sesi:', e));
+            } catch (_) {}
+        }
+        function focusStopCountdownSound() {
+            const cd = focusCountdownEl();
+            if (!cd) return;
+            try { cd.pause(); cd.currentTime = 0; } catch (_) {}
+        }
+        // "Başla" dokunuşuyla geri sayım sesinin kilidini aç (iOS otomatik
+        // oynatmaya izin vermez; sessizce bir kez çalıp durdururuz).
+        function focusUnlockCountdown() {
+            const cd = focusCountdownEl();
+            if (!cd) return;
+            try {
+                cd.muted = true;
+                try { cd.load(); } catch (_) {}   // sayaç bitmeden önce tamponlansın
+                const pr = cd.play();
+                const done = () => { try { cd.pause(); cd.currentTime = 0; cd.muted = false; } catch (_) {} };
+                if (pr && pr.then) pr.then(done).catch(() => { try { cd.muted = false; } catch (_) {} });
+                else done();
+            } catch (_) {}
+        }
+        function focusResetEndPhase(stopSound) {
+            _fmCdStarted = false;
+            _fmMusicSilenced = false;
+            if (_fmDuckTimer) { clearInterval(_fmDuckTimer); _fmDuckTimer = null; }
+            if (stopSound) focusStopCountdownSound();
+            const a = focusAudio();
+            if (a) { try { a.volume = 1; } catch (_) {} }
+        }
+
         // --- Müzik ---
         function focusPlayMusic(restart) {
             const a = focusAudio();
-            if (!a) return;
+            if (!a || _fmMusicSilenced) return;
             try {
                 a.loop = true;
-                try { a.volume = 1; } catch (_) {}
+                // Son 10 saniyedeysek kısık ses korunur
+                try { a.volume = _fmCdStarted ? FOCUS_DUCK_VOL : 1; } catch (_) {}
                 if (restart) { try { a.currentTime = 0; } catch (_) {} }
                 const pr = a.play();
                 if (pr && pr.catch) pr.catch(err => {
@@ -1820,7 +1942,7 @@
         }
         // Müzik herhangi bir nedenle durursa sayaç sürdüğü sürece kendini toparlar
         function focusKeepMusicAlive() {
-            if (focusState !== 'running') return;
+            if (focusState !== 'running' || _fmMusicSilenced) return;
             const a = focusAudio();
             if (!a || !a.paused) return;
             const pr = a.play();
@@ -1847,6 +1969,8 @@
             focusRemainMs = focusTotalMs;
             focusDeadline = Date.now() + focusTotalMs;
             focusState = 'running';
+            focusResetEndPhase(true);
+            focusUnlockCountdown();          // dokunma anında ses kilidini aç
             focusPlayMusic(true);
             focusMediaSetup();
             focusRequestWakeLock();
@@ -1870,9 +1994,11 @@
             focusPaintLauncher();
             focusKeepMusicAlive();
             focusMediaUpdate();
-            if (remain <= 5000) {   // son 5 saniyede sesi yumuşakça kıs
-                const a = focusAudio();
-                if (a) { try { a.volume = Math.max(0, Math.min(1, remain / 5000)); } catch (_) {} }
+            // Son 10 saniye: müziği kıs ve geri sayım sesini başlat
+            if (remain <= FOCUS_CD_MS && remain > 0 && !_fmCdStarted) {
+                _fmCdStarted = true;
+                focusDuckMusic();
+                focusStartCountdownSound(remain);
             }
             if (remain <= 0) focusComplete();
         }
@@ -1881,6 +2007,7 @@
             if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
             focusState = 'done';
             focusStopMusic();
+            focusResetEndPhase(false);   // bitiş çanı sonuna kadar çalsın
             focusMediaClear();
             focusReleaseWakeLock();
             focusRemainMs = 0;
@@ -1896,12 +2023,14 @@
                 if (focusTick) { clearInterval(focusTick); focusTick = null; }
                 if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
                 const a = focusAudio(); if (a) { try { a.pause(); } catch (_) {} }
+                const cd = focusCountdownEl(); if (cd) { try { cd.pause(); } catch (_) {} }
                 focusReleaseWakeLock();
                 focusPaint(focusRemainMs, focusTotalMs);
             } else if (focusState === 'paused') {
                 focusDeadline = Date.now() + focusRemainMs;
                 focusState = 'running';
                 focusPlayMusic(false);
+                if (_fmCdStarted) focusStartCountdownSound(focusRemainMs);
                 focusRequestWakeLock();
                 focusRunLoop();
             }
@@ -1914,6 +2043,7 @@
             if (focusTick) { clearInterval(focusTick); focusTick = null; }
             if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
             focusStopMusic();
+            focusResetEndPhase(true);
             focusMediaClear();
             focusReleaseWakeLock();
             focusState = 'idle';
