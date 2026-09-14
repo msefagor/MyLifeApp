@@ -480,6 +480,195 @@
         .rest-emoji { font-size: 48px; margin-bottom: 10px; }
         .rest-title { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
         .rest-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 18px; }
+        /* ===================================================== */
+        /* ===  OKUMA MODU — Liquid Dock tasarım dili         === */
+        /* ===================================================== */
+        .focus-launch, #modal-focus { --fm-c1: #7fe3ff; --fm-c2: #3ba7f0; }
+
+        /* Günlük ekranındaki giriş kartı (dock barının aynı camı) */
+        .focus-launch {
+            position: relative; width: 100%; margin-top: 16px;
+            display: flex; align-items: center; gap: 15px;
+            padding: 13px 16px; border-radius: 26px; cursor: pointer;
+            color: #fff; text-align: left; font-family: inherit;
+            background: linear-gradient(180deg, #232a44 0%, #171c2f 55%, #121625 100%);
+            border: 1px solid rgba(255,255,255,0.10);
+            box-shadow: 0 16px 34px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.13);
+            transition: transform 0.22s ease;
+        }
+        .focus-launch::after {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 42%);
+        }
+        .focus-launch:active { transform: scale(0.985); }
+        .fl-bead {
+            position: relative; flex: none; width: 52px; height: 52px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #0d1220;
+            background: linear-gradient(160deg, var(--fm-c1) 0%, var(--fm-c2) 100%);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.20), 0 12px 26px rgba(59,167,240,0.42), 0 0 30px rgba(127,227,255,0.32);
+        }
+        .fl-bead::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 55%);
+        }
+        .fl-bead svg { position: relative; z-index: 2; width: 25px; height: 25px; stroke-width: 2.1; }
+        .fl-texts { position: relative; z-index: 1; min-width: 0; }
+        .fl-title { display: block; font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
+        .fl-sub { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+        .fl-go { position: relative; z-index: 1; margin-left: auto; flex: none; color: rgba(255,255,255,0.32); }
+        .focus-launch.is-live .fl-sub { color: var(--fm-c1); font-weight: 600; }
+        .focus-launch.is-live .fl-bead { animation: flPulse 2.6s ease-in-out infinite; }
+        @keyframes flPulse {
+            0%,100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.20), 0 12px 26px rgba(59,167,240,0.42), 0 0 30px rgba(127,227,255,0.32); }
+            50%     { box-shadow: 0 0 0 1px rgba(255,255,255,0.30), 0 12px 32px rgba(59,167,240,0.62), 0 0 48px rgba(127,227,255,0.58); }
+        }
+
+        /* Sayaç sayfası — sadece bu modalı biçimlendirir */
+        #modal-focus .modal-content {
+            background: linear-gradient(180deg, #232a44 0%, #171c2f 40%, #121625 100%);
+            border-top: 1px solid rgba(255,255,255,0.16);
+            box-shadow: 0 -18px 44px rgba(0,0,0,0.6);
+            padding: 12px 22px calc(22px + var(--safe-bottom));
+        }
+        .fm-grip { width: 42px; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.16); margin: 0 auto 14px; }
+        .fm-head { text-align: center; }
+        .fm-head h3 { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
+        .fm-head p { font-size: 12px; color: var(--text-muted); margin-top: 5px; line-height: 1.45; }
+
+        /* Halka */
+        .focus-ring-wrap {
+            width: 274px;                        /* min() desteklemeyen eski tarayıcılar için */
+            width: min(274px, 72vw, 33vh);       /* kısa ekranlarda küçülsün */
+            margin: 12px auto 16px; position: relative;
+        }
+        .focus-ring-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+        .fr-track { fill: none; stroke: rgba(255,255,255,0.055); stroke-width: 13; }
+        .fr-hair { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 1; }
+        .fr-prog {
+            fill: none; stroke: url(#frGrad); stroke-width: 13; stroke-linecap: round;
+            transition: stroke-dashoffset 0.3s linear;
+            filter: drop-shadow(0 0 10px rgba(59,167,240,0.5));
+        }
+        .fr-badge-pill { fill: url(#frGrad); stroke: #151a2c; stroke-width: 3; }
+        .fr-badge-text { fill: #06243a; font-size: 13px; font-weight: 700; font-family: 'Outfit', sans-serif; }
+        .fr-center {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; pointer-events: none;
+        }
+        .fr-time {
+            font-size: 46px; font-size: clamp(36px, 6.2vh, 50px);
+            font-weight: 700; line-height: 1;
+            font-variant-numeric: tabular-nums; letter-spacing: 1.5px;
+            text-shadow: 0 6px 26px rgba(0,0,0,0.5);
+        }
+        .fr-label {
+            font-size: 10px; letter-spacing: 2.4px; text-transform: uppercase;
+            color: var(--text-muted); margin-top: 10px; font-weight: 600;
+        }
+        .focus-ring-wrap.is-paused .fr-prog { filter: none; opacity: 0.5; }
+
+        /* Süre seçici — dock'taki kayan bead mantığı */
+        .fm-seg-cap {
+            font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--text-muted); font-weight: 600; margin: 0 2px 9px;
+        }
+        .fm-seg {
+            position: relative; display: flex; padding: 5px; margin-bottom: 12px;
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.07);
+            background: linear-gradient(180deg, rgba(0,0,0,0.36), rgba(0,0,0,0.18));
+            box-shadow: inset 0 2px 9px rgba(0,0,0,0.5);
+        }
+        .fm-seg-bead {
+            position: absolute; left: 0; top: 0; border-radius: 15px; pointer-events: none; opacity: 0;
+            background: linear-gradient(160deg, var(--fm-c1) 0%, var(--fm-c2) 100%);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.22), 0 8px 20px rgba(59,167,240,0.38), 0 0 26px rgba(127,227,255,0.26);
+            transition: transform 0.46s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        width 0.46s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+            will-change: transform;
+        }
+        .fm-seg-bead::after {
+            content: ''; position: absolute; inset: 0; border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 58%);
+        }
+        .fm-seg-item {
+            position: relative; z-index: 2; flex: 1; border: none; background: none; padding: 15px 0;
+            border-radius: 15px; color: var(--text-muted); font-family: inherit;
+            font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+            transition: color 0.3s ease, transform 0.2s ease;
+        }
+        .fm-seg-item.active { color: #06243a; font-weight: 700; }
+        .fm-seg-item:active { transform: scale(0.93); }
+
+        /* Serbest dakika */
+        .fm-custom { display: flex; align-items: center; gap: 10px; }
+        .fm-step {
+            width: 54px; height: 54px; flex: none; border-radius: 18px; font-family: inherit;
+            border: 1px solid rgba(255,255,255,0.09); color: #fff; font-size: 23px; line-height: 1; cursor: pointer;
+            background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+            transition: transform 0.18s ease, background 0.2s ease;
+        }
+        .fm-step:active { transform: scale(0.93); background: rgba(255,255,255,0.16); }
+        .fm-minutes {
+            flex: 1; height: 54px; border-radius: 18px; display: flex; align-items: center;
+            justify-content: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07);
+            background: linear-gradient(180deg, rgba(0,0,0,0.36), rgba(0,0,0,0.18));
+            box-shadow: inset 0 2px 9px rgba(0,0,0,0.5);
+        }
+        .fm-minutes input {
+            width: 58px; background: none; border: none; outline: none; color: #fff; padding: 0;
+            font-family: inherit; font-size: 20px; font-weight: 700; text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .fm-minutes span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+        /* Kumanda düğmeleri */
+        .fm-actions { display: flex; align-items: flex-start; justify-content: center; gap: 30px; margin-top: 18px; }
+        .fm-ctl {
+            display: flex; flex-direction: column; align-items: center; gap: 9px;
+            background: none; border: none; padding: 0; font-family: inherit; cursor: pointer;
+        }
+        .fm-ctl-btn {
+            position: relative; width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #fff;
+            background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.035));
+            border: 1px solid rgba(255,255,255,0.10);
+            box-shadow: 0 10px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.14);
+            transition: transform 0.2s ease;
+        }
+        .fm-ctl-btn svg { position: relative; z-index: 2; width: 23px; height: 23px; }
+        .fm-ctl-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.2px; }
+        .fm-ctl:active .fm-ctl-btn { transform: scale(0.91); }
+        .fm-ctl.primary .fm-ctl-btn {
+            width: 70px; height: 70px; color: #0d1220; border-color: transparent;
+            background: linear-gradient(160deg, var(--fm-c1) 0%, var(--fm-c2) 100%);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.22), 0 14px 30px rgba(59,167,240,0.45), 0 0 36px rgba(127,227,255,0.3);
+        }
+        .fm-ctl.primary .fm-ctl-btn::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 55%);
+        }
+        .fm-ctl.primary .fm-ctl-btn svg { width: 29px; height: 29px; }
+        .fm-ctl.primary .fm-ctl-label { color: #fff; }
+        .fm-ctl.danger .fm-ctl-btn { color: #ff8ba0; border-color: rgba(255,95,109,0.32); }
+        .fm-ctl.is-ghost { visibility: hidden; pointer-events: none; }
+
+        /* "Müzik çalıyor" göstergesi */
+        .fm-now {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin: -4px 0 2px; font-size: 12px; color: var(--text-muted); font-weight: 500;
+        }
+        .fm-eq { display: inline-flex; align-items: flex-end; gap: 3px; height: 15px; }
+        .fm-eq i {
+            width: 3px; height: 5px; border-radius: 2px;
+            background: linear-gradient(180deg, var(--fm-c1), var(--fm-c2));
+            animation: fmEq 1.05s ease-in-out infinite;
+        }
+        .fm-eq i:nth-child(2) { animation-delay: 0.18s; }
+        .fm-eq i:nth-child(3) { animation-delay: 0.36s; }
+        .fm-eq i:nth-child(4) { animation-delay: 0.54s; }
+        @keyframes fmEq { 0%,100% { height: 5px; opacity: 0.5; } 50% { height: 15px; opacity: 1; } }
+        .fm-now.is-paused .fm-eq i { animation-play-state: paused; opacity: 0.35; }
         /* Stat kart renk varyantları */
         .stat-card.tone-blue .ring-val { stroke: #4cc9f0; }
         .stat-card.tone-pink .ring-val { stroke: #f72585; }
@@ -557,6 +746,23 @@
                     </div>
                 </div>
             </div>
+            <!-- ===== OKUMA MODU (odak sayacı) ===== -->
+            <button type="button" class="focus-launch" id="focusLaunch" onclick="openFocusModal()">
+                <span class="fl-bead">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3.5 14.5v-2a8.5 8.5 0 1117 0v2"/>
+                        <path d="M3.5 15a2.5 2.5 0 012.5-2.5h1.2a.8.8 0 01.8.8v4.4a.8.8 0 01-.8.8H6A2.5 2.5 0 013.5 16v-1z"/>
+                        <path d="M20.5 15a2.5 2.5 0 00-2.5-2.5h-1.2a.8.8 0 00-.8.8v4.4a.8.8 0 00.8.8H18a2.5 2.5 0 002.5-2.5v-1z"/>
+                    </svg>
+                </span>
+                <span class="fl-texts">
+                    <span class="fl-title">Okuma Modu</span>
+                    <span class="fl-sub" id="flSub">Sayaç ve odak müziği ile oku</span>
+                </span>
+                <span class="fl-go">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </button>
         </div>
     </div>
     <div id="view-library" class="hidden">
@@ -748,6 +954,92 @@
             <button class="btn btn-secondary" onclick="closeModal('modal-settings')">Kapat</button>
         </div>
     </div>
+    <!-- ===== OKUMA MODU SAYACI ===== -->
+    <audio id="focusAudio" src="okuma-muzigi.mp3" preload="none" loop playsinline
+           x-webkit-airplay="allow" crossorigin="anonymous"></audio>
+    <div id="modal-focus" class="modal">
+        <div class="modal-content">
+            <div class="fm-grip"></div>
+            <div class="fm-head">
+                <h3>Okuma Modu</h3>
+                <p id="fmHeadSub">Sayaç bitene kadar odak müziği çalar</p>
+            </div>
+
+            <div class="focus-ring-wrap" id="focusRingWrap">
+                <svg viewBox="0 0 280 280" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="frGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#7fe3ff"/>
+                            <stop offset="100%" stop-color="#3ba7f0"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="fr-hair" cx="140" cy="140" r="97"/>
+                    <g transform="rotate(-90 140 140)">
+                        <circle class="fr-track" cx="140" cy="140" r="112"/>
+                        <circle id="frProg" class="fr-prog" cx="140" cy="140" r="112"
+                                stroke-dasharray="703.72" stroke-dashoffset="703.72"/>
+                    </g>
+                    <g id="frBadge" transform="translate(140,28)">
+                        <rect class="fr-badge-pill" x="-25" y="-13" width="50" height="26" rx="13"/>
+                        <text id="frBadgeText" class="fr-badge-text" x="0" y="4.6" text-anchor="middle">%0</text>
+                    </g>
+                </svg>
+                <div class="fr-center">
+                    <div id="frTime" class="fr-time">25:00</div>
+                    <div id="frLabel" class="fr-label">Hazır</div>
+                </div>
+            </div>
+
+            <div class="fm-now hidden" id="fmNow">
+                <span class="fm-eq"><i></i><i></i><i></i><i></i></span>
+                <span id="fmNowText">Odak müziği çalıyor</span>
+            </div>
+
+            <div id="focusSetup">
+                <div class="fm-seg-cap">Süre</div>
+                <div class="fm-seg" id="focusPresets">
+                    <div class="fm-seg-bead" id="fmSegBead"></div>
+                    <button type="button" class="fm-seg-item" data-min="10" onclick="focusSetMinutes(10)">10 dk</button>
+                    <button type="button" class="fm-seg-item" data-min="25" onclick="focusSetMinutes(25)">25 dk</button>
+                    <button type="button" class="fm-seg-item" data-min="45" onclick="focusSetMinutes(45)">45 dk</button>
+                    <button type="button" class="fm-seg-item" data-min="60" onclick="focusSetMinutes(60)">60 dk</button>
+                    <button type="button" class="fm-seg-item" id="fmSegCustom" onclick="focusFocusCustom()">Özel</button>
+                </div>
+                <div class="fm-custom">
+                    <button type="button" class="fm-step" onclick="focusStepMinutes(-5)" aria-label="5 dakika azalt">−</button>
+                    <div class="fm-minutes">
+                        <input type="text" id="focusCustom" value="25" inputmode="numeric" pattern="[0-9]*"
+                               autocomplete="off" maxlength="3" enterkeyhint="done"
+                               oninput="focusCustomInput(this)" onblur="focusApplyMinutes(this.value, true)">
+                        <span>dakika</span>
+                    </div>
+                    <button type="button" class="fm-step" onclick="focusStepMinutes(5)" aria-label="5 dakika artır">+</button>
+                </div>
+            </div>
+
+            <div class="fm-actions">
+                <button type="button" class="fm-ctl danger is-ghost" id="fmBtnStop" onclick="focusStop(true)">
+                    <span class="fm-ctl-btn">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>
+                    </span>
+                    <span class="fm-ctl-label">Bitir</span>
+                </button>
+                <button type="button" class="fm-ctl primary" id="fmBtnMain" onclick="focusMainAction()">
+                    <span class="fm-ctl-btn" id="fmBtnMainIcon">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5.4c0-.8.9-1.3 1.6-.9l9.1 6.6c.6.4.6 1.4 0 1.8l-9.1 6.6c-.7.4-1.6-.1-1.6-.9V5.4z"/></svg>
+                    </span>
+                    <span class="fm-ctl-label" id="fmBtnMainLabel">Başla</span>
+                </button>
+                <button type="button" class="fm-ctl" id="fmBtnClose" onclick="closeModal('modal-focus')">
+                    <span class="fm-ctl-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 9l6 6 6-6"/></svg>
+                    </span>
+                    <span class="fm-ctl-label" id="fmBtnCloseLabel">Kapat</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const DB_KEY = 'liquid_lib_pro_v1';
         let data = {
@@ -1322,6 +1614,395 @@
             saveData();
             closeModal('modal-settings');
         }
+        // =====================================================================
+        //  OKUMA MODU — geri sayım sayacı + odak müziği
+        //  - Süre: 10/25/45/60 dk hazır seçenek veya 1–180 dk serbest
+        //  - Halka çevresinde ilerleme barı, bar üzerinde canlı % rozeti
+        //  - Kalan süre bitiş zaman damgasından hesaplanır: uygulama arka plana
+        //    alınsa, ekran kilitlense bile sayaç şaşmaz.
+        //  - iPhone kilit ekranı: Media Session ile başlık + ilerleme çubuğunda
+        //    kalan süre gösterilir, oynat/duraklat/bitir oradan kullanılabilir.
+        // =====================================================================
+        const FR_RADIUS = 112;
+        const FR_CIRC = 2 * Math.PI * FR_RADIUS;
+        const FOCUS_PRESETS = [10, 25, 45, 60];
+        let focusMinutes  = 25;
+        let focusState    = 'idle';   // idle | running | paused | done
+        let focusTotalMs  = 25 * 60000;
+        let focusRemainMs = 25 * 60000;
+        let focusDeadline = 0;
+        let focusTick     = null;
+        let focusEndTimer = null;
+        let focusWakeLock = null;
+
+        const focusEl = (id) => document.getElementById(id);
+        function focusAudio() { return document.getElementById('focusAudio'); }
+
+        function fmtMMSS(ms) {
+            if (!(ms > 0)) ms = 0;
+            const t = Math.ceil(ms / 1000);
+            return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+        }
+        function focusLiveRemain() {
+            if (focusState === 'running') return Math.max(0, focusDeadline - Date.now());
+            return Math.max(0, focusRemainMs);
+        }
+
+        // --- Halka / rozet çizimi ---
+        function focusPaint(remainMs, totalMs) {
+            const total = totalMs > 0 ? totalMs : 1;
+            let p = 1 - (remainMs / total);
+            if (!isFinite(p)) p = 0;
+            p = Math.min(1, Math.max(0, p));
+
+            const prog = focusEl('frProg');
+            if (prog) prog.style.strokeDashoffset = String(FR_CIRC * (1 - p));
+
+            const ang = (-90 + p * 360) * Math.PI / 180;
+            const badge = focusEl('frBadge');
+            if (badge) badge.setAttribute('transform', 'translate(' +
+                (140 + FR_RADIUS * Math.cos(ang)).toFixed(2) + ',' +
+                (140 + FR_RADIUS * Math.sin(ang)).toFixed(2) + ')');
+            const btxt = focusEl('frBadgeText');
+            if (btxt) btxt.textContent = '%' + Math.round(p * 100);
+            const tEl = focusEl('frTime');
+            if (tEl) tEl.textContent = fmtMMSS(remainMs);
+        }
+
+        // --- Süre seçimi ---
+        function focusApplyMinutes(min, writeInput) {
+            min = Math.round(Number(min) || 0);
+            if (!(min >= 1)) min = 1;
+            if (min > 180) min = 180;
+            focusMinutes = min;
+            if (writeInput) { const el = focusEl('focusCustom'); if (el) el.value = min; }
+
+            const isPreset = FOCUS_PRESETS.indexOf(min) !== -1;
+            document.querySelectorAll('#focusPresets .fm-seg-item').forEach(it => {
+                const dm = it.dataset.min ? Number(it.dataset.min) : null;
+                it.classList.toggle('active', dm === null ? !isPreset : (isPreset && dm === min));
+            });
+            const cus = focusEl('fmSegCustom');
+            if (cus) cus.textContent = isPreset ? 'Özel' : min + ' dk';
+            focusMoveSegBead();
+
+            if (focusState === 'idle' || focusState === 'done') {
+                focusTotalMs = min * 60000;
+                focusRemainMs = focusTotalMs;
+                focusPaint(focusTotalMs, focusTotalMs);
+            }
+        }
+        function focusSetMinutes(m) { focusApplyMinutes(m, true); }
+        function focusStepMinutes(d) { focusApplyMinutes(focusMinutes + d, true); }
+        function focusCustomInput(el) {
+            const cleaned = el.value.replace(/[^0-9]/g, '');
+            if (cleaned !== el.value) el.value = cleaned;
+            const v = parseInt(cleaned, 10);
+            if (!cleaned || isNaN(v) || v < 1) return;   // kullanıcı hâlâ yazıyor
+            focusApplyMinutes(Math.min(180, v), false);
+        }
+        function focusFocusCustom() {
+            const el = focusEl('focusCustom');
+            if (!el) return;
+            el.focus(); el.select();
+        }
+        // Dock'taki kayan daire mantığı: seçili sekmenin altına kayan bead
+        function focusMoveSegBead() {
+            const bar = focusEl('focusPresets'), bead = focusEl('fmSegBead');
+            if (!bar || !bead) return;
+            const act = bar.querySelector('.fm-seg-item.active');
+            if (!act || !act.offsetWidth) { bead.style.opacity = '0'; return; }
+            bead.style.opacity = '1';
+            bead.style.width = act.offsetWidth + 'px';
+            bead.style.height = act.offsetHeight + 'px';
+            bead.style.transform = 'translate3d(' + (act.offsetLeft - bar.clientLeft) + 'px,' +
+                                                    (act.offsetTop - bar.clientTop) + 'px,0)';
+        }
+        window.addEventListener('resize', () => focusMoveSegBead());
+
+        // =================================================================
+        //  KİLİT EKRANI (Media Session) — iPhone'da başlık ve kalan süre
+        // =================================================================
+        let _fmArtwork = null;
+        function focusArtwork() {
+            if (_fmArtwork) return _fmArtwork;
+            try {
+                const c = document.createElement('canvas');
+                c.width = c.height = 256;
+                const g = c.getContext('2d');
+                const bg = g.createLinearGradient(0, 0, 256, 256);
+                bg.addColorStop(0, '#1d2440'); bg.addColorStop(1, '#0d1220');
+                g.fillStyle = bg; g.fillRect(0, 0, 256, 256);
+                const rg = g.createLinearGradient(40, 40, 216, 216);
+                rg.addColorStop(0, '#7fe3ff'); rg.addColorStop(1, '#3ba7f0');
+                g.strokeStyle = 'rgba(255,255,255,0.10)'; g.lineWidth = 12;
+                g.beginPath(); g.arc(128, 128, 84, 0, Math.PI * 2); g.stroke();
+                g.strokeStyle = rg; g.lineWidth = 12; g.lineCap = 'round';
+                g.beginPath(); g.arc(128, 128, 84, -Math.PI / 2, Math.PI * 0.95); g.stroke();
+                g.strokeStyle = '#e9f6ff'; g.lineWidth = 9;
+                g.beginPath(); g.moveTo(128, 96); g.lineTo(128, 130); g.lineTo(152, 144); g.stroke();
+                // JPEG: her saniye yeniden kurulan metadata için hafif kalsın (~8 KB)
+                _fmArtwork = c.toDataURL('image/jpeg', 0.82);
+            } catch (_) { _fmArtwork = ''; }
+            return _fmArtwork;
+        }
+        function focusMediaSetup() {
+            if (!('mediaSession' in navigator)) return;
+            const ms = navigator.mediaSession;
+            const on = (a, fn) => { try { ms.setActionHandler(a, fn); } catch (_) {} };
+            on('play',  () => { if (focusState === 'paused') focusTogglePause(); });
+            on('pause', () => { if (focusState === 'running') focusTogglePause(); });
+            on('stop',  () => focusStop(false));
+            // Kilit ekranındaki ileri/geri sarma düğmeleri bu senaryoda anlamsız
+            ['previoustrack', 'nexttrack', 'seekbackward', 'seekforward', 'seekto']
+                .forEach(a => on(a, null));
+        }
+        let _fmLastTitle = '';
+        function focusMediaUpdate() {
+            if (!('mediaSession' in navigator)) return;
+            const ms = navigator.mediaSession;
+            try {
+                if (focusState !== 'running' && focusState !== 'paused') {
+                    ms.playbackState = 'none';
+                    _fmLastTitle = '';
+                    return;
+                }
+                const remain = focusLiveRemain();
+                const title = fmtMMSS(remain) + ' kaldı';
+                const key = title + '|' + focusState;
+                if (key !== _fmLastTitle && typeof MediaMetadata === 'function') {
+                    _fmLastTitle = key;
+                    ms.metadata = new MediaMetadata({
+                        title: title,
+                        artist: focusState === 'paused' ? 'Okuma Modu · duraklatıldı' : 'Okuma Modu',
+                        album: focusMinutes + ' dakikalık okuma seansı',
+                        artwork: [{ src: focusArtwork(), sizes: '256x256', type: 'image/jpeg' }]
+                    });
+                }
+                ms.playbackState = (focusState === 'running') ? 'playing' : 'paused';
+                if (typeof ms.setPositionState === 'function' && focusTotalMs > 0) {
+                    const dur = focusTotalMs / 1000;
+                    const pos = Math.min(dur, Math.max(0, (focusTotalMs - remain) / 1000));
+                    // Kilit ekranındaki çubuk, JS uyusa bile kendi başına ilerler
+                    ms.setPositionState({ duration: dur, position: pos, playbackRate: 1 });
+                }
+            } catch (_) {}
+        }
+        function focusMediaClear() {
+            if (!('mediaSession' in navigator)) return;
+            try {
+                navigator.mediaSession.playbackState = 'none';
+                navigator.mediaSession.metadata = null;
+                _fmLastTitle = '';
+            } catch (_) {}
+        }
+
+        // --- Müzik ---
+        function focusPlayMusic(restart) {
+            const a = focusAudio();
+            if (!a) return;
+            try {
+                a.loop = true;
+                try { a.volume = 1; } catch (_) {}
+                if (restart) { try { a.currentTime = 0; } catch (_) {} }
+                const pr = a.play();
+                if (pr && pr.catch) pr.catch(err => {
+                    console.warn('[okuma modu] müzik başlatılamadı:', err);
+                    const l = focusEl('frLabel');
+                    if (l && focusState === 'running') l.textContent = 'Kalan süre (müzik yok)';
+                });
+            } catch (e) { console.warn('[okuma modu] müzik hatası:', e); }
+        }
+        function focusStopMusic() {
+            const a = focusAudio();
+            if (!a) return;
+            try { a.pause(); a.currentTime = 0; a.volume = 1; } catch (_) {}
+        }
+        // Müzik herhangi bir nedenle durursa sayaç sürdüğü sürece kendini toparlar
+        function focusKeepMusicAlive() {
+            if (focusState !== 'running') return;
+            const a = focusAudio();
+            if (!a || !a.paused) return;
+            const pr = a.play();
+            if (pr && pr.catch) pr.catch(() => {});
+        }
+
+        // --- Ekranı uyanık tut (kullanıcı kendisi kilitlerse müzik yine devam eder) ---
+        async function focusRequestWakeLock() {
+            try {
+                if (!('wakeLock' in navigator) || focusWakeLock) return;
+                focusWakeLock = await navigator.wakeLock.request('screen');
+                focusWakeLock.addEventListener('release', () => { focusWakeLock = null; });
+            } catch (_) {}
+        }
+        function focusReleaseWakeLock() {
+            try { if (focusWakeLock) focusWakeLock.release(); } catch (_) {}
+            focusWakeLock = null;
+        }
+
+        // --- Sayaç ---
+        function focusStart() {
+            focusApplyMinutes(focusMinutes, true);
+            focusTotalMs  = focusMinutes * 60000;
+            focusRemainMs = focusTotalMs;
+            focusDeadline = Date.now() + focusTotalMs;
+            focusState = 'running';
+            focusPlayMusic(true);
+            focusMediaSetup();
+            focusRequestWakeLock();
+            focusRunLoop();
+            focusUpdateUI();
+        }
+        function focusRunLoop() {
+            if (focusTick) clearInterval(focusTick);
+            focusTick = setInterval(focusStep, 250);
+            if (focusEndTimer) clearTimeout(focusEndTimer);
+            // Sekme dondurulsa bile bitişte tetiklenecek yedek zamanlayıcı
+            focusEndTimer = setTimeout(() => { focusEndTimer = null; focusStep(); },
+                                       Math.max(0, focusDeadline - Date.now()) + 150);
+            focusStep();
+        }
+        function focusStep() {
+            if (focusState !== 'running') return;
+            const remain = focusDeadline - Date.now();
+            focusRemainMs = remain;
+            focusPaint(remain, focusTotalMs);
+            focusPaintLauncher();
+            focusKeepMusicAlive();
+            focusMediaUpdate();
+            if (remain <= 5000) {   // son 5 saniyede sesi yumuşakça kıs
+                const a = focusAudio();
+                if (a) { try { a.volume = Math.max(0, Math.min(1, remain / 5000)); } catch (_) {} }
+            }
+            if (remain <= 0) focusComplete();
+        }
+        function focusComplete() {
+            if (focusTick) { clearInterval(focusTick); focusTick = null; }
+            if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
+            focusState = 'done';
+            focusStopMusic();
+            focusMediaClear();
+            focusReleaseWakeLock();
+            focusRemainMs = 0;
+            focusPaint(0, focusTotalMs);
+            const t = focusEl('frTime'); if (t) t.textContent = '00:00';
+            focusUpdateUI();
+            try { if (navigator.vibrate) navigator.vibrate([220, 120, 220]); } catch (_) {}
+        }
+        function focusTogglePause() {
+            if (focusState === 'running') {
+                focusState = 'paused';
+                focusRemainMs = Math.max(0, focusDeadline - Date.now());
+                if (focusTick) { clearInterval(focusTick); focusTick = null; }
+                if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
+                const a = focusAudio(); if (a) { try { a.pause(); } catch (_) {} }
+                focusReleaseWakeLock();
+                focusPaint(focusRemainMs, focusTotalMs);
+            } else if (focusState === 'paused') {
+                focusDeadline = Date.now() + focusRemainMs;
+                focusState = 'running';
+                focusPlayMusic(false);
+                focusRequestWakeLock();
+                focusRunLoop();
+            }
+            focusMediaUpdate();
+            focusUpdateUI();
+        }
+        function focusStop(ask) {
+            if (ask && focusState === 'running' &&
+                !confirm('Okuma modunu bitirmek istiyor musun? Sayaç sıfırlanacak.')) return;
+            if (focusTick) { clearInterval(focusTick); focusTick = null; }
+            if (focusEndTimer) { clearTimeout(focusEndTimer); focusEndTimer = null; }
+            focusStopMusic();
+            focusMediaClear();
+            focusReleaseWakeLock();
+            focusState = 'idle';
+            focusApplyMinutes(focusMinutes, true);
+            focusUpdateUI();
+        }
+        function focusMainAction() {
+            if (focusState === 'running' || focusState === 'paused') focusTogglePause();
+            else focusStart();
+        }
+        function openFocusModal() {
+            if (focusState === 'done') focusState = 'idle';
+            if (focusState === 'idle') {
+                focusApplyMinutes(focusMinutes, true);
+                const a = focusAudio();
+                if (a) { try { a.load(); } catch (_) {} }   // "Başla"da anında çalsın
+            }
+            focusUpdateUI();
+            openModal('modal-focus');
+            requestAnimationFrame(focusMoveSegBead);
+            setTimeout(focusMoveSegBead, 340);
+        }
+
+        // --- Arayüz durumları ---
+        const FM_ICON_PLAY  = '<svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5.4c0-.8.9-1.3 1.6-.9l9.1 6.6c.6.4.6 1.4 0 1.8l-9.1 6.6c-.7.4-1.6-.1-1.6-.9V5.4z"/></svg>';
+        const FM_ICON_PAUSE = '<svg fill="currentColor" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4.2" height="14" rx="1.6"/><rect x="13.3" y="5" width="4.2" height="14" rx="1.6"/></svg>';
+        function focusUpdateUI() {
+            const running = focusState === 'running';
+            const paused  = focusState === 'paused';
+            const setup   = !running && !paused;
+            const hide = (id, h) => { const el = focusEl(id); if (el) el.classList.toggle('hidden', h); };
+
+            hide('focusSetup', !setup);
+            hide('fmNow', setup);
+            const stopBtn = focusEl('fmBtnStop');
+            if (stopBtn) stopBtn.classList.toggle('is-ghost', setup);
+            const now = focusEl('fmNow');
+            if (now) now.classList.toggle('is-paused', paused);
+            const nowTxt = focusEl('fmNowText');
+            if (nowTxt) nowTxt.textContent = paused ? 'Müzik duraklatıldı' : 'Odak müziği çalıyor';
+
+            const icon = focusEl('fmBtnMainIcon');
+            if (icon) icon.innerHTML = running ? FM_ICON_PAUSE : FM_ICON_PLAY;
+            const lbl = focusEl('fmBtnMainLabel');
+            if (lbl) lbl.textContent = running ? 'Duraklat' : (paused ? 'Devam Et' : 'Başla');
+            const cl = focusEl('fmBtnCloseLabel');
+            if (cl) cl.textContent = setup ? 'Kapat' : 'Küçült';
+
+            const rl = focusEl('frLabel');
+            if (rl) rl.textContent = running ? 'Kalan süre'
+                                   : paused  ? 'Duraklatıldı'
+                                   : (focusState === 'done' ? 'Tamamlandı 🎉' : 'Hazır');
+            const wrap = focusEl('focusRingWrap');
+            if (wrap) wrap.classList.toggle('is-paused', paused);
+            const hs = focusEl('fmHeadSub');
+            if (hs) hs.textContent = setup
+                ? 'Sayaç bitene kadar odak müziği çalar'
+                : 'Ekran kilitlense bile müzik ve sayaç devam eder';
+
+            if (setup) { requestAnimationFrame(focusMoveSegBead); }
+            focusPaintLauncher();
+        }
+        // Günlük ekrandaki "Okuma Modu" kartının alt yazısı
+        function focusPaintLauncher() {
+            const sub = focusEl('flSub'), card = focusEl('focusLaunch');
+            if (!sub) return;
+            if (focusState === 'running')      sub.textContent = fmtMMSS(focusLiveRemain()) + ' kaldı · sürüyor';
+            else if (focusState === 'paused')  sub.textContent = fmtMMSS(focusRemainMs) + ' · duraklatıldı';
+            else                               sub.textContent = 'Sayaç ve odak müziği ile oku';
+            if (card) card.classList.toggle('is-live', focusState === 'running' || focusState === 'paused');
+        }
+
+        // Sayfa öne geldiğinde sayacı ve müziği tazele (arka planda geçen süre dahil)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') return;
+            if (focusState === 'running') {
+                focusRequestWakeLock();
+                focusKeepMusicAlive();
+                focusStep();
+            }
+        });
+        (function initFocusAudioGuards() {
+            const a = document.getElementById('focusAudio');
+            if (!a) return;
+            a.addEventListener('ended', focusKeepMusicAlive);
+            a.addEventListener('pause', () => setTimeout(focusKeepMusicAlive, 400));
+        })();
+        focusApplyMinutes(focusMinutes, true);
+
         function switchTab(id, btn) {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             btn.classList.add('active');
