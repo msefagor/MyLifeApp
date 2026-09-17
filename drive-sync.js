@@ -33,7 +33,8 @@ const DOMAINS = {
     kitap:     { file: 'kitap.json',     keys: ['liquid_lib_pro_v1'] },
     yatirim:   { file: 'yatirim.json',   keys: ['liquid_trader_db_v3', 'liquid_trader_settings_v3'] },
     ingilizce: { file: 'ingilizce.json', prefixes: ['eng_day_', 'eng_done_'] },
-    sozluk:    { file: 'sozluk.json',    keys: ['sozlukKelimeler'] }
+    sozluk:    { file: 'sozluk.json',    keys: ['sozlukKelimeler'] },
+    makale:    { file: 'makale.json',    keys: ['makale_app_v1'] }
 };
 const SESSION_FILE = '_session.json';
 const NEVER_SYNC_PREFIXES = ['101_v', 'devam_', '_dbsync_'];
@@ -52,6 +53,7 @@ const LS_DIRTY            = '_dbsync_dirty';           // { domain: ts } buluta 
 const LS_CONFLICT_PREFIX  = '_dbsync_conflict_';       // çakışmada uzak sürümün yedeği
 const LS_KITAP_LITE       = '_dbsync_kitap_lite';      // kapaksız acil durum yedeği
 const KITAP_KEY           = 'liquid_lib_pro_v1';
+const MAKALE_KEY          = 'makale_app_v1';   // Makale: kelime bazlı birleştirme
 
 // =============================================================================
 //  HANGİ ANAHTAR HANGİ DOMAIN'E AİT?
@@ -178,6 +180,10 @@ function fingerprintValue(key, value) {
             return { __k: 1, books, history: hist, settings: hashStr(stableStr(o.settings || {})) };
         }
     }
+    if (key === MAKALE_KEY) {
+        const o = parseMakale(value);
+        if (o) return fpMakale(o);
+    }
     return hashStr(String(value));
 }
 function fingerprintDomain(domain, data) {
@@ -244,6 +250,79 @@ function mergeKitap(baseFp, lStr, rStr) {
     return JSON.stringify({ books, history, settings });
 }
 
+// --- MAKALE: kelime bazlı 3-yollu birleştirme --------------------------------
+//  Farklı cihazlarda eklenen kelimeler birbirini EZMEZ; hepsi birleşir.
+function parseMakale(str) {
+    if (typeof str !== 'string' || !str) return null;
+    try {
+        const o = JSON.parse(str);
+        if (!o || typeof o !== 'object') return null;
+        return {
+            words:    (o.words    && typeof o.words    === 'object') ? o.words    : {},
+            cache:    (o.cache    && typeof o.cache    === 'object') ? o.cache    : {},
+            days:     (o.days     && typeof o.days     === 'object') ? o.days     : {},
+            settings: (o.settings && typeof o.settings === 'object') ? o.settings : {}
+        };
+    } catch (_) { return null; }
+}
+function fpMakale(o) {
+    const words = {}, days = {};
+    for (const [k, v] of Object.entries(o.words || {})) words[k] = hashStr(stableStr(v));
+    for (const [k, v] of Object.entries(o.days  || {})) days[k]  = hashStr(stableStr(v));
+    return {
+        __m: 1, words, days,
+        cache: hashStr(stableStr(o.cache || {})),
+        settings: hashStr(stableStr(o.settings || {}))
+    };
+}
+function mergeMap(baseHashes, L, R, pick) {
+    const out = {};
+    const keys = new Set([...Object.keys(L || {}), ...Object.keys(R || {})]);
+    for (const k of keys) {
+        const l = L ? L[k] : undefined;
+        const r = R ? R[k] : undefined;
+        const bh = baseHashes ? baseHashes[k] : undefined;
+        if (l !== undefined && r !== undefined) {
+            const ls = stableStr(l), rs = stableStr(r);
+            if (ls === rs) { out[k] = l; continue; }
+            if (bh && hashStr(ls) === bh) { out[k] = r; continue; }   // yerel değişmemiş → uzak
+            if (bh && hashStr(rs) === bh) { out[k] = l; continue; }   // uzak değişmemiş → yerel
+            out[k] = pick(l, r);
+        } else if (l !== undefined) {
+            if (bh && hashStr(stableStr(l)) === bh) continue;          // uzakta silinmiş
+            out[k] = l;
+        } else {
+            if (bh && hashStr(stableStr(r)) === bh) continue;          // yerelde silinmiş
+            out[k] = r;
+        }
+    }
+    return out;
+}
+function pickWord(l, r) {
+    const lt = Number(l.updatedAt || l.learnedAt || l.added || 0);
+    const rt = Number(r.updatedAt || r.learnedAt || r.added || 0);
+    if (rt > lt) return r;
+    if (lt > rt) return l;
+    return (l.status === 'learned') ? l : r;   // eşitlikte 'ezberledim' korunur
+}
+function pickDay(l, r) {
+    return {
+        added:   Math.max(Number((l && l.added)   || 0), Number((r && r.added)   || 0)),
+        learned: Math.max(Number((l && l.learned) || 0), Number((r && r.learned) || 0))
+    };
+}
+function mergeMakale(baseFp, lStr, rStr) {
+    const L = parseMakale(lStr), R = parseMakale(rStr);
+    if (!L) return rStr;
+    if (!R) return lStr;
+    const bf = (baseFp && typeof baseFp === 'object' && baseFp.__m) ? baseFp : null;
+    const words = mergeMap(bf ? bf.words : null, L.words, R.words, pickWord);
+    const days  = mergeMap(bf ? bf.days  : null, L.days,  R.days,  pickDay);
+    const cache = Object.assign({}, R.cache, L.cache);          // çeviriler birleşir
+    const settings = Object.assign({}, R.settings, L.settings); // ayarlarda bu cihaz esas
+    return JSON.stringify({ words, cache, days, settings });
+}
+
 function backupConflict(domain, key, remoteValue) {
     try { window.localStorage.setItem(LS_CONFLICT_PREFIX + domain + '_' + key, remoteValue); }
     catch (_) {}
@@ -268,7 +347,8 @@ function mergeDomainData(domain, baseFp, local, remote) {
             if (bf !== undefined && sameAsBase(k, l, bf)) continue;  // uzakta silinmiş
             out[k] = l; continue;                    // yeni yerel kayıt → korunur
         }
-        if (k === KITAP_KEY) { out[k] = mergeKitap(bf, l, r); continue; }
+        if (k === KITAP_KEY)  { out[k] = mergeKitap(bf, l, r);  continue; }
+        if (k === MAKALE_KEY) { out[k] = mergeMakale(bf, l, r); continue; }
 
         const lSame = sameAsBase(k, l, bf);
         const rSame = sameAsBase(k, r, bf);
