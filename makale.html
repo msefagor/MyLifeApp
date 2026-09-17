@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Makale</title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="eng_icon.png?v=1">
+    <link rel="icon" type="image/png" href="eng_icon.png?v=1">
+    <link rel="shortcut icon" href="eng_icon.png?v=1">
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Cloud sync (kelimeler ve istatistikler senkronlanır, PDF dosyaları cihazda kalır) -->
+    <script>window.SYNC_KEYS = ['makale_app_v1'];</script>
+    <script type="module" src="./drive-sync.js?v=3"></script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(18, 22, 38, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.04);
+            --glass-stroke: rgba(255, 255, 255, 0.14);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.62);
+            --text-muted: rgba(255, 255, 255, 0.45);
+            --accent: #4cc9f0;
+            --accent-soft: rgba(76, 201, 240, 0.15);
+            --accent-gradient: linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%);
+            --warm-gradient: linear-gradient(135deg, #f72585 0%, #b5179e 100%);
+            --gold-gradient: linear-gradient(135deg, #ffd166 0%, #ef8354 100%);
+            --green-gradient: linear-gradient(135deg, #06d6a0 0%, #1b9aaa 100%);
+            --orange-gradient: linear-gradient(135deg, #ffa552 0%, #ff5f6d 100%);
+            --danger: #ff5f6d;
+            --success: #06d6a0;
+            --unknown: #ff9f45;
+            --safe-bottom: env(safe-area-inset-bottom);
+            --shadow-sm: 0 2px 10px rgba(0,0,0,0.18);
+            --shadow-md: 0 8px 28px rgba(0,0,0,0.32);
+            --shadow-lg: 0 18px 48px rgba(0,0,0,0.45);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Outfit', sans-serif; }
+        body {
+            background-color: #0f172a;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(120px + var(--safe-bottom));
+        }
+        .liquid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #0f0c29; overflow: hidden; }
+        .blob { position: absolute; filter: blur(90px); opacity: 0.5; animation: move 20s infinite alternate; }
+        .blob-1 { top: -10%; left: -10%; width: 60vw; height: 60vw; background: #3a1c71; border-radius: 40% 60% 70% 30%; animation-duration: 25s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 70vw; height: 70vw; background: #d76d77; border-radius: 60% 40% 30% 70%; animation-duration: 30s; }
+        .blob-3 { top: 40%; left: 30%; width: 50vw; height: 50vw; background: #23a6d5; border-radius: 30% 70% 70% 30%; animation-duration: 22s; }
+        @keyframes move { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(30px, 50px) rotate(20deg); } }
+
+        .glass-panel {
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        .glass-panel::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            border-radius: inherit;
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 35%);
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 0 20px; }
+        header { padding: 22px 0 14px; display: flex; justify-content: center; align-items: center; position: relative; }
+        header h2 { font-size: 20px; font-weight: 600; letter-spacing: 0.2px; }
+        .head-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 38px; height: 38px; border-radius: 13px;
+            background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
+            color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .head-btn:active { transform: translateY(-50%) scale(0.92); }
+        .head-btn.left { left: 20px; }
+        .head-btn.right { right: 20px; }
+        .head-btn svg { width: 20px; height: 20px; }
+
+        .card { padding: 22px; margin-bottom: 18px; }
+        .section-title {
+            font-size: 16px; margin-bottom: 16px; font-weight: 600; color: var(--text-primary);
+            display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.2px;
+        }
+        .section-title .accent-dot {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent); margin-right: 8px; box-shadow: 0 0 10px var(--accent);
+        }
+        .search-box {
+            width: 100%; padding: 14px 20px; border-radius: 16px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.22); color: white; margin-bottom: 18px; font-size: 15px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+        .stat-card { text-align: center; padding: 22px 16px; display: flex; flex-direction: column; align-items: center; }
+        .stat-card .stat-label { font-size: 11px; color: var(--text-secondary); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-card .stat-value { font-size: 17px; font-weight: 700; }
+        .stat-card .stat-value small { font-weight: 500; color: var(--text-muted); }
+        .ring-container { width: 96px; height: 96px; position: relative; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; position: absolute; inset: 0; }
+        .ring-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 7; }
+        .ring-val {
+            fill: none; stroke-width: 7; stroke-linecap: round;
+            stroke-dasharray: 220; stroke-dashoffset: 220;
+            transition: stroke-dashoffset 1s cubic-bezier(0.22, 1, 0.36, 1);
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+        .ring-percent-text {
+            position: relative; z-index: 10; font-weight: 700; font-size: 17px; color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; line-height: 1;
+        }
+        .ring-percent-text small { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.5px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .glass-input, select, textarea {
+            width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+            border-radius: 14px; color: white; font-size: 16px; outline: none; appearance: none;
+        }
+        .btn {
+            width: 100%; padding: 15px 18px; border-radius: 14px; border: none;
+            font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.25s ease, opacity 0.2s ease; letter-spacing: 0.2px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent-gradient); color: white; box-shadow: 0 8px 22px rgba(67, 97, 238, 0.35); }
+        .btn-success { background: var(--green-gradient); color: #04261d; box-shadow: 0 8px 22px rgba(6, 214, 160, 0.3); }
+        .btn-warm { background: var(--orange-gradient); color: #2b1300; box-shadow: 0 8px 22px rgba(255, 120, 60, 0.3); }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: white; border: 1px solid var(--glass-border); }
+        .btn-secondary:active { background: rgba(255,255,255,0.14); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px dashed var(--glass-border); }
+        .fab {
+            position: fixed; bottom: calc(126px + var(--safe-bottom)); right: 20px;
+            width: 58px; height: 58px; border-radius: 50%; background: var(--accent-gradient);
+            border: none; color: white; font-size: 28px; box-shadow: 0 10px 26px rgba(67, 97, 238, 0.45);
+            display: flex; align-items: center; justify-content: center; z-index: 90;
+            transition: transform 0.2s ease;
+        }
+        .fab:active { transform: scale(0.92); }
+
+        /* ===================================================== */
+        /* ===  LIQUID DOCK (Meniscus) Navigasyon             === */
+        /* ===================================================== */
+        .liquid-nav {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+            padding: 0 18px calc(14px + var(--safe-bottom));
+            pointer-events: none;
+        }
+        .liquid-nav::before {
+            content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+            height: calc(120px + var(--safe-bottom));
+            background: linear-gradient(180deg, rgba(11,14,26,0) 0%, rgba(11,14,26,0.55) 45%, rgba(11,14,26,0.9) 100%);
+            pointer-events: none; z-index: -1;
+        }
+        .dock { position: relative; height: 66px; max-width: 460px; margin: 0 auto; pointer-events: auto; }
+        .dock-skin { position: absolute; left: 0; top: 0; overflow: visible; filter: drop-shadow(0 16px 34px rgba(0,0,0,0.55)); }
+        .dock-glow {
+            position: absolute; top: -34px; left: 0; width: 92px; height: 92px;
+            border-radius: 50%; filter: blur(26px); opacity: 0.55;
+            pointer-events: none; will-change: transform; transition: background 0.45s ease;
+        }
+        .dock-bead {
+            position: absolute; top: -40px; left: 0;
+            width: 58px; height: 58px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            will-change: transform; transition: background 0.45s ease, box-shadow 0.45s ease;
+        }
+        .dock-bead::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0) 55%);
+            pointer-events: none;
+        }
+        .dock-bead .bead-icon {
+            position: relative; z-index: 2; display: flex; color: #0d1220;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .dock-bead .bead-icon svg { width: 25px; height: 25px; stroke-width: 2.1; }
+        .dock-bead.pop .bead-icon { transform: scale(0.82) rotate(-8deg); }
+        .dock-tabs { position: absolute; inset: 0; display: flex; padding: 0 10px; }
+        .nav-item {
+            flex: 1; background: none; border: none; padding: 0; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); cursor: pointer;
+        }
+        .nav-item .tab-icon { display: flex; align-items: center; justify-content: center; transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .nav-item .tab-icon svg { width: 23px; height: 23px; stroke-width: 1.9; }
+        .nav-item .tab-label {
+            position: absolute; bottom: 9px; left: 0; right: 0;
+            font-size: 10.5px; font-weight: 700; letter-spacing: 0.2px;
+            opacity: 0; transform: translateY(6px);
+            transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none; white-space: nowrap;
+        }
+        .nav-item .tab-badge {
+            position: absolute; top: 2px; right: 50%; margin-right: -22px;
+            min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+            background: var(--danger); color: #fff; font-size: 10px; font-weight: 700;
+            display: none; align-items: center; justify-content: center; line-height: 1;
+        }
+        .nav-item .tab-badge.show { display: flex; }
+        .nav-item:active .tab-icon { transform: scale(0.86); }
+        .nav-item.active .tab-icon { opacity: 0; transform: translateY(-14px) scale(0.7); }
+        .nav-item.active .tab-label { opacity: 1; transform: translateY(0); }
+        .nav-item.active .tab-badge { display: none !important; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: flex-end; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            width: 100%; background: #1a1f35; border-radius: 30px 30px 0 0; padding: 25px;
+            max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-top: 1px solid var(--glass-border);
+        }
+        .modal.active .modal-content { transform: translateY(0); }
+        .hidden { display: none !important; }
+        .text-muted { color: var(--text-secondary); font-size: 12px; }
+
+        /* ====== MAKALE (PDF) LİSTESİ ====== */
+        .doc-item {
+            display: flex; gap: 14px; padding: 14px; background: var(--glass-highlight);
+            border-radius: 18px; margin-bottom: 12px; align-items: center;
+            border: 1px solid var(--glass-border); transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+        .doc-item:active { border-color: var(--accent); transform: scale(0.99); }
+        .doc-thumb {
+            width: 46px; height: 58px; border-radius: 10px; flex-shrink: 0;
+            background: linear-gradient(160deg, #ff5f6d, #b5179e); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+        }
+        .doc-info { flex: 1; min-width: 0; }
+        .doc-title { font-weight: 600; font-size: 15px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .doc-meta { font-size: 11.5px; color: var(--text-secondary); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .pill { padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 10.5px; }
+        .pill.success { background: rgba(6, 214, 160, 0.15); color: var(--success); }
+        .pill.warn { background: rgba(255, 159, 69, 0.16); color: var(--unknown); }
+        .icon-btn {
+            width: 34px; height: 34px; border-radius: 11px; background: rgba(255, 95, 109, 0.14);
+            color: var(--danger); border: 1px solid rgba(255, 95, 109, 0.28);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        .icon-btn:active { transform: scale(0.92); }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
+        .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.6; }
+        .empty-state h4 { font-size: 16px; color: #fff; margin-bottom: 6px; font-weight: 600; }
+        .empty-state p { font-size: 13px; line-height: 1.5; }
+
+        /* ====== OKUYUCU ====== */
+        #readerView { padding-bottom: 20px; }
+        .reader-head {
+            position: sticky; top: 0; z-index: 60;
+            background: rgba(12, 16, 30, 0.86);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .reader-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; }
+        /* Kutucukları göster / orijinal hali */
+        .reader-sub { display: flex; align-items: center; gap: 10px; padding: 0 16px 10px; }
+        .mark-check {
+            display: flex; align-items: center; gap: 9px; cursor: pointer;
+            font-size: 12.5px; font-weight: 500; color: var(--text-secondary);
+            -webkit-user-select: none; user-select: none; flex: 1;
+        }
+        .mark-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .mc-box {
+            width: 21px; height: 21px; border-radius: 7px; flex-shrink: 0;
+            border: 1.8px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.04);
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .mc-box svg { width: 13px; height: 13px; color: #fff; opacity: 0; transform: scale(0.5); transition: 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+        .mark-check input:checked + .mc-box { background: var(--accent-gradient); border-color: transparent; }
+        .mark-check input:checked + .mc-box svg { opacity: 1; transform: scale(1); }
+        .mark-check:active .mc-box { transform: scale(0.9); }
+        .mark-check input:checked ~ .mc-text { color: #fff; }
+        .rs-count { font-size: 11.5px; color: var(--text-muted); flex-shrink: 0; }
+        /* Orijinal hal: hiçbir işaret çizilmez */
+        .no-marks .w.st-unknown, .no-marks .w.st-learned { box-shadow: none !important; }
+        .text-page.no-marks .w.st-unknown, .text-page.no-marks .w.st-learned,
+        .no-marks .text-page .w.st-unknown, .no-marks .text-page .w.st-learned {
+            color: inherit !important; font-weight: inherit !important;
+        }
+        .rb-btn {
+            min-width: 36px; height: 36px; padding: 0 10px; border-radius: 12px;
+            background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
+            color: #fff; display: flex; align-items: center; justify-content: center; gap: 5px;
+            font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+        }
+        .rb-btn:active { transform: scale(0.93); }
+        .rb-btn.on { background: var(--accent-soft); border-color: rgba(76,201,240,0.45); color: var(--accent); }
+        .rb-btn svg { width: 18px; height: 18px; }
+        .rb-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+        .page-nav {
+            position: fixed; left: 0; right: 0; bottom: calc(96px + var(--safe-bottom));
+            display: flex; justify-content: center; gap: 10px; z-index: 95; pointer-events: none;
+        }
+        .page-nav > * { pointer-events: auto; }
+        .pn-btn {
+            width: 42px; height: 42px; border-radius: 50%;
+            background: rgba(22, 28, 48, 0.9); border: 1px solid var(--glass-stroke); color: #fff;
+            display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); cursor: pointer;
+        }
+        .pn-btn:active { transform: scale(0.9); }
+        .pn-btn:disabled { opacity: 0.35; }
+        .pn-info {
+            height: 42px; padding: 0 16px; border-radius: 999px;
+            background: rgba(22, 28, 48, 0.9); border: 1px solid var(--glass-stroke);
+            display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+            box-shadow: var(--shadow-md);
+        }
+        .pn-info input {
+            width: 38px; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border);
+            border-radius: 8px; color: #fff; text-align: center; font-size: 13px; padding: 4px 0; outline: none;
+        }
+
+        #pagesHost { padding: 14px 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .page-wrap { position: relative; margin: 0 auto 18px; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-lg); background: #fff; isolation: isolate; }
+        .page-wrap canvas { display: block; width: 100%; height: auto; }
+        .text-layer {
+            position: absolute; inset: 0; overflow: hidden; line-height: 1;
+            transform-origin: 0 0;
+        }
+        .text-layer .ti { position: absolute; white-space: pre; transform-origin: 0% 0%; color: transparent; }
+        .text-layer .w { cursor: pointer; border-radius: 4px; }
+        /* İçi boş çerçeve — kelimenin okunabilirliği bozulmaz */
+        .page-wrap .text-layer .w.st-unknown { box-shadow: 0 0 0 1.6px #f97316; }
+        .page-wrap .text-layer .w.st-learned { box-shadow: 0 0 0 1.6px #12b886; }
+        .page-wrap .text-layer .w.sel { box-shadow: 0 0 0 2px #2196f3; }
+
+        /* Metin (reflow) modu */
+        #textHost { padding: 6px 4px 10px; }
+        .text-page {
+            padding: 22px 20px; margin-bottom: 16px; border-radius: 20px;
+            background: rgba(10, 14, 28, 0.62); border: 1px solid var(--glass-border);
+            font-size: var(--reader-fs, 17px); line-height: 1.85; letter-spacing: 0.2px;
+            color: rgba(255,255,255,0.90); font-weight: 300;
+        }
+        .text-page p { margin-bottom: 14px; }
+        .text-page .w { cursor: pointer; border-radius: 5px; padding: 0 2px; }
+        .text-page .w.st-unknown { color: var(--unknown); font-weight: 500; box-shadow: 0 0 0 1.5px rgba(255,159,69,0.9); }
+        .text-page .w.st-learned { color: var(--success); font-weight: 500; box-shadow: 0 0 0 1.5px rgba(6,214,160,0.9); }
+        .text-page .w.sel { box-shadow: 0 0 0 2px #4cc9f0; color: #fff; }
+        .tp-head { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+
+        /* Kelime baloncuğu */
+        #wordPop {
+            position: absolute; z-index: 300; width: 262px; max-width: calc(100vw - 24px);
+            background: rgba(20, 26, 46, 0.97);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--glass-stroke); border-radius: 20px; padding: 16px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0; transform: translateY(-6px) scale(0.96); pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #wordPop.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        .wp-word { font-size: 19px; font-weight: 700; letter-spacing: 0.2px; display: flex; align-items: center; gap: 8px; }
+        .wp-word .spk { width: 26px; height: 26px; border-radius: 9px; background: rgba(255,255,255,0.08); border: none; color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .wp-tr {
+            margin-top: 10px; padding: 11px 13px; border-radius: 13px;
+            background: rgba(76, 201, 240, 0.10); border: 1px solid rgba(76, 201, 240, 0.22);
+            font-size: 15.5px; color: #dff6ff; min-height: 44px; display: flex; align-items: center; gap: 8px; word-break: break-word;
+        }
+        .wp-tr.err { background: rgba(255,95,109,0.10); border-color: rgba(255,95,109,0.25); color: #ffd7da; font-size: 13px; }
+        .wp-tr input { flex: 1; background: transparent; border: none; color: #fff; font-size: 15.5px; outline: none; width: 100%; }
+        .wp-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .wp-actions button {
+            flex: 1; padding: 11px 6px; border-radius: 12px; border: none; cursor: pointer;
+            font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .wp-actions button:active { transform: scale(0.95); }
+        .wp-save { background: var(--orange-gradient); color: #2b1300; }
+        .wp-learn { background: var(--green-gradient); color: #04261d; }
+        .wp-del { background: rgba(255,95,109,0.16); color: var(--danger); border: 1px solid rgba(255,95,109,0.3) !important; }
+        .wp-edit { background: rgba(255,255,255,0.08); color: #fff; }
+        .wp-status { margin-top: 9px; font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .spinner {
+            width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.18);
+            border-top-color: var(--accent); animation: spin 0.8s linear infinite; flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ====== KELİME LİSTELERİ ====== */
+        .word-item {
+            display: flex; align-items: center; gap: 12px; padding: 14px 15px;
+            background: var(--glass-highlight); border: 1px solid var(--glass-border);
+            border-radius: 16px; margin-bottom: 10px;
+        }
+        .word-item:active { transform: scale(0.995); }
+        .wi-main { flex: 1; min-width: 0; cursor: pointer; }
+        .wi-en { font-size: 15.5px; font-weight: 600; letter-spacing: 0.2px; }
+        .wi-tr { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .wi-tr.blur { filter: blur(5px); transition: filter 0.2s ease; }
+        .wi-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+        .wi-act { display: flex; gap: 7px; flex-shrink: 0; }
+        .wi-btn { width: 34px; height: 34px; border-radius: 11px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .wi-btn.ok { background: rgba(6,214,160,0.14); border-color: rgba(6,214,160,0.3); color: var(--success); }
+        .wi-btn.back { background: rgba(255,159,69,0.14); border-color: rgba(255,159,69,0.3); color: var(--unknown); }
+        .wi-btn.del { background: rgba(255,95,109,0.13); border-color: rgba(255,95,109,0.28); color: var(--danger); }
+        .wi-btn:active { transform: scale(0.9); }
+        .wi-btn svg { width: 17px; height: 17px; }
+
+        .list-tools { display: flex; gap: 8px; margin-bottom: 14px; }
+        .list-tools .btn { margin-top: 0; }
+
+        /* ====== ÇALIŞMA KARTI (Flashcard) ====== */
+        .flash-wrap { padding: 4px 0 10px; }
+        .flash-card {
+            position: relative; min-height: 250px; border-radius: 26px; padding: 30px 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+            background: linear-gradient(160deg, rgba(76,201,240,0.13), rgba(67,97,238,0.10));
+            border: 1px solid var(--glass-stroke); text-align: center; cursor: pointer;
+        }
+        .fc-lang { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-muted); }
+        .fc-word { font-size: 31px; font-weight: 700; letter-spacing: 0.3px; line-height: 1.2; word-break: break-word; }
+        .fc-tr { font-size: 21px; color: var(--accent); font-weight: 500; }
+        .fc-hint { font-size: 12px; color: var(--text-muted); }
+        .fc-count { font-size: 12px; color: var(--text-secondary); text-align: center; margin-bottom: 12px; }
+        .fc-actions { display: flex; gap: 10px; margin-top: 14px; }
+        .fc-actions .btn { margin-top: 0; }
+
+        /* ====== İSTATİSTİK ====== */
+        .mini-stat { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--glass-highlight); border: 1px solid var(--glass-border); margin-bottom: 10px; }
+        .ms-icon { width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .ms-body { flex: 1; }
+        .ms-label { font-size: 12px; color: var(--text-secondary); }
+        .ms-value { font-size: 19px; font-weight: 700; }
+        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; height: 130px; padding: 8px 4px 0; }
+        .bc-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+        .bc-stack { width: 100%; max-width: 30px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; flex: 1; }
+        .bc-bar { width: 100%; border-radius: 6px; min-height: 2px; transition: height 0.6s cubic-bezier(0.22,1,0.36,1); }
+        .bc-bar.unk { background: var(--orange-gradient); }
+        .bc-bar.lrn { background: var(--green-gradient); }
+        .bc-label { font-size: 10px; color: var(--text-muted); }
+        .legend { display: flex; gap: 16px; justify-content: center; margin-top: 12px; font-size: 11.5px; color: var(--text-secondary); }
+        .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; }
+
+        /* Toast */
+        #toast {
+            position: fixed; left: 50%; transform: translate(-50%, 20px);
+            bottom: calc(150px + var(--safe-bottom)); z-index: 500;
+            background: rgba(20, 26, 46, 0.96); border: 1px solid var(--glass-stroke);
+            padding: 12px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+            box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none; transition: 0.28s;
+            max-width: calc(100vw - 40px); text-align: center;
+        }
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* Drive durum satırı */
+        .cloud-status {
+            display: flex; align-items: center; gap: 10px;
+            padding: 13px 15px; border-radius: 15px;
+            background: var(--glass-highlight); border: 1px solid var(--glass-border);
+            font-size: 13.5px; color: var(--text-secondary);
+        }
+        .cs-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+        .cs-dot.ok { background: var(--success); }
+        .cs-dot.wait { background: var(--unknown); }
+        .cs-dot.off { background: var(--danger); }
+
+        #loadOverlay {
+            position: fixed; inset: 0; z-index: 400; background: rgba(8, 11, 22, 0.78);
+            backdrop-filter: blur(6px); display: none; flex-direction: column;
+            align-items: center; justify-content: center; gap: 16px;
+        }
+        #loadOverlay.show { display: flex; }
+        #loadOverlay .spinner { width: 38px; height: 38px; border-width: 3px; }
+        #loadOverlay span { font-size: 13.5px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="liquid-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- ============ 1) OKU (Makaleler) ============ -->
+    <div id="view-read">
+        <!-- Makale listesi -->
+        <div id="docListView">
+            <header>
+                <a href="index.html" class="head-btn left" aria-label="Geri">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+                <h2>Makale</h2>
+            </header>
+            <div class="container">
+                <div class="glass-panel card" style="padding:18px 20px; margin-bottom:16px;">
+                    <div style="display:flex; align-items:center; gap:13px;">
+                        <div style="width:44px;height:44px;border-radius:14px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v5a1 1 0 001 1h5"/><path d="M8 13h8M8 17h5"/></svg>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:15px;">PDF makale yükle</div>
+                            <div class="text-muted" style="margin-top:3px; line-height:1.45;">Okurken kelimeye dokun, Türkçesini gör ve kaydet.</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="document.getElementById('pdfInput').click()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        PDF Seç
+                    </button>
+                    <input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden onchange="handlePdfInput(this)">
+                </div>
+
+                <div class="section-title"><span><span class="accent-dot"></span>Makalelerim</span><span class="text-muted" id="docCount">0</span></div>
+                <div id="docList" style="padding-bottom:40px;"></div>
+            </div>
+        </div>
+
+        <!-- Okuyucu -->
+        <div id="readerView" class="hidden">
+            <div class="reader-head">
+                <div class="reader-bar">
+                    <button class="rb-btn" onclick="closeReader()" aria-label="Geri">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <div class="rb-title" id="readerTitle">—</div>
+                    <button class="rb-btn" id="btnModeText" onclick="setReadMode('text')" title="Metin modu">Aa</button>
+                    <button class="rb-btn" id="btnModePdf" onclick="setReadMode('pdf')" title="PDF görünümü">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                    </button>
+                    <button class="rb-btn" id="btnZoom" onclick="cycleZoom()" title="Yakınlaştır">100%</button>
+                </div>
+                <div class="reader-sub">
+                    <label class="mark-check">
+                        <input type="checkbox" id="markToggle" checked onchange="toggleMarks(this.checked)">
+                        <span class="mc-box">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        <span class="mc-text">Kelime kutucuklarını göster</span>
+                    </label>
+                    <span class="rs-count" id="markCount"></span>
+                </div>
+            </div>
+            <div id="pagesHost"></div>
+            <div id="textHost" class="hidden"><div class="container" style="padding:0 14px;"></div></div>
+            <div class="page-nav" id="pageNav">
+                <button class="pn-btn" id="btnPrev" onclick="gotoPage(state.page-1)">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="pn-info">
+                    <input type="number" id="pageInput" min="1" value="1" onchange="gotoPage(parseInt(this.value))">
+                    <span class="text-muted" style="font-size:12px;">/ <span id="pageTotal">0</span></span>
+                </div>
+                <button class="pn-btn" id="btnNext" onclick="gotoPage(state.page+1)">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 2) BİLMEDİKLERİM ============ -->
+    <div id="view-unknown" class="hidden">
+        <header>
+            <button class="head-btn left" onclick="cloudPull()" title="Drive'dan kelimeleri getir">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            </button>
+            <h2>Bilmediklerim</h2>
+            <button class="head-btn right" onclick="startFlash('unknown')" title="Çalış">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M7 10v5c0 1.5 2.2 3 5 3s5-1.5 5-3v-5"/></svg>
+            </button>
+        </header>
+        <div class="container" style="padding-bottom:40px;">
+            <input type="text" id="searchUnknown" class="search-box" placeholder="Kelime ara..." oninput="renderUnknown()">
+            <div class="list-tools">
+                <button class="btn btn-warm" style="flex:1" onclick="startFlash('unknown')">
+                    <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>
+                    Kartlarla Çalış
+                </button>
+                <button class="btn btn-secondary" style="flex:0 0 46%" onclick="toggleBlur('unknown')" id="blurBtnUnknown">Anlamları Gizle</button>
+            </div>
+            <div id="unknownList"></div>
+        </div>
+    </div>
+
+    <!-- ============ 3) EZBERLEDİKLERİM ============ -->
+    <div id="view-learned" class="hidden">
+        <header>
+            <button class="head-btn left" onclick="cloudPull()" title="Drive'dan kelimeleri getir">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            </button>
+            <h2>Ezberlediklerim</h2>
+            <button class="head-btn right" onclick="startFlash('learned')" title="Tekrar et">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>
+            </button>
+        </header>
+        <div class="container" style="padding-bottom:40px;">
+            <input type="text" id="searchLearned" class="search-box" placeholder="Kelime ara..." oninput="renderLearned()">
+            <div class="list-tools">
+                <button class="btn btn-success" style="flex:1" onclick="startFlash('learned')">
+                    <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>
+                    Tekrar Et
+                </button>
+                <button class="btn btn-secondary" style="flex:0 0 46%" onclick="toggleBlur('learned')" id="blurBtnLearned">Anlamları Gizle</button>
+            </div>
+            <div id="learnedList"></div>
+        </div>
+    </div>
+
+    <!-- ============ 4) İSTATİSTİK ============ -->
+    <div id="view-stats" class="hidden">
+        <header><h2>İstatistik</h2></header>
+        <div class="container" style="padding-bottom:40px;">
+            <div class="stats-grid">
+                <div class="glass-panel stat-card">
+                    <div class="ring-container">
+                        <svg class="ring-svg" viewBox="0 0 80 80">
+                            <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                            <circle id="ringLearn" class="ring-val" cx="40" cy="40" r="35" style="stroke:#06d6a0"></circle>
+                        </svg>
+                        <div class="ring-percent-text"><span id="textLearnPct">%0</span><small>EZBER</small></div>
+                    </div>
+                    <div class="stat-label">Ezber Oranı</div>
+                    <div class="stat-value"><span id="statLearned">0</span> <small>/ <span id="statTotal">0</span></small></div>
+                </div>
+                <div class="glass-panel stat-card">
+                    <div class="ring-container">
+                        <svg class="ring-svg" viewBox="0 0 80 80">
+                            <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                            <circle id="ringToday" class="ring-val" cx="40" cy="40" r="35" style="stroke:#ffa552"></circle>
+                        </svg>
+                        <div class="ring-percent-text"><span id="textTodayNum">0</span><small>BUGÜN</small></div>
+                    </div>
+                    <div class="stat-label">Günlük Hedef</div>
+                    <div class="stat-value"><span id="statTodayLearned">0</span> <small>/ <span id="statGoal">10</span></small></div>
+                </div>
+            </div>
+
+            <div class="glass-panel card">
+                <div class="section-title"><span><span class="accent-dot"></span>Özet</span></div>
+                <div class="mini-stat">
+                    <div class="ms-icon" style="background:rgba(255,159,69,0.16); color:var(--unknown);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                    </div>
+                    <div class="ms-body"><div class="ms-label">Bilmediğim kelime</div><div class="ms-value" id="msUnknown">0</div></div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-icon" style="background:rgba(6,214,160,0.16); color:var(--success);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="ms-body"><div class="ms-label">Ezberlediğim kelime</div><div class="ms-value" id="msLearned">0</div></div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-icon" style="background:rgba(76,201,240,0.16); color:var(--accent);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v5a1 1 0 001 1h5"/></svg>
+                    </div>
+                    <div class="ms-body"><div class="ms-label">Yüklenen makale</div><div class="ms-value" id="msDocs">0</div></div>
+                </div>
+                <div class="mini-stat">
+                    <div class="ms-icon" style="background:rgba(247,37,133,0.16); color:#f72585;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>
+                    </div>
+                    <div class="ms-body"><div class="ms-label">Bugün eklenen</div><div class="ms-value" id="msTodayAdded">0</div></div>
+                </div>
+            </div>
+
+            <div class="glass-panel card">
+                <div class="section-title"><span><span class="accent-dot"></span>Son 7 Gün</span></div>
+                <div class="bar-chart" id="barChart"></div>
+                <div class="legend">
+                    <span><i style="background:#ffa552"></i>Eklenen</span>
+                    <span><i style="background:#06d6a0"></i>Ezberlenen</span>
+                </div>
+            </div>
+
+            <div class="glass-panel card">
+                <div class="section-title"><span><span class="accent-dot"></span>Google Drive</span></div>
+                <div class="cloud-status" id="cloudStatus">
+                    <span class="cs-dot" id="csDot"></span>
+                    <span id="csText">Durum kontrol ediliyor...</span>
+                </div>
+                <div class="text-muted" style="line-height:1.55; margin:12px 2px 4px;">
+                    Kelimelerin ve istatistiklerin her değişiklikte otomatik olarak Drive'a kaydedilir.
+                    Başka bir cihazda çalıştıysan <b>Kelimeleri Getir</b> ile en güncel hali indir.
+                </div>
+                <button class="btn btn-primary" onclick="cloudPull()">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+                    Kelimeleri Getir (Drive'dan)
+                </button>
+                <button class="btn btn-secondary" onclick="cloudSave()">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M8 13l4-4 4 4"/><path d="M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+                    Şimdi Drive'a Kaydet
+                </button>
+            </div>
+
+            <div class="glass-panel card">
+                <div class="section-title"><span><span class="accent-dot"></span>Ayarlar</span></div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label class="form-label">Günlük ezber hedefi</label>
+                    <input type="number" id="goalInput" class="glass-input" min="1" value="10" onchange="saveGoal(this.value)">
+                </div>
+                <button class="btn btn-ghost" onclick="clearAllPdfs()">Yüklenen tüm PDF'leri sil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kelime baloncuğu -->
+    <div id="wordPop"></div>
+
+    <!-- Çalışma modu (flashcard) -->
+    <div id="modal-flash" class="modal">
+        <div class="modal-content">
+            <div class="section-title"><span id="flashTitle">Kelime Çalışması</span><button class="rb-btn" onclick="closeModal('modal-flash')">✕</button></div>
+            <div class="flash-wrap">
+                <div class="fc-count" id="flashCount">0 / 0</div>
+                <div class="flash-card" id="flashCard" onclick="flipFlash()">
+                    <div class="fc-lang" id="fcLang">İNGİLİZCE</div>
+                    <div class="fc-word" id="fcWord">—</div>
+                    <div class="fc-tr hidden" id="fcTr">—</div>
+                    <div class="fc-hint" id="fcHint">Türkçesi için karta dokun</div>
+                </div>
+                <div class="fc-actions">
+                    <button class="btn btn-secondary" style="flex:1" onclick="nextFlash(-1)">Önceki</button>
+                    <button class="btn btn-success" style="flex:1.3" id="fcLearnBtn" onclick="flashMarkLearned()">Ezberledim</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="nextFlash(1)">Sonraki</button>
+                </div>
+                <button class="btn btn-ghost" onclick="speak(flash.list[flash.i] && flash.list[flash.i].w)">🔊 Telaffuz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kelime detayı -->
+    <div id="modal-word" class="modal">
+        <div class="modal-content" id="wordDetailBody"></div>
+    </div>
+
+    <div id="toast"></div>
+    <div id="loadOverlay"><div class="spinner"></div><span id="loadText">Yükleniyor...</span></div>
+
+    <!-- ===== LIQUID DOCK NAVIGASYON ===== -->
+    <nav class="liquid-nav">
+        <div class="dock" id="liquidDock">
+            <div class="dock-glow" id="dockGlow"></div>
+            <svg class="dock-skin" id="dockSkin" aria-hidden="true">
+                <defs>
+                    <linearGradient id="dockFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#232a44"/>
+                        <stop offset="55%" stop-color="#171c2f"/>
+                        <stop offset="100%" stop-color="#121625"/>
+                    </linearGradient>
+                    <linearGradient id="dockStroke" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
+                        <stop offset="45%" stop-color="#ffffff" stop-opacity="0.09"/>
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04"/>
+                    </linearGradient>
+                </defs>
+                <path id="dockPath" fill="url(#dockFill)" stroke="url(#dockStroke)" stroke-width="1.3"/>
+            </svg>
+            <div class="dock-bead" id="dockBead"><span class="bead-icon" id="beadIcon"></span></div>
+            <div class="dock-tabs">
+                <button class="nav-item active" data-tab="read" data-c1="#7fe3ff" data-c2="#3ba7f0" onclick="switchTab('read', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v5a1 1 0 001 1h5"/><path d="M8 13h8M8 17h5"/></svg>
+                    </span>
+                    <span class="tab-label">Oku</span>
+                </button>
+                <button class="nav-item" data-tab="unknown" data-c1="#ffb066" data-c2="#ff6b4a" onclick="switchTab('unknown', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                    </span>
+                    <span class="tab-label">Bilmediklerim</span>
+                    <span class="tab-badge" id="badgeUnknown">0</span>
+                </button>
+                <button class="nav-item" data-tab="learned" data-c1="#7ef2c4" data-c2="#0ec98a" onclick="switchTab('learned', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    </span>
+                    <span class="tab-label">Ezberlediklerim</span>
+                </button>
+                <button class="nav-item" data-tab="stats" data-c1="#ff7ab0" data-c2="#f7256f" onclick="switchTab('stats', this)">
+                    <span class="tab-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </span>
+                    <span class="tab-label">İstatistik</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <!-- ===== /LIQUID DOCK ===== -->
+
+<script>
+/* =========================================================================
+   MAKALE — PDF okuma + kelime çalışma modülü
+   Veri: localStorage('makale_app_v1')  |  PDF dosyaları: IndexedDB('makaleDB')
+   ========================================================================= */
+
+const LS_KEY  = 'makale_app_v1';    // Drive'a senkronlanan veri (kelimeler, istatistik)
+const LS_DOCS = 'makale_docs_v1';   // Yüklenen PDF listesi — cihaza özel, senkronlanmaz
+const DB_NAME = 'makaleDB';
+const DB_STORE = 'pdfs';
+
+let data = {
+    words: {},      // { "word": {w, tr, status:'unknown'|'learned', added, learnedAt, updatedAt, doc, note} }
+    docs: [],       // [{id, name, pages, size, addedAt, lastPage}] — yalnızca bu cihazda
+    cache: {},      // çeviri önbelleği  { "word": "çeviri" }
+    days: {},       // { "2026-09-17": {added:n, learned:n} }
+    settings: { goal: 10, mode: 'pdf', zoom: 1, marks: true }
+};
+
+const state = { docId: null, pdf: null, page: 1, total: 0, mode: 'pdf', zoom: 1, marks: true, rendering: false, textCache: {} };
+const flash = { list: [], i: 0, flipped: false, type: 'unknown' };
+let blurState = { unknown: false, learned: false };
+
+/* ---------------- Depolama ---------------- */
+function load() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+            const p = JSON.parse(raw);
+            data.words = p.words || {};
+            data.cache = p.cache || {};
+            data.days = p.days || {};
+            data.settings = Object.assign({ goal: 10, mode: 'pdf', zoom: 1, marks: true }, p.settings || {});
+            // Eski sürüm: PDF listesi de aynı anahtardaydı → cihaza özel anahtara taşı
+            if (Array.isArray(p.docs) && p.docs.length && !localStorage.getItem(LS_DOCS)) {
+                localStorage.setItem(LS_DOCS, JSON.stringify(p.docs));
+            }
+        }
+    } catch (e) { console.warn('Veri okunamadı', e); }
+    try {
+        const d = localStorage.getItem(LS_DOCS);
+        data.docs = d ? (JSON.parse(d) || []) : [];
+    } catch (e) { data.docs = []; }
+}
+
+// Kelimeler + istatistik → localStorage'a yazılır; drive-sync bunu otomatik Drive'a gönderir.
+function save() {
+    try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+            words: data.words, cache: data.cache, days: data.days, settings: data.settings
+        }));
+    } catch (e) { toast('Kayıt alanı dolu olabilir'); }
+    updateCloudStatus();
+}
+// PDF listesi yalnızca bu cihazda saklanır (dosyalar IndexedDB'de)
+function saveDocs() {
+    try { localStorage.setItem(LS_DOCS, JSON.stringify(data.docs)); } catch (e) {}
+}
+function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function bumpDay(field) {
+    const k = todayKey();
+    if (!data.days[k]) data.days[k] = { added: 0, learned: 0 };
+    data.days[k][field] = (data.days[k][field] || 0) + 1;
+}
+
+/* ---------------- IndexedDB (PDF dosyaları) ---------------- */
+function idb() {
+    return new Promise((resolve, reject) => {
+        const r = indexedDB.open(DB_NAME, 1);
+        r.onupgradeneeded = () => {
+            const db = r.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
+        };
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+    });
+}
+async function idbPut(id, name, buf) {
+    const db = await idb();
+    return new Promise((res, rej) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put({ id, name, buf });
+        tx.oncomplete = () => res(true);
+        tx.onerror = () => rej(tx.error);
+    });
+}
+async function idbGet(id) {
+    const db = await idb();
+    return new Promise((res, rej) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const q = tx.objectStore(DB_STORE).get(id);
+        q.onsuccess = () => res(q.result);
+        q.onerror = () => rej(q.error);
+    });
+}
+async function idbDel(id) {
+    const db = await idb();
+    return new Promise((res) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(id);
+        tx.oncomplete = () => res(true);
+        tx.onerror = () => res(false);
+    });
+}
+
+/* ---------------- Yardımcılar ---------------- */
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function overlay(on, text) {
+    const o = document.getElementById('loadOverlay');
+    if (text) document.getElementById('loadText').textContent = text;
+    o.classList.toggle('show', !!on);
+}
+function normWord(s) {
+    return (s || '').toLowerCase()
+        .replace(/[‘’]/g, "'")
+        .replace(/^[^a-zçğıöşü']+|[^a-zçğıöşü']+$/gi, '')
+        .replace(/^'+|'+$/g, '')
+        .trim();
+}
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function speak(w) {
+    if (!w) return;
+    try {
+        const u = new SpeechSynthesisUtterance(w);
+        u.lang = 'en-US'; u.rate = 0.9;
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) {}
+}
+function fmtDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+}
+
+/* ---------------- Çeviri ---------------- */
+async function translate(word) {
+    const key = word.toLowerCase();
+    if (data.cache[key]) return { tr: data.cache[key], cached: true };
+
+    // 1) Google (ücretsiz uç nokta)
+    try {
+        const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=' + encodeURIComponent(word));
+        if (r.ok) {
+            const j = await r.json();
+            const t = (j && j[0] && j[0].map(x => x[0]).join('')) || '';
+            if (t && t.toLowerCase() !== key) {
+                data.cache[key] = t; save();
+                return { tr: t };
+            }
+            if (t) { data.cache[key] = t; save(); return { tr: t }; }
+        }
+    } catch (e) { /* sonraki servise geç */ }
+
+    // 2) MyMemory
+    try {
+        const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(word) + '&langpair=en|tr');
+        const j = await r.json();
+        let t = (j && j.responseData && j.responseData.translatedText) || '';
+        if (/MYMEMORY WARNING|INVALID|QUERY LENGTH/i.test(t)) t = '';
+        if (t) { data.cache[key] = t; save(); return { tr: t }; }
+    } catch (e) {}
+
+    return { tr: '', error: true };
+}
+
+/* ---------------- Kelime durumu ---------------- */
+function wordStatus(w) {
+    const e = data.words[w];
+    return e ? e.status : null;
+}
+function addWord(w, tr, status) {
+    const now = Date.now();
+    const ex = data.words[w];
+    if (!ex) {
+        data.words[w] = {
+            w, tr: tr || '', status: status,
+            added: now, updatedAt: now, learnedAt: status === 'learned' ? now : null,
+            doc: state.docId || null, page: state.page || null
+        };
+        bumpDay('added');
+        if (status === 'learned') bumpDay('learned');
+    } else {
+        if (tr) ex.tr = tr;
+        ex.updatedAt = now;
+        if (ex.status !== status) {
+            ex.status = status;
+            if (status === 'learned') { ex.learnedAt = now; bumpDay('learned'); }
+        }
+    }
+    save();
+    refreshAll();
+}
+function removeWord(w) {
+    delete data.words[w];
+    save();
+    refreshAll();
+}
+function refreshAll() {
+    paintWordsInReader();
+    renderUnknown();
+    renderLearned();
+    renderStats();
+    updateBadges();
+}
+function updateBadges() {
+    const n = Object.values(data.words).filter(x => x.status === 'unknown').length;
+    const b = document.getElementById('badgeUnknown');
+    b.textContent = n > 99 ? '99+' : n;
+    b.classList.toggle('show', n > 0);
+}
+
+/* =========================================================================
+   PDF YÜKLEME & LİSTE
+   ========================================================================= */
+async function handlePdfInput(input) {
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (!files.length) return;
+    overlay(true, 'PDF kaydediliyor...');
+    for (const f of files) {
+        try {
+            const buf = await f.arrayBuffer();
+            const id = 'd' + Date.now() + Math.random().toString(36).slice(2, 7);
+            // Sayfa sayısını öğren
+            let pages = 0;
+            try {
+                const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+                pages = doc.numPages;
+                doc.destroy();
+            } catch (e) {}
+            await idbPut(id, f.name, buf);
+            data.docs.unshift({
+                id, name: f.name.replace(/\.pdf$/i, ''),
+                pages, size: f.size, addedAt: Date.now(), lastPage: 1
+            });
+        } catch (e) {
+            console.error(e);
+            toast(f.name + ' yüklenemedi');
+        }
+    }
+    saveDocs();
+    overlay(false);
+    renderDocs();
+    renderStats();
+    toast(files.length + ' makale eklendi');
+}
+
+function renderDocs() {
+    const host = document.getElementById('docList');
+    document.getElementById('docCount').textContent = data.docs.length + ' makale';
+    if (!data.docs.length) {
+        host.innerHTML = '<div class="empty-state"><div class="es-icon">📄</div><h4>Henüz makale yok</h4><p>Yukarıdaki <b>PDF Seç</b> butonuna dokunarak<br>okumak istediğin makaleyi yükle.</p></div>';
+        return;
+    }
+    host.innerHTML = data.docs.map(d => `
+        <div class="doc-item">
+            <div class="doc-thumb" onclick="openDoc('${d.id}')">PDF</div>
+            <div class="doc-info" onclick="openDoc('${d.id}')">
+                <div class="doc-title">${esc(d.name)}</div>
+                <div class="doc-meta">
+                    <span class="pill">${d.pages || '?'} sayfa</span>
+                    ${d.lastPage > 1 ? `<span class="pill success">Kaldığın yer: ${d.lastPage}</span>` : ''}
+                    <span>${fmtDate(d.addedAt)}</span>
+                </div>
+            </div>
+            <div class="icon-btn" onclick="deleteDoc('${d.id}', event)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </div>
+        </div>`).join('');
+}
+
+async function deleteDoc(id, ev) {
+    if (ev) ev.stopPropagation();
+    const d = data.docs.find(x => x.id === id);
+    if (!d) return;
+    if (!confirm('"' + d.name + '" silinsin mi? (Kelimelerin korunur)')) return;
+    await idbDel(id);
+    data.docs = data.docs.filter(x => x.id !== id);
+    saveDocs();
+    renderDocs(); renderStats();
+    toast('Makale silindi');
+}
+
+async function clearAllPdfs() {
+    if (!data.docs.length) { toast('Silinecek PDF yok'); return; }
+    if (!confirm('Yüklenen tüm PDF dosyaları silinsin mi? Kelime listelerin korunur.')) return;
+    for (const d of data.docs) await idbDel(d.id);
+    data.docs = [];
+    saveDocs(); renderDocs(); renderStats();
+    toast('Tüm PDF\'ler silindi');
+}
+
+/* =========================================================================
+   OKUYUCU
+   ========================================================================= */
+async function openDoc(id) {
+    const meta = data.docs.find(d => d.id === id);
+    if (!meta) return;
+    overlay(true, 'Makale açılıyor...');
+    try {
+        const rec = await idbGet(id);
+        if (!rec) { overlay(false); toast('Dosya bulunamadı'); return; }
+        if (state.pdf) { try { state.pdf.destroy(); } catch (e) {} }
+        state.pdf = await pdfjsLib.getDocument({ data: rec.buf.slice(0) }).promise;
+        state.docId = id;
+        state.total = state.pdf.numPages;
+        state.page = Math.min(Math.max(1, meta.lastPage || 1), state.total);
+        state.textCache = {};
+        state.mode = data.settings.mode || 'pdf';
+        state.zoom = data.settings.zoom || 1;
+        state.marks = data.settings.marks !== false;
+        if (!meta.pages) { meta.pages = state.total; saveDocs(); }
+
+        document.getElementById('readerTitle').textContent = meta.name;
+        document.getElementById('pageTotal').textContent = state.total;
+        document.getElementById('docListView').classList.add('hidden');
+        document.getElementById('readerView').classList.remove('hidden');
+        document.getElementById('pageNav').style.display = '';
+        updateModeButtons();
+        await renderPage();
+        window.scrollTo(0, 0);
+    } catch (e) {
+        console.error(e);
+        toast('PDF açılamadı');
+    }
+    overlay(false);
+}
+
+function closeReader() {
+    hidePop();
+    document.getElementById('pageNav').style.display = 'none';
+    document.getElementById('readerView').classList.add('hidden');
+    document.getElementById('docListView').classList.remove('hidden');
+    document.getElementById('pagesHost').innerHTML = '';
+    document.querySelector('#textHost .container').innerHTML = '';
+    renderDocs();
+}
+
+function updateModeButtons() {
+    document.getElementById('btnModeText').classList.toggle('on', state.mode === 'text');
+    document.getElementById('btnModePdf').classList.toggle('on', state.mode === 'pdf');
+    document.getElementById('btnZoom').textContent = Math.round(state.zoom * 100) + '%';
+    document.getElementById('btnZoom').style.display = state.mode === 'pdf' ? '' : 'none';
+    applyMarks();
+}
+
+function setReadMode(m) {
+    state.mode = m;
+    data.settings.mode = m; save();
+    updateModeButtons();
+    renderPage();
+}
+function cycleZoom() {
+    const steps = [1, 1.35, 1.7, 2.2];
+    const i = steps.indexOf(state.zoom);
+    state.zoom = steps[(i + 1) % steps.length];
+    data.settings.zoom = state.zoom; save();
+    updateModeButtons();
+    renderPage();
+}
+
+async function gotoPage(n) {
+    if (!state.pdf) return;
+    n = Math.min(Math.max(1, n || 1), state.total);
+    if (n === state.page) { document.getElementById('pageInput').value = state.page; return; }
+    state.page = n;
+    const meta = data.docs.find(d => d.id === state.docId);
+    if (meta) { meta.lastPage = n; saveDocs(); }
+    await renderPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function renderPage() {
+    if (!state.pdf || state.rendering) return;
+    state.rendering = true;
+    hidePop();
+    document.getElementById('pageInput').value = state.page;
+    document.getElementById('btnPrev').disabled = state.page <= 1;
+    document.getElementById('btnNext').disabled = state.page >= state.total;
+
+    const pdfHost = document.getElementById('pagesHost');
+    const textHost = document.getElementById('textHost');
+
+    try {
+        const page = await state.pdf.getPage(state.page);
+
+        if (state.mode === 'text') {
+            pdfHost.classList.add('hidden'); pdfHost.innerHTML = '';
+            textHost.classList.remove('hidden');
+            await renderTextMode(page);
+        } else {
+            textHost.classList.add('hidden');
+            document.querySelector('#textHost .container').innerHTML = '';
+            pdfHost.classList.remove('hidden');
+            await renderPdfMode(page);
+        }
+    } catch (e) {
+        console.error(e);
+        toast('Sayfa görüntülenemedi');
+    }
+    state.rendering = false;
+}
+
+/* ---- PDF görünümü: canvas + kelime katmanı ---- */
+async function renderPdfMode(page) {
+    const host = document.getElementById('pagesHost');
+    host.innerHTML = '';
+
+    const avail = Math.min(window.innerWidth - 20, 900);
+    const base = page.getViewport({ scale: 1 });
+    const scale = (avail / base.width) * state.zoom;
+    const viewport = page.getViewport({ scale });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'page-wrap';
+    wrap.style.width = viewport.width + 'px';
+    wrap.style.height = viewport.height + 'px';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = viewport.width + 'px';
+    canvas.style.height = viewport.height + 'px';
+    wrap.appendChild(canvas);
+
+    const layer = document.createElement('div');
+    layer.className = 'text-layer';
+    layer.style.width = viewport.width + 'px';
+    layer.style.height = viewport.height + 'px';
+    wrap.appendChild(layer);
+
+    host.appendChild(wrap);
+    if (state.zoom > 1) { host.style.overflowX = 'auto'; host.style.alignItems = 'flex-start'; }
+    else { host.style.overflowX = ''; host.style.alignItems = 'center'; }
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const tc = await page.getTextContent();
+    buildWordLayer(tc, viewport, layer);
+    paintWordsInReader();
+}
+
+function pickFontFamily(style) {
+    const f = (style && style.fontFamily) || 'serif';
+    if (/mono/i.test(f)) return "'Courier New', Courier, monospace";
+    if (/sans/i.test(f)) return "Helvetica, Arial, sans-serif";
+    return "'Times New Roman', Times, serif";
+}
+
+function buildWordLayer(textContent, viewport, layer) {
+    const frag = document.createDocumentFragment();
+    const styles = textContent.styles || {};
+    const meas = document.createElement('div');
+    meas.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;top:0;left:0;line-height:1;';
+    layer.appendChild(meas);
+
+    textContent.items.forEach(item => {
+        if (!item.str || !item.str.trim()) return;
+        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+        const fs = Math.hypot(tx[2], tx[3]) || Math.abs(tx[3]);
+        if (!fs) return;
+        const angle = Math.atan2(tx[1], tx[0]);
+        const fam = pickFontFamily(styles[item.fontName]);
+
+        const span = document.createElement('span');
+        span.className = 'ti';
+        span.style.left = tx[4] + 'px';
+        // Yazı tabanı (baseline) tx[5] noktasına otursun: 0.84em tipik ascent payı
+        span.style.top = (tx[5] - fs * 0.84) + 'px';
+        span.style.fontSize = fs + 'px';
+        span.style.fontFamily = fam;
+        if (angle) span.style.transform = 'rotate(' + angle + 'rad)';
+
+        // Kelime kelime böl
+        const parts = item.str.split(/(\s+)/);
+        parts.forEach(p => {
+            if (!p) return;
+            if (/^\s+$/.test(p)) { span.appendChild(document.createTextNode(p)); return; }
+            const n = normWord(p);
+            if (!n || n.length < 2 || !/[a-zçğıöşü]/i.test(n)) { span.appendChild(document.createTextNode(p)); return; }
+            const s = document.createElement('span');
+            s.className = 'w';
+            s.dataset.w = n;
+            s.textContent = p;
+            span.appendChild(s);
+        });
+
+        // Genişliği ölçüp orijinal genişliğe oturt
+        meas.style.fontSize = fs + 'px';
+        meas.style.fontFamily = fam;
+        meas.textContent = item.str;
+        const mw = meas.offsetWidth;
+        const target = item.width * (viewport.scale || 1);
+        if (mw > 0 && target > 0) {
+            const ratio = target / mw;
+            span.style.transform = (angle ? 'rotate(' + angle + 'rad) ' : '') + 'scaleX(' + ratio.toFixed(4) + ')';
+        }
+        frag.appendChild(span);
+    });
+
+    layer.removeChild(meas);
+    layer.appendChild(frag);
+    layer.addEventListener('click', onWordClick);
+}
+
+/* ---- Metin modu: akıcı okuma ---- */
+async function renderTextMode(page) {
+    const host = document.querySelector('#textHost .container');
+    host.innerHTML = '<div class="text-page"><div class="tp-head">Sayfa ' + state.page + '</div><div id="tpBody"></div></div>';
+    const body = document.getElementById('tpBody');
+
+    const tc = await page.getTextContent();
+    const paras = [];
+    let cur = '';
+    tc.items.forEach(it => {
+        cur += it.str;
+        if (it.hasEOL) {
+            if (/[.!?:;”"']\s*$/.test(cur) || cur.trim().length < 40) { paras.push(cur.trim()); cur = ''; }
+            else cur += ' ';
+        }
+    });
+    if (cur.trim()) paras.push(cur.trim());
+
+    const frag = document.createDocumentFragment();
+    const merged = [];
+    let buf = '';
+    paras.forEach(p => {
+        if (!p) { if (buf) { merged.push(buf); buf = ''; } return; }
+        buf = buf ? buf + ' ' + p : p;
+        if (/[.!?]["”')\]]?$/.test(p) && buf.length > 160) { merged.push(buf); buf = ''; }
+    });
+    if (buf) merged.push(buf);
+
+    (merged.length ? merged : ['(Bu sayfada seçilebilir metin bulunamadı — PDF görünümünü deneyin.)']).forEach(txt => {
+        const p = document.createElement('p');
+        txt.split(/(\s+)/).forEach(tok => {
+            if (!tok) return;
+            if (/^\s+$/.test(tok)) { p.appendChild(document.createTextNode(' ')); return; }
+            const n = normWord(tok);
+            if (!n || n.length < 2 || !/[a-zçğıöşü]/i.test(n)) { p.appendChild(document.createTextNode(tok)); return; }
+            const s = document.createElement('span');
+            s.className = 'w'; s.dataset.w = n; s.textContent = tok;
+            p.appendChild(s);
+        });
+        frag.appendChild(p);
+    });
+    body.appendChild(frag);
+    body.addEventListener('click', onWordClick);
+    paintWordsInReader();
+}
+
+function paintWordsInReader() {
+    let unk = 0, lrn = 0;
+    document.querySelectorAll('.w').forEach(el => {
+        const st = wordStatus(el.dataset.w);
+        el.classList.toggle('st-unknown', st === 'unknown');
+        el.classList.toggle('st-learned', st === 'learned');
+        if (st === 'unknown') unk++; else if (st === 'learned') lrn++;
+    });
+    applyMarks();
+    const c = document.getElementById('markCount');
+    if (c) c.textContent = (unk || lrn) ? (unk + ' bilinmeyen · ' + lrn + ' ezber') : '';
+}
+
+// Kutucuklu hâl ⇄ makalenin orijinal hâli
+function applyMarks() {
+    const on = state.marks !== false;
+    const ph = document.getElementById('pagesHost');
+    const th = document.getElementById('textHost');
+    if (ph) ph.classList.toggle('no-marks', !on);
+    if (th) th.classList.toggle('no-marks', !on);
+    const cb = document.getElementById('markToggle');
+    if (cb) cb.checked = on;
+}
+function toggleMarks(on) {
+    state.marks = !!on;
+    data.settings.marks = !!on;
+    save();
+    applyMarks();
+    hidePop();
+    toast(on ? 'Kutucuklar açık' : 'Makalenin orijinal hâli');
+}
+
+/* =========================================================================
+   KELİME BALONCUĞU
+   ========================================================================= */
+let popWord = null, popEl = null, popTr = '', popEditing = false;
+
+function onWordClick(e) {
+    const el = e.target.closest('.w');
+    if (!el) { hidePop(); return; }
+    e.stopPropagation();
+    showPop(el);
+}
+
+async function showPop(el) {
+    document.querySelectorAll('.w.sel').forEach(x => x.classList.remove('sel'));
+    el.classList.add('sel');
+    popEl = el;
+    popWord = el.dataset.w;
+    popEditing = false;
+    popTr = (data.words[popWord] && data.words[popWord].tr) || data.cache[popWord] || '';
+
+    renderPop(popTr ? 'ready' : 'loading');
+    positionPop(el);
+
+    if (!popTr) {
+        const res = await translate(popWord);
+        if (popWord !== el.dataset.w) return;
+        if (res.tr) { popTr = res.tr; renderPop('ready'); }
+        else { renderPop('error'); }
+        positionPop(el);
+    }
+}
+
+function renderPop(mode) {
+    const pop = document.getElementById('wordPop');
+    const st = wordStatus(popWord);
+    let trHtml = '';
+    if (mode === 'loading') {
+        trHtml = '<div class="wp-tr"><div class="spinner"></div><span style="font-size:13px;color:var(--text-secondary)">Çevriliyor...</span></div>';
+    } else if (mode === 'error') {
+        trHtml = '<div class="wp-tr err">Çeviri alınamadı (internet?). Anlamı kendin yazabilirsin:</div>' +
+                 '<div class="wp-tr" style="margin-top:6px;"><input id="popTrInput" placeholder="Türkçe anlamı..." value=""></div>';
+    } else if (popEditing) {
+        trHtml = '<div class="wp-tr"><input id="popTrInput" value="' + esc(popTr) + '" placeholder="Türkçe anlamı..."></div>';
+    } else {
+        trHtml = '<div class="wp-tr">' + esc(popTr) + '</div>';
+    }
+
+    let actions = '';
+    if (st === 'unknown') {
+        actions = '<button class="wp-learn" onclick="popAction(\'learned\')">✓ Ezberledim</button>' +
+                  '<button class="wp-edit" onclick="popEdit()">✎</button>' +
+                  '<button class="wp-del" onclick="popAction(\'remove\')">🗑</button>';
+    } else if (st === 'learned') {
+        actions = '<button class="wp-save" onclick="popAction(\'unknown\')">↺ Bilmiyorum</button>' +
+                  '<button class="wp-edit" onclick="popEdit()">✎</button>' +
+                  '<button class="wp-del" onclick="popAction(\'remove\')">🗑</button>';
+    } else {
+        actions = '<button class="wp-save" onclick="popAction(\'unknown\')">＋ Kaydet</button>' +
+                  '<button class="wp-learn" onclick="popAction(\'learned\')">✓ Biliyorum</button>';
+    }
+
+    let statusLine = '';
+    if (st === 'unknown') statusLine = '<div class="wp-status">● Bilmediklerim listesinde</div>';
+    else if (st === 'learned') statusLine = '<div class="wp-status" style="color:var(--success)">● Ezberlediklerim listesinde</div>';
+
+    pop.innerHTML =
+        '<div class="wp-word"><span style="flex:1;word-break:break-word;">' + esc(popEl ? popEl.textContent.trim() : popWord) + '</span>' +
+        '<button class="spk" onclick="speak(popWord)">🔊</button></div>' +
+        trHtml + statusLine +
+        '<div class="wp-actions">' + actions + '</div>';
+    pop.classList.add('show');
+
+    const inp = document.getElementById('popTrInput');
+    if (inp) { inp.focus(); inp.addEventListener('input', () => { popTr = inp.value; }); }
+}
+
+function popEdit() { popEditing = true; renderPop('ready'); }
+
+function popAction(kind) {
+    const inp = document.getElementById('popTrInput');
+    if (inp) popTr = inp.value.trim();
+    if (kind === 'remove') {
+        removeWord(popWord);
+        toast('Kelime listeden çıkarıldı');
+        hidePop();
+        return;
+    }
+    if (!popTr) {
+        toast('Önce Türkçe anlamını yaz');
+        popEditing = true; renderPop('ready');
+        return;
+    }
+    data.cache[popWord] = popTr;
+    addWord(popWord, popTr, kind);
+    toast(kind === 'learned' ? '“' + popWord + '” ezberlediklerine eklendi' : '“' + popWord + '” bilmediklerine eklendi');
+    hidePop();
+}
+
+function positionPop(el) {
+    const pop = document.getElementById('wordPop');
+    const r = el.getBoundingClientRect();
+    const pw = pop.offsetWidth || 262;
+    const ph = pop.offsetHeight || 170;
+    let left = r.left + window.scrollX + r.width / 2 - pw / 2;
+    left = Math.max(12 + window.scrollX, Math.min(left, window.scrollX + window.innerWidth - pw - 12));
+    let top = r.bottom + window.scrollY + 8;           // kelimenin hemen altı
+    if (r.bottom + ph + 20 > window.innerHeight) {      // alta sığmıyorsa üste al
+        top = r.top + window.scrollY - ph - 8;
+        if (top < window.scrollY + 8) top = r.bottom + window.scrollY + 8;
+    }
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+}
+
+function hidePop() {
+    const pop = document.getElementById('wordPop');
+    pop.classList.remove('show');
+    document.querySelectorAll('.w.sel').forEach(x => x.classList.remove('sel'));
+    popEl = null; popWord = null; popTr = ''; popEditing = false;
+}
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#wordPop') && !e.target.closest('.w')) hidePop();
+});
+
+/* =========================================================================
+   KELİME LİSTELERİ
+   ========================================================================= */
+function wordsOf(status) {
+    return Object.values(data.words)
+        .filter(x => x.status === status)
+        .sort((a, b) => (b.added || 0) - (a.added || 0));
+}
+
+function listHtml(items, status) {
+    if (!items.length) {
+        return status === 'unknown'
+            ? '<div class="empty-state"><div class="es-icon">🔎</div><h4>Liste boş</h4><p>Makale okurken bilmediğin bir kelimeye dokun<br>ve <b>Kaydet</b> de — burada birikecek.</p></div>'
+            : '<div class="empty-state"><div class="es-icon">🌱</div><h4>Henüz ezberlenen yok</h4><p>Bilmediklerim listesindeki bir kelimeyi<br><b>✓</b> ile işaretleyince buraya taşınır.</p></div>';
+    }
+    const blur = blurState[status] ? ' blur' : '';
+    return items.map(x => `
+        <div class="word-item">
+            <div class="wi-main" onclick="openWordDetail('${esc(x.w)}')">
+                <div class="wi-en">${esc(x.w)}</div>
+                <div class="wi-tr${blur}">${esc(x.tr || '—')}</div>
+                <div class="wi-sub">${status === 'learned' ? 'Ezber: ' + fmtDate(x.learnedAt || x.added) : 'Eklendi: ' + fmtDate(x.added)}${x.page ? ' · s.' + x.page : ''}</div>
+            </div>
+            <div class="wi-act">
+                <button class="wi-btn" onclick="speak('${esc(x.w)}')" title="Telaffuz">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>
+                </button>
+                ${status === 'unknown'
+                    ? `<button class="wi-btn ok" onclick="markLearned('${esc(x.w)}')" title="Ezberledim">
+                           <svg fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                       </button>`
+                    : `<button class="wi-btn back" onclick="markUnknown('${esc(x.w)}')" title="Tekrar çalış">
+                           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>
+                       </button>`}
+                <button class="wi-btn del" onclick="askRemove('${esc(x.w)}')" title="Sil">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+function renderUnknown() {
+    const q = (document.getElementById('searchUnknown').value || '').toLowerCase().trim();
+    let items = wordsOf('unknown');
+    if (q) items = items.filter(x => x.w.includes(q) || (x.tr || '').toLowerCase().includes(q));
+    document.getElementById('unknownList').innerHTML = listHtml(items, 'unknown');
+}
+function renderLearned() {
+    const q = (document.getElementById('searchLearned').value || '').toLowerCase().trim();
+    let items = wordsOf('learned');
+    if (q) items = items.filter(x => x.w.includes(q) || (x.tr || '').toLowerCase().includes(q));
+    document.getElementById('learnedList').innerHTML = listHtml(items, 'learned');
+}
+function toggleBlur(status) {
+    blurState[status] = !blurState[status];
+    const btn = document.getElementById(status === 'unknown' ? 'blurBtnUnknown' : 'blurBtnLearned');
+    btn.textContent = blurState[status] ? 'Anlamları Göster' : 'Anlamları Gizle';
+    status === 'unknown' ? renderUnknown() : renderLearned();
+}
+function markLearned(w) {
+    const e = data.words[w]; if (!e) return;
+    e.status = 'learned'; e.learnedAt = Date.now(); e.updatedAt = Date.now();
+    bumpDay('learned'); save(); refreshAll();
+    toast('“' + w + '” ezberlendi 🎉');
+}
+function markUnknown(w) {
+    const e = data.words[w]; if (!e) return;
+    e.status = 'unknown'; e.updatedAt = Date.now(); save(); refreshAll();
+    toast('“' + w + '” tekrar çalışılacaklara alındı');
+}
+function askRemove(w) {
+    if (!confirm('“' + w + '” tamamen silinsin mi?')) return;
+    removeWord(w); toast('Silindi');
+}
+
+function openWordDetail(w) {
+    const x = data.words[w]; if (!x) return;
+    const body = document.getElementById('wordDetailBody');
+    const doc = data.docs.find(d => d.id === x.doc);
+    body.innerHTML = `
+        <div style="text-align:center; padding:8px 0 18px;">
+            <div class="fc-lang">İNGİLİZCE</div>
+            <div class="fc-word" style="margin:8px 0 4px;">${esc(x.w)}</div>
+            <button class="btn btn-ghost" style="width:auto;padding:8px 16px;margin:6px auto 16px;display:inline-flex;" onclick="speak('${esc(x.w)}')">🔊 Telaffuz</button>
+            <div class="fc-lang">TÜRKÇE</div>
+            <div class="fc-tr" style="margin-top:6px;">${esc(x.tr || '—')}</div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Anlamı düzenle</label>
+            <input type="text" class="glass-input" id="editTr" value="${esc(x.tr || '')}">
+        </div>
+        <div class="text-muted" style="text-align:center;margin-bottom:14px;">
+            ${doc ? esc(doc.name) + (x.page ? ' · sayfa ' + x.page : '') : 'Kaynak belirtilmemiş'} · ${fmtDate(x.added)}
+        </div>
+        <button class="btn btn-primary" onclick="saveWordEdit('${esc(x.w)}')">Kaydet</button>
+        ${x.status === 'unknown'
+            ? `<button class="btn btn-success" onclick="markLearned('${esc(x.w)}'); closeModal('modal-word')">✓ Ezberledim</button>`
+            : `<button class="btn btn-warm" onclick="markUnknown('${esc(x.w)}'); closeModal('modal-word')">↺ Tekrar çalışacağım</button>`}
+        <button class="btn btn-ghost" onclick="closeModal('modal-word')">Kapat</button>`;
+    openModal('modal-word');
+}
+function saveWordEdit(w) {
+    const v = document.getElementById('editTr').value.trim();
+    if (data.words[w]) { data.words[w].tr = v; data.words[w].updatedAt = Date.now(); data.cache[w] = v; save(); refreshAll(); }
+    closeModal('modal-word'); toast('Güncellendi');
+}
+
+/* =========================================================================
+   FLASHCARD
+   ========================================================================= */
+function startFlash(type) {
+    const list = wordsOf(type);
+    if (!list.length) { toast(type === 'unknown' ? 'Bilmediğin kelime yok' : 'Ezberlediğin kelime yok'); return; }
+    flash.list = list.slice().sort(() => Math.random() - 0.5);
+    flash.i = 0; flash.flipped = false; flash.type = type;
+    document.getElementById('flashTitle').textContent = type === 'unknown' ? 'Kelime Çalışması' : 'Tekrar';
+    document.getElementById('fcLearnBtn').style.display = type === 'unknown' ? '' : 'none';
+    drawFlash();
+    openModal('modal-flash');
+}
+function drawFlash() {
+    const x = flash.list[flash.i];
+    if (!x) { closeModal('modal-flash'); return; }
+    document.getElementById('flashCount').textContent = (flash.i + 1) + ' / ' + flash.list.length;
+    document.getElementById('fcWord').textContent = x.w;
+    document.getElementById('fcTr').textContent = x.tr || '—';
+    document.getElementById('fcTr').classList.toggle('hidden', !flash.flipped);
+    document.getElementById('fcHint').textContent = flash.flipped ? 'Kart çevrildi' : 'Türkçesi için karta dokun';
+    document.getElementById('fcLang').textContent = flash.flipped ? 'İNGİLİZCE → TÜRKÇE' : 'İNGİLİZCE';
+}
+function flipFlash() { flash.flipped = !flash.flipped; drawFlash(); }
+function nextFlash(d) {
+    flash.i = (flash.i + d + flash.list.length) % flash.list.length;
+    flash.flipped = false; drawFlash();
+}
+function flashMarkLearned() {
+    const x = flash.list[flash.i]; if (!x) return;
+    markLearned(x.w);
+    flash.list.splice(flash.i, 1);
+    if (!flash.list.length) { closeModal('modal-flash'); toast('Tüm kelimeler bitti 🎉'); return; }
+    if (flash.i >= flash.list.length) flash.i = 0;
+    flash.flipped = false; drawFlash();
+}
+
+/* =========================================================================
+   İSTATİSTİK
+   ========================================================================= */
+function renderStats() {
+    const unk = Object.values(data.words).filter(x => x.status === 'unknown').length;
+    const lrn = Object.values(data.words).filter(x => x.status === 'learned').length;
+    const tot = unk + lrn;
+    const pct = tot ? Math.round(lrn / tot * 100) : 0;
+
+    document.getElementById('msUnknown').textContent = unk;
+    document.getElementById('msLearned').textContent = lrn;
+    document.getElementById('msDocs').textContent = data.docs.length;
+    document.getElementById('statLearned').textContent = lrn;
+    document.getElementById('statTotal').textContent = tot;
+    document.getElementById('textLearnPct').textContent = '%' + pct;
+    setRing('ringLearn', pct);
+
+    const t = data.days[todayKey()] || { added: 0, learned: 0 };
+    const goal = data.settings.goal || 10;
+    document.getElementById('msTodayAdded').textContent = t.added || 0;
+    document.getElementById('statTodayLearned').textContent = t.learned || 0;
+    document.getElementById('statGoal').textContent = goal;
+    document.getElementById('textTodayNum').textContent = t.learned || 0;
+    document.getElementById('goalInput').value = goal;
+    setRing('ringToday', Math.min(100, Math.round((t.learned || 0) / goal * 100)));
+
+    // Son 7 gün
+    const host = document.getElementById('barChart');
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        days.push({ k, label: d.toLocaleDateString('tr-TR', { weekday: 'short' }).slice(0, 2), v: data.days[k] || { added: 0, learned: 0 } });
+    }
+    const max = Math.max(1, ...days.map(d => Math.max(d.v.added || 0, d.v.learned || 0)));
+    host.innerHTML = days.map(d => `
+        <div class="bc-col">
+            <div class="bc-stack">
+                <div class="bc-bar unk" style="height:${Math.round((d.v.added || 0) / max * 100)}%"></div>
+                <div class="bc-bar lrn" style="height:${Math.round((d.v.learned || 0) / max * 100)}%"></div>
+            </div>
+            <div class="bc-label">${d.label}</div>
+        </div>`).join('');
+}
+function setRing(id, pct) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const c = 2 * Math.PI * 35;
+    el.style.strokeDasharray = c;
+    el.style.strokeDashoffset = c - (c * Math.min(100, Math.max(0, pct)) / 100);
+}
+function saveGoal(v) {
+    data.settings.goal = Math.max(1, parseInt(v) || 10);
+    save(); renderStats();
+}
+/* =========================================================================
+   GOOGLE DRIVE SENKRONU
+   Kelimeler localStorage'a yazıldıkça drive-sync.js otomatik gönderir.
+   Buradaki butonlar: elle kaydetme ve başka cihazdan güncel hali çekme.
+   ========================================================================= */
+function cloudReady() {
+    return !!(window.dbSync && typeof window.dbSync.isReady === 'function' && window.dbSync.isReady());
+}
+function updateCloudStatus() {
+    const dot = document.getElementById('csDot');
+    const txt = document.getElementById('csText');
+    if (!dot || !txt) return;
+    dot.className = 'cs-dot';
+    if (!window.dbSync) { dot.classList.add('off'); txt.textContent = 'Drive modülü yüklenmedi'; return; }
+    if (!cloudReady()) { dot.classList.add('off'); txt.innerHTML = 'Drive bağlı değil — ana ekrandaki bulut simgesinden giriş yap'; return; }
+    const pending = typeof window.dbSync.isDirty === 'function' && window.dbSync.isDirty('makale');
+    if (pending) { dot.classList.add('wait'); txt.textContent = 'Kaydediliyor...'; return; }
+    dot.classList.add('ok');
+    const last = data.settings.lastSync;
+    txt.textContent = last
+        ? 'Tüm kelimeler Drive\'da ✓  ·  Son: ' + new Date(last).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : 'Drive bağlı ✓  ·  Otomatik kaydediliyor';
+}
+
+async function cloudSave() {
+    if (!cloudReady()) { toast('Önce ana ekrandan Drive girişi yap'); updateCloudStatus(); return; }
+    overlay(true, 'Drive\'a kaydediliyor...');
+    try {
+        await window.dbSync.flushNow('makale');
+        data.settings.lastSync = Date.now();
+        save();
+        toast('Kelimeler Drive\'a kaydedildi ✓');
+    } catch (e) { toast('Kaydedilemedi, tekrar denenecek'); }
+    overlay(false);
+    updateCloudStatus();
+}
+
+async function cloudPull() {
+    if (!cloudReady()) { toast('Önce ana ekrandan Drive girişi yap'); updateCloudStatus(); return; }
+    overlay(true, 'Drive\'dan kelimeler getiriliyor...');
+    try {
+        // Önce bu cihazdaki bekleyenleri gönder, sonra en güncel hali indir
+        await window.dbSync.flushNow('makale');
+        await window.dbSync.pullDomain('makale');
+        load();
+        refreshAll();
+        data.settings.lastSync = Date.now();
+        save();
+        const n = Object.keys(data.words).length;
+        toast(n + ' kelime güncel hale getirildi ✓');
+    } catch (e) { toast('Drive\'dan getirilemedi'); }
+    overlay(false);
+    updateCloudStatus();
+}
+
+/* =========================================================================
+   SEKME & BAŞLANGIÇ
+   ========================================================================= */
+function switchTab(id, btn) {
+    hidePop();
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    btn.classList.add('active');
+    ['read', 'unknown', 'learned', 'stats'].forEach(v => document.getElementById('view-' + v).classList.add('hidden'));
+    document.getElementById('view-' + id).classList.remove('hidden');
+    const inReader = id === 'read' && !document.getElementById('readerView').classList.contains('hidden');
+    document.getElementById('pageNav').style.display = inReader ? '' : 'none';
+    if (id === 'stats') renderStats();
+    if (id === 'unknown') renderUnknown();
+    if (id === 'learned') renderLearned();
+    if (window.LiquidDock) window.LiquidDock.moveTo(btn);
+    window.scrollTo({ top: 0 });
+}
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+document.addEventListener('keydown', (e) => {
+    if (document.getElementById('readerView').classList.contains('hidden')) return;
+    if (e.key === 'ArrowRight') gotoPage(state.page + 1);
+    if (e.key === 'ArrowLeft') gotoPage(state.page - 1);
+});
+window.addEventListener('resize', () => { if (state.pdf && state.mode === 'pdf') { clearTimeout(window._rs); window._rs = setTimeout(renderPage, 300); } });
+
+// drive-sync.js Drive'dan veri indirdiğinde ekranı tazele
+window.addEventListener('dbsynced', () => {
+    load(); refreshAll();
+    data.settings.lastSync = Date.now();
+    updateCloudStatus();
+});
+window.addEventListener('dbauthstate', updateCloudStatus);
+window.addEventListener('dbauthready', updateCloudStatus);
+window.addEventListener('storage', (e) => { if (e.key === LS_KEY) { load(); refreshAll(); } });
+setInterval(updateCloudStatus, 5000);
+
+function init() {
+    if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    load();
+    renderDocs();
+    renderUnknown();
+    renderLearned();
+    renderStats();
+    updateBadges();
+    updateCloudStatus();
+    document.getElementById('pageNav').style.display = 'none';
+}
+init();
+</script>
+
+<!-- ===== LIQUID DOCK: kayan daire + eriyen (meniscus) bar ===== -->
+<script>
+(function () {
+    const dock   = document.getElementById('liquidDock');
+    const svg    = document.getElementById('dockSkin');
+    const path   = document.getElementById('dockPath');
+    const bead   = document.getElementById('dockBead');
+    const glow   = document.getElementById('dockGlow');
+    const icon   = document.getElementById('beadIcon');
+    const tabs   = Array.from(dock.querySelectorAll('.nav-item'));
+    if (!dock || !path || tabs.length === 0) return;
+
+    const H  = 66, R = 26, BR = 29, GAP = 5;
+    const SR = BR + GAP;
+    const K  = 11;
+    const HC = Math.sqrt(SR * SR - K * K);
+    const SH = 22;
+
+    let W = 0, cx = 0, target = 0, vel = 0, raf = null, activeIndex = 0;
+
+    function buildPath(x) {
+        const tx = K / SR, ty = HC / SR;
+        x = Math.min(Math.max(x, R + HC * 0.35), W - R - HC * 0.35);
+        const L = x - HC, Rt = x + HC;
+        const shL = Math.max(0, Math.min(SH, L - R));
+        const shR = Math.max(0, Math.min(SH, (W - R) - Rt));
+        const a = Math.max(R, L - shL);
+        const b = Math.min(W - R, Rt + shR);
+        const c1x = a + shL * 0.55,       c1y = 0;
+        const c2x = L - shL * 0.55 * tx,  c2y = -shL * 0.55 * ty;
+        const d1x = Rt + shR * 0.55 * tx, d1y = -shR * 0.55 * ty;
+        const d2x = b - shR * 0.55,       d2y = 0;
+        return [
+            `M ${R} 0`,
+            `L ${a.toFixed(2)} 0`,
+            `C ${c1x.toFixed(2)} ${c1y}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${L.toFixed(2)} 0`,
+            `A ${SR} ${SR} 0 0 0 ${Rt.toFixed(2)} 0`,
+            `C ${d1x.toFixed(2)} ${d1y.toFixed(2)}, ${d2x.toFixed(2)} ${d2y}, ${b.toFixed(2)} 0`,
+            `L ${W - R} 0`,
+            `A ${R} ${R} 0 0 1 ${W} ${R}`,
+            `L ${W} ${H - R}`,
+            `A ${R} ${R} 0 0 1 ${W - R} ${H}`,
+            `L ${R} ${H}`,
+            `A ${R} ${R} 0 0 1 0 ${H - R}`,
+            `L 0 ${R}`,
+            `A ${R} ${R} 0 0 1 ${R} 0`,
+            'Z'
+        ].join(' ');
+    }
+    function draw() {
+        path.setAttribute('d', buildPath(cx));
+        bead.style.transform = `translate3d(${(cx - BR).toFixed(2)}px,0,0)`;
+        glow.style.transform = `translate3d(${(cx - 46).toFixed(2)}px,0,0)`;
+    }
+    function centerOf(el) {
+        const r = el.getBoundingClientRect(), d = dock.getBoundingClientRect();
+        return r.left - d.left + r.width / 2;
+    }
+    function tick() {
+        const diff = target - cx;
+        vel += diff * 0.135; vel *= 0.76; cx += vel;
+        if (Math.abs(diff) < 0.25 && Math.abs(vel) < 0.25) { cx = target; vel = 0; draw(); raf = null; return; }
+        draw(); raf = requestAnimationFrame(tick);
+    }
+    function paint(tab) {
+        const c1 = tab.dataset.c1 || '#4cc9f0';
+        const c2 = tab.dataset.c2 || '#4361ee';
+        bead.style.background = `linear-gradient(160deg, ${c1} 0%, ${c2} 100%)`;
+        bead.style.boxShadow = `0 0 0 1px rgba(255,255,255,0.20), 0 12px 26px ${hexA(c2, 0.45)}, 0 0 30px ${hexA(c1, 0.40)}`;
+        glow.style.background = c1;
+        const lbl = tab.querySelector('.tab-label');
+        if (lbl) lbl.style.color = c1;
+        icon.innerHTML = tab.querySelector('.tab-icon').innerHTML;
+    }
+    function hexA(hex, a) {
+        const h = hex.replace('#', '');
+        const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+    }
+    function moveTo(tab, instant) {
+        const idx = tabs.indexOf(tab);
+        if (idx === -1) return;
+        activeIndex = idx;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        paint(tab);
+        bead.classList.add('pop');
+        setTimeout(() => bead.classList.remove('pop'), 170);
+        target = centerOf(tab);
+        if (instant) { cx = target; vel = 0; draw(); return; }
+        if (!raf) raf = requestAnimationFrame(tick);
+    }
+    function measure(keepInstant) {
+        W = dock.clientWidth;
+        if (!W) return;
+        svg.setAttribute('width', W);
+        svg.setAttribute('height', H);
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        target = centerOf(tabs[activeIndex]);
+        if (keepInstant) { cx = target; vel = 0; }
+        draw();
+    }
+    window.LiquidDock = { moveTo: (tab) => moveTo(tab) };
+    const startTab = tabs.find(t => t.classList.contains('active')) || tabs[0];
+    activeIndex = tabs.indexOf(startTab);
+    paint(startTab);
+    measure(true);
+    window.addEventListener('resize', () => measure(true));
+    window.addEventListener('orientationchange', () => setTimeout(() => measure(true), 250));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measure(true));
+    if (window.ResizeObserver) new ResizeObserver(() => measure(true)).observe(dock);
+})();
+</script>
+<!-- ===== /LIQUID DOCK ===== -->
+</body>
+</html>
