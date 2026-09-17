@@ -17,6 +17,7 @@
     <link rel="preload" href="app-icon.png?v=3" as="image" fetchpriority="high">
     <link rel="preload" href="kitap_icon.png?v=1" as="image">
     <link rel="preload" href="eng_icon.png?v=1" as="image">
+    <link rel="preload" href="makale-icon.png?v=1" as="image">
     <link rel="preload" href="sozluk-icon.png?v=1" as="image">
 
     <link rel="apple-touch-icon" sizes="180x180" href="app-icon.png?v=3">
@@ -899,8 +900,9 @@
             </span>
         </a>
         <a href="#" onclick="navigateTo('makale.html')" class="menu-item theme-makale">
-            <div class="icon-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <div class="icon-box icon-img">
+                <img src="makale-icon.png?v=1" alt="" onerror="iconFallback(this)">
+                <svg class="icon-fallback" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/>
                     <path d="M14 3v5a1 1 0 001 1h5"/>
                     <path d="M8 12h6M8 16h4"/>
