@@ -8,9 +8,11 @@
     <meta name="theme-color" content="#0f172a">
     <title>Makale</title>
 
-    <link rel="apple-touch-icon" sizes="180x180" href="eng_icon.png?v=1">
-    <link rel="icon" type="image/png" href="eng_icon.png?v=1">
-    <link rel="shortcut icon" href="eng_icon.png?v=1">
+    <link rel="preload" href="makale-icon.png?v=1" as="image" fetchpriority="high">
+    <link rel="apple-touch-icon" sizes="180x180" href="makale-icon.png?v=1">
+    <link rel="apple-touch-icon" href="makale-icon.png?v=1">
+    <link rel="icon" type="image/png" href="makale-icon.png?v=1">
+    <link rel="shortcut icon" href="makale-icon.png?v=1">
 
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
 
@@ -258,6 +260,10 @@
         .icon-btn:active { transform: scale(0.92); }
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
         .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.6; }
+        .empty-state .es-img { width: 92px; height: 92px; object-fit: contain; margin: 0 auto 14px; display: block; filter: drop-shadow(0 10px 22px rgba(0,0,0,0.5)); opacity: 0.95; }
+        .app-icon-sm { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin: -2px 0; }
+        .app-icon-sm img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45)); }
+        .app-icon-sm.fallback { border-radius: 14px; background: var(--accent-gradient); }
         .empty-state h4 { font-size: 16px; color: #fff; margin-bottom: 6px; font-weight: 600; }
         .empty-state p { font-size: 13px; line-height: 1.5; }
 
@@ -503,8 +509,8 @@
             <div class="container">
                 <div class="glass-panel card" style="padding:18px 20px; margin-bottom:16px;">
                     <div style="display:flex; align-items:center; gap:13px;">
-                        <div style="width:44px;height:44px;border-radius:14px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.9" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v5a1 1 0 001 1h5"/><path d="M8 13h8M8 17h5"/></svg>
+                        <div class="app-icon-sm">
+                            <img src="makale-icon.png?v=1" alt="" onerror="this.parentElement.classList.add('fallback'); this.remove();">
                         </div>
                         <div style="flex:1;">
                             <div style="font-weight:600; font-size:15px;">PDF makale yükle</div>
@@ -1056,7 +1062,7 @@ function renderDocs() {
     const host = document.getElementById('docList');
     document.getElementById('docCount').textContent = data.docs.length + ' makale';
     if (!data.docs.length) {
-        host.innerHTML = '<div class="empty-state"><div class="es-icon">📄</div><h4>Henüz makale yok</h4><p>Yukarıdaki <b>PDF Seç</b> butonuna dokunarak<br>okumak istediğin makaleyi yükle.</p></div>';
+        host.innerHTML = '<div class="empty-state"><img class="es-img" src="makale-icon.png?v=1" alt="" onerror="this.style.display=\'none\'"><h4>Henüz makale yok</h4><p>Yukarıdaki <b>PDF Seç</b> butonuna dokunarak<br>okumak istediğin makaleyi yükle.</p></div>';
         return;
     }
     host.innerHTML = data.docs.map(d => `
