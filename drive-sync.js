@@ -28,7 +28,7 @@ window.__dbSyncLoading = true;
 //  DOMAIN MAPPING — hangi localStorage anahtarları hangi Drive dosyasına gider
 // =============================================================================
 const DOMAINS = {
-    namaz:     { file: 'namaz.json',     keys: ['namazTakipData_v2'] },
+    namaz:     { file: 'namaz.json',     keys: ['namazTakipData_v2', 'kazaTakipData_v1'] },
     notlar:    { file: 'notlar.json',    keys: ['glassProTasks'] },
     kitap:     { file: 'kitap.json',     keys: ['liquid_lib_pro_v1'] },
     yatirim:   { file: 'yatirim.json',   keys: ['liquid_trader_db_v3', 'liquid_trader_settings_v3'] },
