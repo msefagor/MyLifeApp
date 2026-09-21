@@ -369,6 +369,39 @@
         }
         .kaza-hero-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; margin-bottom: 8px; }
         .kaza-hero-sub { font-size: 12.5px; opacity: 0.78; margin-top: 8px; line-height: 1.5; }
+        .kaza-complete {
+            margin-top: 14px; background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px 12px;
+        }
+        .kaza-complete-title {
+            font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase;
+            opacity: 0.6; text-align: center; margin-bottom: 13px; font-weight: 600;
+        }
+        .kaza-chips { display: flex; gap: 7px; justify-content: center; }
+        .kaza-chip {
+            flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px;
+            padding: 11px 2px; border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+            transition: 0.3s;
+        }
+        .kaza-chip .chip-mark {
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 800; line-height: 1;
+        }
+        .kaza-chip .chip-name { font-size: 10.5px; font-weight: 700; letter-spacing: 0.2px; }
+        .kaza-chip.done { border-color: rgba(50,215,75,0.42); background: rgba(50,215,75,0.12); }
+        .kaza-chip.done .chip-mark { background: var(--accent-green); color: #08210d; box-shadow: 0 0 12px rgba(50,215,75,0.45); }
+        .kaza-chip.done .chip-name { color: #8ff0a4; }
+        .kaza-chip.need { border-color: rgba(255,75,31,0.45); background: rgba(255,75,31,0.10); }
+        .kaza-chip.need .chip-mark {
+            background: rgba(255,75,31,0.16); color: var(--missed-color);
+            border: 1px dashed rgba(255,75,31,0.65);
+        }
+        .kaza-chip.need .chip-name { color: #ff9c85; }
+        .kaza-complete-need { text-align: center; font-size: 13.5px; margin-top: 14px; line-height: 1.6; opacity: 0.92; }
+        .kaza-complete-need b { color: var(--missed-color); }
+        .kaza-complete-need .ok { color: var(--accent-green); }
         .kaza-log-item {
             display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
             padding: 11px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13.5px;
@@ -514,15 +547,17 @@
                     <div class="kaza-hero-value" id="kazaDayBack">0 GÜN</div>
                     <div class="kaza-hero-sub" id="kazaDaySub">Her vakitten (Sabah, Öğle, İkindi, Akşam, Yatsı) birer tane işaretlendiğinde 1 GÜN geri gidilir.</div>
                 </div>
-                <div class="stats-grid">
+                <div class="stats-grid" style="grid-template-columns: 1fr;">
                     <div class="stat-box">
-                        <div class="stat-label">Toplam Kaza</div>
+                        <div class="stat-label">Toplam Kılınan Kaza</div>
                         <div class="stat-value" id="kazaTotal" style="color:var(--kaza-color)">0</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-label">Toplam Rekat</div>
-                        <div class="stat-value" id="kazaRakat" style="color:var(--kaza-color)">0</div>
-                    </div>
+                </div>
+
+                <div class="kaza-complete">
+                    <div class="kaza-complete-title">Günü Tamamlamak İçin</div>
+                    <div class="kaza-chips" id="kazaChips"></div>
+                    <div class="kaza-complete-need" id="kazaCompleteNeed"></div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-header">
@@ -1116,12 +1151,37 @@
                     : 'Her vakitten (Sabah, Öğle, İkindi, Akşam, Yatsı) birer tane işaretlendiğinde 1 GÜN geri gidilir.';
             }
 
-            let total = 0, rakat = 0;
-            prayers.forEach(p => { const n = kd.counts[p.id] || 0; total += n; rakat += n * p.rekat; });
+            let total = 0;
+            prayers.forEach(p => { total += (kd.counts[p.id] || 0); });
             const tEl = document.getElementById('kazaTotal'); if (tEl) tEl.textContent = total;
-            const rEl = document.getElementById('kazaRakat'); if (rEl) rEl.textContent = rakat;
 
-            const ahead = counts.filter(n => n > fullDays).length;
+            // --- Günü tamamlamak için hangi vakitler eksik? ---
+            const doneList = prayers.filter(p => (kd.counts[p.id] || 0) > fullDays);
+            const needList = prayers.filter(p => (kd.counts[p.id] || 0) <= fullDays);
+
+            const chipsEl = document.getElementById('kazaChips');
+            if (chipsEl) {
+                chipsEl.innerHTML = prayers.map(p => {
+                    const ok = (kd.counts[p.id] || 0) > fullDays;
+                    return `<div class="kaza-chip ${ok ? 'done' : 'need'}">
+                        <div class="chip-mark">${ok ? '&#10003;' : '&#43;'}</div>
+                        <div class="chip-name">${p.name}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            const needEl = document.getElementById('kazaCompleteNeed');
+            if (needEl) {
+                if (doneList.length === 0) {
+                    needEl.innerHTML = 'Yeni bir günü tamamlamak için <b>5 vaktin tamamı</b> gerekli.';
+                } else {
+                    const doneTxt = doneList.map(p => '1 ' + p.name).join(', ');
+                    const needTxt = needList.map(p => '1 ' + p.name).join(', ');
+                    needEl.innerHTML = `${doneTxt} kılındı — <b>${needTxt}</b> eksik kaldı.`;
+                }
+            }
+
+            const ahead = doneList.length;
             const nt = document.getElementById('kazaNextText'); if (nt) nt.textContent = `${ahead} / 5 vakit`;
             const nb = document.getElementById('kazaNextBar'); if (nb) nb.style.width = `${(ahead / 5) * 100}%`;
         }
