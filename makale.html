@@ -20,9 +20,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <!-- Cloud sync (kelimeler ve istatistikler senkronlanır, PDF dosyaları cihazda kalır) -->
-    <script>window.SYNC_KEYS = ['makale_app_v1'];</script>
+    <script>window.SYNC_KEYS = ['makale_app_v1']; window.SYNC_PREFIXES = ['eng_day_'];</script>
     <script type="module" src="./drive-sync.js?v=3"></script>
 
+    <script defer src="./english-vocabulary.js?v=1"></script>
     <style>
         :root {
             --glass-bg: rgba(18, 22, 38, 0.55);
@@ -1946,6 +1947,8 @@ document.addEventListener('keydown', (e) => {
 window.addEventListener('resize', () => { if (state.pdf && state.mode === 'pdf') { clearTimeout(window._rs); window._rs = setTimeout(renderPage, 300); } });
 
 // drive-sync.js Drive'dan veri indirdiğinde ekranı tazele
+window.addEventListener('englishvocabularyimported', () => { load(); refreshAll(); });
+window.addEventListener('storage', e => { if (e.key === LS_KEY) { load(); refreshAll(); } });
 window.addEventListener('dbsynced', () => {
     load(); refreshAll();
     data.settings.lastSync = Date.now();
