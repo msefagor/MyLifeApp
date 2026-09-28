@@ -12,6 +12,7 @@
     <script>
         // İngilizce sayfası birden çok dinamik anahtar kullanır (her tarihe bir kayıt)
         window.SYNC_PREFIXES = ['eng_day_', 'eng_done_', 'eng_img_'];
+        window.SYNC_KEYS = ['makale_app_v1'];
         window.addEventListener('dbsynced', () => {
             try {
                 if (typeof renderCalendar === 'function') renderCalendar();
@@ -19,7 +20,8 @@
             } catch (e) { console.warn('ingilizce refresh after sync:', e); }
         });
     </script>
-    <script type="module" src="./drive-sync.js?v=2"></script>
+    <script type="module" src="./drive-sync.js?v=3"></script>
+    <script defer src="./english-vocabulary.js?v=1"></script>
     <style>
         :root {
             --bg-body: #07091a;
@@ -1173,7 +1175,8 @@
                 return;
             }
             localStorage.setItem('eng_day_' + date, content);
-            showToast('Ders içeriği kaydedildi.', { type: 'success', title: 'Kaydedildi' });
+            const imported = window.EnglishVocabulary ? EnglishVocabulary.sync() : -1;
+            showToast(imported < 0 ? 'Ders kaydedildi; kelimeler henüz aktarılamadı. Sayfa açıldığında yeniden denenecek.' : 'Ders kaydedildi. ' + imported + ' yeni kelime Bilmediklerim’e eklendi.', { type: imported < 0 ? 'warn' : 'success', title: 'Kaydedildi' });
             setTimeout(goHome, 700);
         }
 
