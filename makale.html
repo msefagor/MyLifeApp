@@ -161,7 +161,7 @@
         /* ===================================================== */
         .liquid-nav {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
-            padding: 0 18px calc(14px + var(--safe-bottom));
+            padding: 0 12px var(--safe-bottom);
             pointer-events: none;
         }
         .liquid-nav::before {
@@ -342,8 +342,13 @@
             position: absolute; inset: 0; overflow: hidden; line-height: 1;
             transform-origin: 0 0;
         }
+        .text-layer { text-size-adjust: none; -webkit-text-size-adjust: none; }
+        .text-layer span[role="presentation"], .text-layer br { position: absolute; white-space: pre; transform-origin: 0 0; color: transparent; }
+        .text-layer[data-main-rotation="90"] { transform: rotate(90deg) translateY(-100%); }
+        .text-layer[data-main-rotation="180"] { transform: rotate(180deg) translate(-100%, -100%); }
+        .text-layer[data-main-rotation="270"] { transform: rotate(270deg) translateX(-100%); }
         .text-layer .ti { position: absolute; white-space: pre; transform-origin: 0% 0%; color: transparent; }
-        .text-layer .w { cursor: pointer; border-radius: 4px; }
+        .text-layer .w { font: inherit; letter-spacing: inherit; padding: 0; cursor: pointer; border-radius: 4px; }
         /* İçi boş çerçeve — kelimenin okunabilirliği bozulmaz */
         .page-wrap .text-layer .w.st-unknown { box-shadow: 0 0 0 1.6px #f97316; }
         .page-wrap .text-layer .w.st-learned { box-shadow: 0 0 0 1.6px #12b886; }
@@ -425,6 +430,8 @@
         .list-tools .btn { margin-top: 0; }
 
         /* ====== ÇALIŞMA KARTI (Flashcard) ====== */
+        #fcActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        #fcActions .btn { min-width: 0; padding: 14px 4px; font-size: 13px; }
         .flash-wrap { padding: 4px 0 10px; }
         .flash-card {
             position: relative; min-height: 250px; border-radius: 26px; padding: 30px 24px;
@@ -487,6 +494,40 @@
         #loadOverlay.show { display: flex; }
         #loadOverlay .spinner { width: 38px; height: 38px; border-width: 3px; }
         #loadOverlay span { font-size: 13.5px; color: var(--text-secondary); }
+
+        /* Reading controls overlay the page without taking reading space. */
+        .reader-handle { display: none; }
+        body.reading-focus { padding-bottom: 0; }
+        .reading-focus #readerView { padding-bottom: 0; }
+        .reading-focus #pagesHost { padding: 0; min-height: calc(100dvh - env(safe-area-inset-top)); }
+        .reading-focus .page-wrap { margin: 0 auto; border-radius: 0; flex-shrink: 0; }
+        .reading-focus .reader-head {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding-top: env(safe-area-inset-top);
+            transform: translateY(-110%); visibility: hidden; pointer-events: none;
+            transition: transform .22s ease, visibility .22s;
+        }
+        .reading-focus .liquid-nav, .reading-focus .page-nav {
+            transform: translateY(calc(200px + env(safe-area-inset-bottom)));
+            visibility: hidden; pointer-events: none;
+            transition: transform .22s ease, visibility .22s;
+        }
+        .reading-focus.controls-open .reader-head,
+        .reading-focus.controls-open .liquid-nav,
+        .reading-focus.controls-open .page-nav { transform: translateY(0); visibility: visible; }
+        .reading-focus.controls-open .reader-head { pointer-events: auto; }
+        .reading-focus .reader-handle {
+            display: flex; position: fixed; z-index: 110; bottom: 0; left: 50%;
+            transform: translateX(-50%); width: 100px; height: calc(28px + env(safe-area-inset-bottom));
+            padding: 10px 0 env(safe-area-inset-bottom); align-items: flex-start; justify-content: center;
+            background: rgba(15,23,42,.65); border: 0; border-radius: 18px 18px 0 0;
+            cursor: pointer; touch-action: none;
+        }
+        .reader-handle::after { content: ''; width: 40px; height: 5px; border-radius: 5px; background: #d8e4ee; }
+        .reading-focus.controls-open .reader-handle { bottom: calc(146px + env(safe-area-inset-bottom)); height: 28px; padding-bottom: 0; border-radius: 18px; }
+        @media (prefers-reduced-motion: reduce) {
+            .reading-focus .reader-head, .reading-focus .liquid-nav, .reading-focus .page-nav { transition: none; }
+        }
     </style>
 </head>
 <body>
@@ -708,6 +749,8 @@
             <div class="glass-panel card">
                 <div class="section-title"><span><span class="accent-dot"></span>Ayarlar</span></div>
                 <div class="form-group" style="margin-bottom:12px;">
+                    <label class="form-label" for="recallSeconds">Hatırlama süresi (saniye)</label>
+                    <input id="recallSeconds" class="glass-input" type="number" min="3" max="60" value="8" onchange="data.settings.recallSeconds=Math.max(3,Math.min(60,Number(this.value)||8));save();this.value=data.settings.recallSeconds;">
                     <label class="form-label">Günlük ezber hedefi</label>
                     <input type="number" id="goalInput" class="glass-input" min="1" value="10" onchange="saveGoal(this.value)">
                 </div>
@@ -725,18 +768,21 @@
             <div class="section-title"><span id="flashTitle">Kelime Çalışması</span><button class="rb-btn" onclick="closeModal('modal-flash')">✕</button></div>
             <div class="flash-wrap">
                 <div class="fc-count" id="flashCount">0 / 0</div>
-                <div class="flash-card" id="flashCard" onclick="flipFlash()">
+                <div class="flash-card" id="flashCard" role="button" tabindex="0" aria-label="Türkçe anlamını aç" onclick="flipFlash()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlash();}">
                     <div class="fc-lang" id="fcLang">İNGİLİZCE</div>
                     <div class="fc-word" id="fcWord">—</div>
                     <div class="fc-tr hidden" id="fcTr">—</div>
                     <div class="fc-hint" id="fcHint">Türkçesi için karta dokun</div>
                 </div>
-                <div class="fc-actions">
-                    <button class="btn btn-secondary" style="flex:1" onclick="nextFlash(-1)">Önceki</button>
-                    <button class="btn btn-success" style="flex:1.3" id="fcLearnBtn" onclick="flashMarkLearned()">Ezberledim</button>
-                    <button class="btn btn-secondary" style="flex:1" onclick="nextFlash(1)">Sonraki</button>
+                <div id="fcSignal" class="fc-hint" aria-live="polite"></div>
+                <div class="fc-actions" id="fcActions">
+                    <button class="btn btn-warm" style="flex:1" onclick="rateFlash('again')">Hatırlamadım</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="rateFlash('hard')">Zorlandım</button>
+                    <button class="btn btn-success" style="flex:1" id="fcLearnBtn" onclick="rateFlash('good')">Hatırladım</button>
                 </div>
-                <button class="btn btn-ghost" onclick="speak(flash.list[flash.i] && flash.list[flash.i].w)">🔊 Telaffuz</button>
+                <button class="btn btn-ghost" id="fcSpeak" onclick="speak(flash.list[flash.i] && flash.list[flash.i].w)">🔊 Telaffuz</button>
+                <button class="btn btn-ghost" id="fcPause" onclick="pauseFlash()">Duraklat</button>
+                <p class="fc-hint">Türkçeyi açmak veya süreyi aşmak, kelimenin daha sık gelmesini sağlar.</p>
             </div>
         </div>
     </div>
@@ -748,6 +794,8 @@
 
     <div id="toast"></div>
     <div id="loadOverlay"><div class="spinner"></div><span id="loadText">Yükleniyor...</span></div>
+
+    <button id="readerHandle" class="reader-handle" aria-label="Okuma kontrollerini aç" aria-expanded="false" aria-controls="pageNav liquidDock" onclick="toggleReaderControls()"></button>
 
     <!-- ===== LIQUID DOCK NAVIGASYON ===== -->
     <nav class="liquid-nav">
@@ -1129,6 +1177,7 @@ async function openDoc(id) {
         document.getElementById('docListView').classList.add('hidden');
         document.getElementById('readerView').classList.remove('hidden');
         document.getElementById('pageNav').style.display = '';
+        setReaderFocus(true);
         updateModeButtons();
         await renderPage();
         window.scrollTo(0, 0);
@@ -1140,6 +1189,7 @@ async function openDoc(id) {
 }
 
 function closeReader() {
+    setReaderFocus(false);
     hidePop();
     document.getElementById('pageNav').style.display = 'none';
     document.getElementById('readerView').classList.add('hidden');
@@ -1184,7 +1234,8 @@ async function gotoPage(n) {
 }
 
 async function renderPage() {
-    if (!state.pdf || state.rendering) return;
+    if (!state.pdf) return;
+    if (state.rendering) { state.renderPending = true; return; }
     state.rendering = true;
     hidePop();
     document.getElementById('pageInput').value = state.page;
@@ -1212,6 +1263,7 @@ async function renderPage() {
         toast('Sayfa görüntülenemedi');
     }
     state.rendering = false;
+    if (state.renderPending) { state.renderPending = false; await renderPage(); }
 }
 
 /* ---- PDF görünümü: canvas + kelime katmanı ---- */
@@ -1219,7 +1271,8 @@ async function renderPdfMode(page) {
     const host = document.getElementById('pagesHost');
     host.innerHTML = '';
 
-    const avail = Math.min(window.innerWidth - 20, 900);
+    const inset = document.body.classList.contains('reading-focus') ? 0 : 20;
+    const avail = Math.max(1, Math.min(host.clientWidth - inset, 900));
     const base = page.getViewport({ scale: 1 });
     const scale = (avail / base.width) * state.zoom;
     const viewport = page.getViewport({ scale });
@@ -1252,70 +1305,30 @@ async function renderPdfMode(page) {
     await page.render({ canvasContext: ctx, viewport }).promise;
 
     const tc = await page.getTextContent();
-    buildWordLayer(tc, viewport, layer);
+    await buildWordLayer(tc, viewport, layer);
     paintWordsInReader();
 }
 
-function pickFontFamily(style) {
-    const f = (style && style.fontFamily) || 'serif';
-    if (/mono/i.test(f)) return "'Courier New', Courier, monospace";
-    if (/sans/i.test(f)) return "Helvetica, Arial, sans-serif";
-    return "'Times New Roman', Times, serif";
-}
-
-function buildWordLayer(textContent, viewport, layer) {
-    const frag = document.createDocumentFragment();
-    const styles = textContent.styles || {};
-    const meas = document.createElement('div');
-    meas.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;top:0;left:0;line-height:1;';
-    layer.appendChild(meas);
-
-    textContent.items.forEach(item => {
-        if (!item.str || !item.str.trim()) return;
-        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-        const fs = Math.hypot(tx[2], tx[3]) || Math.abs(tx[3]);
-        if (!fs) return;
-        const angle = Math.atan2(tx[1], tx[0]);
-        const fam = pickFontFamily(styles[item.fontName]);
-
-        const span = document.createElement('span');
-        span.className = 'ti';
-        span.style.left = tx[4] + 'px';
-        // Yazı tabanı (baseline) tx[5] noktasına otursun: 0.84em tipik ascent payı
-        span.style.top = (tx[5] - fs * 0.84) + 'px';
-        span.style.fontSize = fs + 'px';
-        span.style.fontFamily = fam;
-        if (angle) span.style.transform = 'rotate(' + angle + 'rad)';
-
-        // Kelime kelime böl
-        const parts = item.str.split(/(\s+)/);
-        parts.forEach(p => {
-            if (!p) return;
-            if (/^\s+$/.test(p)) { span.appendChild(document.createTextNode(p)); return; }
-            const n = normWord(p);
-            if (!n || n.length < 2 || !/[a-zçğıöşü]/i.test(n)) { span.appendChild(document.createTextNode(p)); return; }
-            const s = document.createElement('span');
-            s.className = 'w';
-            s.dataset.w = n;
-            s.textContent = p;
-            span.appendChild(s);
-        });
-
-        // Genişliği ölçüp orijinal genişliğe oturt
-        meas.style.fontSize = fs + 'px';
-        meas.style.fontFamily = fam;
-        meas.textContent = item.str;
-        const mw = meas.offsetWidth;
-        const target = item.width * (viewport.scale || 1);
-        if (mw > 0 && target > 0) {
-            const ratio = target / mw;
-            span.style.transform = (angle ? 'rotate(' + angle + 'rad) ' : '') + 'scaleX(' + ratio.toFixed(4) + ')';
+async function buildWordLayer(textContent, viewport, layer) {
+    // Use the same viewport and PDF.js font metrics as the canvas renderer.
+    layer.style.setProperty('--scale-factor', viewport.scale);
+    const textDivs = [];
+    await pdfjsLib.renderTextLayer({ textContentSource: textContent,
+        container: layer, viewport, textDivs }).promise;
+    for (const span of textDivs) {
+        const parts = span.textContent.split(/(\s+)/);
+        span.replaceChildren();
+        for (const part of parts) {
+            const word = normWord(part);
+            if (!part.trim() || !word || word.length < 2 || !/[a-zçğıöşü]/i.test(word)) {
+                span.appendChild(document.createTextNode(part));
+                continue;
+            }
+            const token = document.createElement('span');
+            token.className = 'w'; token.dataset.w = word; token.textContent = part;
+            span.appendChild(token);
         }
-        frag.appendChild(span);
-    });
-
-    layer.removeChild(meas);
-    layer.appendChild(frag);
+    }
     layer.addEventListener('click', onWordClick);
 }
 
@@ -1583,6 +1596,7 @@ function toggleBlur(status) {
 function markLearned(w) {
     const e = data.words[w]; if (!e) return;
     e.status = 'learned'; e.learnedAt = Date.now(); e.updatedAt = Date.now();
+    e.review = { ...(e.review || {}), due: Date.now(), interval: 0, streak: 0 };
     bumpDay('learned'); save(); refreshAll();
     toast('“' + w + '” ezberlendi 🎉');
 }
@@ -1631,39 +1645,129 @@ function saveWordEdit(w) {
 /* =========================================================================
    FLASHCARD
    ========================================================================= */
+const REVIEW_DAY = 86400000;
+function reviewPriority(x, now) {
+    const r = x.review || {};
+    const age = Math.max(0, (now - (x.learnedAt || x.added || now)) / REVIEW_DAY);
+    const due = Number(r.due) || 0;
+    return (due <= now ? 100 : 0) + 40 / (1 + age)
+        + Math.min(30, (r.lapses || 0) * 5)
+        + (due ? Math.min(40, Math.max(0, (now - due) / REVIEW_DAY) * 4) : 10);
+}
 function startFlash(type) {
-    const list = wordsOf(type);
-    if (!list.length) { toast(type === 'unknown' ? 'Bilmediğin kelime yok' : 'Ezberlediğin kelime yok'); return; }
-    flash.list = list.slice().sort(() => Math.random() - 0.5);
-    flash.i = 0; flash.flipped = false; flash.type = type;
-    document.getElementById('flashTitle').textContent = type === 'unknown' ? 'Kelime Çalışması' : 'Tekrar';
-    document.getElementById('fcLearnBtn').style.display = type === 'unknown' ? '' : 'none';
-    drawFlash();
+    stopFlash();
+    const now = Date.now(), list = wordsOf(type);
+    if (!list.length) { toast('Çalışılacak kelime yok'); return; }
+    Object.assign(flash, { list: list.sort((a,b) => reviewPriority(b,now)-reviewPriority(a,now)).slice(0,20),
+        i: 0, type, active: true, completed: 0, good: 0, difficult: 0, repeats: {}, paused: false });
+    flash.limit = Math.min(20, flash.list.length * 3);
+    document.getElementById('flashTitle').textContent = 'Akıllı tekrar';
     openModal('modal-flash');
+    drawFlash();
+    flash.timer = setInterval(updateFlashClock, 200);
+}
+function elapsedFlash() {
+    return (flash.elapsed || 0) + (flash.started == null ? 0 : performance.now() - flash.started);
+}
+function captureFlashTime() {
+    flash.elapsed = elapsedFlash(); flash.started = null;
+}
+function updateFlashClock() {
+    if (!flash.active || flash.paused || document.hidden) return;
+    const seconds = elapsedFlash() / 1000;
+    if (!flash.revealed && seconds >= (data.settings.recallSeconds || 8) && !flash.slow) {
+        flash.slow = true; recordDifficulty('slow');
+    }
+    document.getElementById('fcSignal').textContent = flash.revealed
+        ? 'Anlam açıldı · Bu kelime daha sık gelecek.'
+        : flash.slow ? 'Hatırlama süresi aşıldı · Daha sık tekrar edilecek.'
+        : Math.floor(seconds) + ' sn · Hatırlayınca aşağıdan yanıtla';
+}
+function recordDifficulty(reason) {
+    const x = flash.list[flash.i]; if (!x || flash.difficultySaved) return;
+    const r = x.review || {};
+    x.review = { ...r, due: Date.now() + 60000, interval: 60000,
+        lapses: (r.lapses || 0) + 1, streak: 0, lastSignal: reason };
+    x.updatedAt = Date.now(); flash.difficultySaved = true; save();
 }
 function drawFlash() {
     const x = flash.list[flash.i];
-    if (!x) { closeModal('modal-flash'); return; }
-    document.getElementById('flashCount').textContent = (flash.i + 1) + ' / ' + flash.list.length;
+    if (!x || flash.completed >= flash.limit) { finishFlash(); return; }
+    Object.assign(flash, { flipped: false, revealed: false, slow: false, difficultySaved: false,
+        elapsed: 0, started: document.hidden ? null : performance.now(), paused: false });
+    document.getElementById('flashCard').style.display = '';
+    document.getElementById('fcActions').style.display = '';
+    document.getElementById('fcSpeak').style.display = '';
+    document.getElementById('fcPause').style.display = '';
+    document.getElementById('fcPause').textContent = 'Duraklat';
+    document.getElementById('flashCount').textContent = flash.completed + ' / ' + Math.min(flash.limit, flash.completed + flash.list.length - flash.i);
     document.getElementById('fcWord').textContent = x.w;
-    document.getElementById('fcTr').textContent = x.tr || '—';
-    document.getElementById('fcTr').classList.toggle('hidden', !flash.flipped);
-    document.getElementById('fcHint').textContent = flash.flipped ? 'Kart çevrildi' : 'Türkçesi için karta dokun';
-    document.getElementById('fcLang').textContent = flash.flipped ? 'İNGİLİZCE → TÜRKÇE' : 'İNGİLİZCE';
+    document.getElementById('fcTr').textContent = x.tr || 'Anlam eklenmemiş';
+    document.getElementById('fcTr').classList.add('hidden');
+    document.getElementById('fcHint').textContent = 'Türkçeyi açmak için dokun';
+    document.getElementById('fcLang').textContent = 'İNGİLİZCE';
+    updateFlashClock();
 }
-function flipFlash() { flash.flipped = !flash.flipped; drawFlash(); }
-function nextFlash(d) {
-    flash.i = (flash.i + d + flash.list.length) % flash.list.length;
-    flash.flipped = false; drawFlash();
+function flipFlash() {
+    if (!flash.active || flash.paused || flash.revealed) return;
+    updateFlashClock(); captureFlashTime(); flash.revealed = true;
+    recordDifficulty('meaning');
+    document.getElementById('fcTr').classList.remove('hidden');
+    document.getElementById('fcHint').textContent = 'Anlamı öğrendikten sonra devam et';
+    updateFlashClock();
 }
-function flashMarkLearned() {
-    const x = flash.list[flash.i]; if (!x) return;
-    markLearned(x.w);
-    flash.list.splice(flash.i, 1);
-    if (!flash.list.length) { closeModal('modal-flash'); toast('Tüm kelimeler bitti 🎉'); return; }
-    if (flash.i >= flash.list.length) flash.i = 0;
-    flash.flipped = false; drawFlash();
+function rateFlash(answer) {
+    if (!flash.active || flash.paused || document.hidden) return;
+    updateFlashClock();
+    const x = flash.list[flash.i], now = Date.now(), ms = elapsedFlash();
+    const failed = flash.revealed || flash.slow || answer === 'again';
+    if (failed) recordDifficulty(flash.revealed ? 'meaning' : flash.slow ? 'slow' : 'again');
+    const r = x.review || {};
+    const interval = failed ? 60000 : answer === 'hard' ? 10 * 60000
+        : Math.min(60 * REVIEW_DAY, Math.max(REVIEW_DAY, (r.interval || 0) * 2.2));
+    x.review = { ...r, interval, due: now + interval, lastReviewed: now,
+        reviews: (r.reviews || 0) + 1, streak: failed ? 0 : (r.streak || 0) + 1,
+        lastMs: Math.round(ms), lastResult: failed ? 'again' : answer };
+    if (!failed && answer === 'good' && x.status === 'unknown') {
+        x.status = 'learned'; x.learnedAt = now; bumpDay('learned');
+    }
+    x.updatedAt = now; save();
+    const difficult = failed || answer === 'hard';
+    flash.completed++; flash[difficult ? 'difficult' : 'good']++;
+    // At most two extra exposures per word, separated by other available cards.
+    if (difficult && (flash.repeats[x.w] || 0) < 2 && flash.completed < flash.limit) {
+        flash.repeats[x.w] = (flash.repeats[x.w] || 0) + 1;
+        flash.list.splice(Math.min(flash.list.length, flash.i + 4), 0, x);
+    }
+    flash.i++; drawFlash();
 }
+function pauseFlash() {
+    if (!flash.active) return;
+    flash.paused = !flash.paused;
+    if (flash.paused) captureFlashTime();
+    else if (!flash.revealed && !document.hidden) flash.started = performance.now();
+    document.getElementById('flashCard').style.visibility = flash.paused ? 'hidden' : '';
+    document.getElementById('fcActions').style.visibility = flash.paused ? 'hidden' : '';
+    document.getElementById('fcPause').textContent = flash.paused ? 'Devam et' : 'Duraklat';
+}
+function stopFlash() {
+    if (flash.active && !flash.paused && !document.hidden) updateFlashClock();
+    clearInterval(flash.timer); flash.active = false;
+    document.getElementById('flashCard').style.visibility = '';
+    document.getElementById('fcActions').style.visibility = '';
+}
+function finishFlash() {
+    stopFlash(); refreshAll();
+    document.getElementById('flashCount').textContent = 'Oturum tamamlandı · ' + flash.completed + ' yanıt';
+    for (const id of ['flashCard','fcActions','fcSpeak','fcPause']) document.getElementById(id).style.display = 'none';
+    document.getElementById('fcSignal').textContent = flash.good + ' rahat hatırlama · ' + flash.difficult
+        + ' zorlanma. Zorlandığın kelimeler sonraki çalışmalarda öncelikli.';
+}
+document.addEventListener('visibilitychange', () => {
+    if (!flash.active) return;
+    if (document.hidden) captureFlashTime();
+    else if (!flash.paused && !flash.revealed) flash.started = performance.now();
+});
 
 /* =========================================================================
    İSTATİSTİK
@@ -1689,6 +1793,7 @@ function renderStats() {
     document.getElementById('statGoal').textContent = goal;
     document.getElementById('textTodayNum').textContent = t.learned || 0;
     document.getElementById('goalInput').value = goal;
+    document.getElementById('recallSeconds').value = data.settings.recallSeconds || 8;
     setRing('ringToday', Math.min(100, Math.round((t.learned || 0) / goal * 100)));
 
     // Son 7 gün
@@ -1786,14 +1891,52 @@ function switchTab(id, btn) {
     document.getElementById('view-' + id).classList.remove('hidden');
     const inReader = id === 'read' && !document.getElementById('readerView').classList.contains('hidden');
     document.getElementById('pageNav').style.display = inReader ? '' : 'none';
+    setReaderFocus(inReader);
+    if (inReader) renderPage();
     if (id === 'stats') renderStats();
     if (id === 'unknown') renderUnknown();
     if (id === 'learned') renderLearned();
     if (window.LiquidDock) window.LiquidDock.moveTo(btn);
     window.scrollTo({ top: 0 });
 }
+function setReaderFocus(enabled) {
+    document.body.classList.toggle('reading-focus', enabled);
+    toggleReaderControls(false);
+}
+function toggleReaderControls(open) {
+    const visible = typeof open === 'boolean' ? open : !document.body.classList.contains('controls-open');
+    document.body.classList.toggle('controls-open', visible);
+    const handle = document.getElementById('readerHandle');
+    handle.setAttribute('aria-expanded', String(visible));
+    handle.setAttribute('aria-label', visible ? 'Okuma kontrollerini gizle' : 'Okuma kontrollerini aç');
+    for (const el of document.querySelectorAll('.reader-head, .liquid-nav, .page-nav')) {
+        el.inert = document.body.classList.contains('reading-focus') && !visible;
+    }
+}
+const readerHandle = document.getElementById('readerHandle');
+let readerGesture = null;
+readerHandle.addEventListener('pointerdown', e => {
+    readerGesture = { y: e.clientY, moved: false };
+    readerHandle.setPointerCapture(e.pointerId);
+});
+readerHandle.addEventListener('pointermove', e => {
+    if (!readerGesture) return;
+    const delta = e.clientY - readerGesture.y;
+    if (Math.abs(delta) > 22) {
+        toggleReaderControls(delta < 0); readerGesture.moved = true;
+    }
+});
+readerHandle.addEventListener('click', e => {
+    if (readerGesture && readerGesture.moved) { e.preventDefault(); e.stopImmediatePropagation(); }
+    readerGesture = null;
+}, true);
+readerHandle.addEventListener('pointercancel', () => { readerGesture = null; });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('reading-focus')) toggleReaderControls(false);
+});
+
 function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function closeModal(id) { if (id === 'modal-flash') stopFlash(); document.getElementById(id).classList.remove('active'); }
 
 document.addEventListener('keydown', (e) => {
     if (document.getElementById('readerView').classList.contains('hidden')) return;
