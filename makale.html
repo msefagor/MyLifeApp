@@ -859,6 +859,15 @@
     <!-- Kelime baloncuğu -->
     <div id="wordPop"></div>
 
+    <div id="modal-pronunciation" class="modal" role="dialog" aria-modal="true" aria-labelledby="pronunciationTitle">
+        <div class="modal-content">
+            <div class="section-title" id="pronunciationTitle">Telaffuzlar seslendirilsin mi?</div>
+            <p class="text-muted" style="margin-bottom:18px">Evet dersen kelime, sonraki karta geçene kadar aralıklarla tekrar okunur.</p>
+            <button class="btn btn-success" onclick="chooseFlashAudio(true)">Evet, sesli çalış</button>
+            <button class="btn btn-secondary" onclick="chooseFlashAudio(false)">Hayır, sessiz çalış</button>
+            <button class="btn btn-ghost" onclick="closeModal('modal-pronunciation')">Vazgeç</button>
+        </div>
+    </div>
     <!-- Çalışma modu (flashcard) -->
     <div id="modal-flash" class="modal">
         <div class="modal-content">
@@ -877,7 +886,7 @@
                     <button class="btn btn-secondary" style="flex:1" onclick="rateFlash('hard')">Zorlandım</button>
                     <button class="btn btn-success" style="flex:1" id="fcLearnBtn" onclick="rateFlash('good')">Hatırladım</button>
                 </div>
-                <button class="btn btn-ghost" id="fcSpeak" onclick="speak(flash.list[flash.i] && flash.list[flash.i].w)">🔊 Telaffuz</button>
+                <button class="btn btn-ghost" id="fcSpeak" onclick="if(flash.audioEnabled){startFlashAudio()}else{speak(flash.list[flash.i] && flash.list[flash.i].w)}">🔊 Telaffuz</button>
                 <button class="btn btn-ghost" id="fcPause" onclick="pauseFlash()">Duraklat</button>
                 <p class="fc-hint">Türkçeye ilk bakış serbesttir. İkinci ve sonraki bakışlar veya süre aşımı tekrar sıklığını artırır.</p>
             </div>
@@ -1780,12 +1789,16 @@ function reviewPriority(x, now) {
         + Math.min(30, (r.lapses || 0) * 5)
         + (due ? Math.min(40, Math.max(0, (now - due) / REVIEW_DAY) * 4) : 10);
 }
-function startFlash(type) {
+function startFlash(type, audioChoice) {
     stopFlash();
     const now = Date.now(), view = dailyView[type];
     if (view.enabled && !view.date) { toast('Önce çalışmak istediğin günü seç'); return; }
     const list = wordsOf(type).filter(x => !view.enabled || wordDay(x) === view.date);
     if (!list.length) { toast('Çalışılacak kelime yok'); return; }
+    if (typeof audioChoice !== 'boolean') {
+        flash.pendingType = type; openModal('modal-pronunciation'); return;
+    }
+    flash.audioEnabled = audioChoice;
     Object.assign(flash, { list: list.sort((a,b) => reviewPriority(b,now)-reviewPriority(a,now)).slice(0,20),
         i: 0, type, active: true, completed: 0, good: 0, difficult: 0, repeats: {}, paused: false });
     flash.limit = Math.min(20, flash.list.length * 3);
@@ -1794,6 +1807,45 @@ function startFlash(type) {
     drawFlash();
     flash.timer = setInterval(updateFlashClock, 200);
 }
+function chooseFlashAudio(enabled) {
+    const type = flash.pendingType;
+    closeModal('modal-pronunciation');
+    if (type) startFlash(type, enabled);
+}
+function stopFlashAudio() {
+    flash.audioGeneration = (flash.audioGeneration || 0) + 1;
+    clearTimeout(flash.audioTimeout);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    flash.utterance = null;
+}
+function startFlashAudio() {
+    stopFlashAudio();
+    if (!flash.active || !flash.audioEnabled || flash.paused || document.hidden) return;
+    if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+        flash.audioEnabled = false; toast('Bu tarayıcı sesli telaffuzu desteklemiyor.'); return;
+    }
+    const generation = flash.audioGeneration;
+    const word = flash.list[flash.i] && flash.list[flash.i].w;
+    if (!word) return;
+    const play = () => {
+        if (generation !== flash.audioGeneration || !flash.active || flash.paused || document.hidden) return;
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US'; utterance.rate = 0.9;
+        flash.utterance = utterance;
+        utterance.onend = () => {
+            if (generation === flash.audioGeneration) flash.audioTimeout = setTimeout(play, 1000);
+        };
+        utterance.onerror = () => {
+            if (generation !== flash.audioGeneration) return;
+            stopFlashAudio();
+            toast('Ses başlatılamadı. Telaffuz düğmesine dokunarak yeniden deneyebilirsin.');
+        };
+        try { speechSynthesis.speak(utterance); } catch (e) { utterance.onerror(); }
+    };
+    play();
+}
+window.addEventListener('pagehide', stopFlashAudio);
+
 function elapsedFlash() {
     return (flash.elapsed || 0) + (flash.started == null ? 0 : performance.now() - flash.started);
 }
@@ -1835,6 +1887,7 @@ function drawFlash() {
     document.getElementById('fcHint').textContent = 'Türkçeyi açmak için dokun';
     document.getElementById('fcLang').textContent = 'İNGİLİZCE';
     updateFlashClock();
+    startFlashAudio();
 }
 function flipFlash() {
     if (!flash.active || flash.paused || flash.revealed) return;
@@ -1876,6 +1929,7 @@ function rateFlash(answer) {
 function pauseFlash() {
     if (!flash.active) return;
     flash.paused = !flash.paused;
+    if (flash.paused) stopFlashAudio(); else startFlashAudio();
     if (flash.paused) captureFlashTime();
     else if (!flash.revealed && !document.hidden) flash.started = performance.now();
     document.getElementById('flashCard').style.visibility = flash.paused ? 'hidden' : '';
@@ -1883,6 +1937,7 @@ function pauseFlash() {
     document.getElementById('fcPause').textContent = flash.paused ? 'Devam et' : 'Duraklat';
 }
 function stopFlash() {
+    stopFlashAudio();
     if (flash.active && !flash.paused && !document.hidden) updateFlashClock();
     clearInterval(flash.timer); flash.active = false;
     document.getElementById('flashCard').style.visibility = '';
@@ -1897,8 +1952,11 @@ function finishFlash() {
 }
 document.addEventListener('visibilitychange', () => {
     if (!flash.active) return;
-    if (document.hidden) captureFlashTime();
-    else if (!flash.paused && !flash.revealed) flash.started = performance.now();
+    if (document.hidden) { captureFlashTime(); stopFlashAudio(); }
+    else if (!flash.paused) {
+        if (!flash.revealed) flash.started = performance.now();
+        startFlashAudio();
+    }
 });
 
 /* =========================================================================
