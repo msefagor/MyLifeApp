@@ -616,6 +616,11 @@
         @media (prefers-reduced-motion: reduce) {
             .reading-focus .reader-head, .reading-focus .liquid-nav, .reading-focus .page-nav { transition: none; }
         }
+        .list-tools { display: grid; grid-template-columns: 1fr 1.15fr .65fr; gap: 6px; }
+        .list-tools .btn { min-width: 0; padding: 12px 5px; font-size: 12px; }
+        .list-tools .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+        .daily-row { width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; text-align: left; }
+        .daily-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -718,8 +723,10 @@
                     <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>
                     Kartlarla Çalış
                 </button>
-                <button class="btn btn-secondary" style="flex:0 0 46%" onclick="toggleBlur('unknown')" id="blurBtnUnknown">Anlamları Gizle</button>
+                <button class="btn btn-secondary"  onclick="toggleBlur('unknown')" id="blurBtnUnknown">Anlamları Gizle</button>
+                <button class="btn btn-secondary" id="dailyBtnUnknown" aria-pressed="false" onclick="toggleDaily('unknown')">Günlük</button>
             </div>
+            <div id="dailyUnknown"></div>
             <div id="unknownList"></div>
         </div>
     </div>
@@ -742,8 +749,10 @@
                     <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>
                     Tekrar Et
                 </button>
-                <button class="btn btn-secondary" style="flex:0 0 46%" onclick="toggleBlur('learned')" id="blurBtnLearned">Anlamları Gizle</button>
+                <button class="btn btn-secondary"  onclick="toggleBlur('learned')" id="blurBtnLearned">Anlamları Gizle</button>
+                <button class="btn btn-secondary" id="dailyBtnLearned" aria-pressed="false" onclick="toggleDaily('learned')">Günlük</button>
             </div>
+            <div id="dailyLearned"></div>
             <div id="learnedList"></div>
         </div>
     </div>
@@ -870,7 +879,7 @@
                 </div>
                 <button class="btn btn-ghost" id="fcSpeak" onclick="speak(flash.list[flash.i] && flash.list[flash.i].w)">🔊 Telaffuz</button>
                 <button class="btn btn-ghost" id="fcPause" onclick="pauseFlash()">Duraklat</button>
-                <p class="fc-hint">Türkçeyi açmak veya süreyi aşmak, kelimenin daha sık gelmesini sağlar.</p>
+                <p class="fc-hint">Türkçeye ilk bakış serbesttir. İkinci ve sonraki bakışlar veya süre aşımı tekrar sıklığını artırır.</p>
             </div>
         </div>
     </div>
@@ -1663,18 +1672,47 @@ function listHtml(items, status) {
         </div>`).join('');
 }
 
-function renderUnknown() {
-    const q = (document.getElementById('searchUnknown').value || '').toLowerCase().trim();
-    let items = wordsOf('unknown');
-    if (q) items = items.filter(x => x.w.includes(q) || (x.tr || '').toLowerCase().includes(q));
-    document.getElementById('unknownList').innerHTML = listHtml(items, 'unknown');
+const dailyView = { unknown: { enabled: false, date: null }, learned: { enabled: false, date: null } };
+function wordDay(x) {
+    // Daily lessons retain their lesson date, even when imported later.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(x.sourceDate || '')) return x.sourceDate;
+    const d = new Date(x.added);
+    if (!Number.isFinite(d.getTime())) return 'undated';
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-function renderLearned() {
-    const q = (document.getElementById('searchLearned').value || '').toLowerCase().trim();
-    let items = wordsOf('learned');
-    if (q) items = items.filter(x => x.w.includes(q) || (x.tr || '').toLowerCase().includes(q));
-    document.getElementById('learnedList').innerHTML = listHtml(items, 'learned');
+function dayLabel(day) {
+    return day === 'undated' ? 'Tarihi bilinmeyen' : new Date(day + 'T12:00:00').toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
 }
+function toggleDaily(status) {
+    dailyView[status].enabled = !dailyView[status].enabled;
+    dailyView[status].date = null; renderWordList(status);
+}
+function selectDaily(status, day) {
+    dailyView[status].date = day; renderWordList(status);
+}
+function renderWordList(status) {
+    const cap = status === 'unknown' ? 'Unknown' : 'Learned', view = dailyView[status];
+    const q = document.getElementById('search' + cap).value.toLowerCase().trim();
+    let items = wordsOf(status);
+    if (q) items = items.filter(x => x.w.includes(q) || (x.tr || '').toLowerCase().includes(q));
+    const dates = document.getElementById('daily' + cap), list = document.getElementById(status + 'List');
+    document.getElementById('dailyBtn' + cap).setAttribute('aria-pressed', String(view.enabled));
+    dates.innerHTML = '';
+    if (view.enabled && !view.date) {
+        const counts = new Map();
+        for (const x of items) { const day = wordDay(x); counts.set(day, (counts.get(day) || 0) + 1); }
+        dates.innerHTML = [...counts.keys()].sort((a,b) => a === 'undated' ? 1 : b === 'undated' ? -1 : b.localeCompare(a)).map(day =>
+            `<button class="btn btn-secondary daily-row" onclick="selectDaily('${status}','${day}')"><span>${dayLabel(day)}</span><span>${counts.get(day)} kelime ›</span></button>`).join('');
+        list.innerHTML = items.length ? '' : listHtml([],status); return;
+    }
+    if (view.enabled && view.date) {
+        items = items.filter(x => wordDay(x) === view.date);
+        dates.innerHTML = `<div class="daily-info"><button class="rb-btn" onclick="selectDaily('${status}',null)">‹ Günler</button><span>${dayLabel(view.date)} · ${items.length} kelime</span></div>`;
+    }
+    list.innerHTML = listHtml(items,status);
+}
+function renderUnknown() { renderWordList('unknown'); }
+function renderLearned() { renderWordList('learned'); }
 function toggleBlur(status) {
     blurState[status] = !blurState[status];
     const btn = document.getElementById(status === 'unknown' ? 'blurBtnUnknown' : 'blurBtnLearned');
@@ -1744,12 +1782,14 @@ function reviewPriority(x, now) {
 }
 function startFlash(type) {
     stopFlash();
-    const now = Date.now(), list = wordsOf(type);
+    const now = Date.now(), view = dailyView[type];
+    if (view.enabled && !view.date) { toast('Önce çalışmak istediğin günü seç'); return; }
+    const list = wordsOf(type).filter(x => !view.enabled || wordDay(x) === view.date);
     if (!list.length) { toast('Çalışılacak kelime yok'); return; }
     Object.assign(flash, { list: list.sort((a,b) => reviewPriority(b,now)-reviewPriority(a,now)).slice(0,20),
         i: 0, type, active: true, completed: 0, good: 0, difficult: 0, repeats: {}, paused: false });
     flash.limit = Math.min(20, flash.list.length * 3);
-    document.getElementById('flashTitle').textContent = 'Akıllı tekrar';
+    document.getElementById('flashTitle').textContent = view.enabled ? dayLabel(view.date) + ' · Tekrar' : 'Akıllı tekrar';
     openModal('modal-flash');
     drawFlash();
     flash.timer = setInterval(updateFlashClock, 200);
@@ -1767,7 +1807,7 @@ function updateFlashClock() {
         flash.slow = true; recordDifficulty('slow');
     }
     document.getElementById('fcSignal').textContent = flash.revealed
-        ? 'Anlam açıldı · Bu kelime daha sık gelecek.'
+        ? (flash.meaningFailed ? 'İkinci veya sonraki bakış · Daha sık tekrar edilecek.' : 'İlk bakış · Tekrar sıklığı etkilenmedi.')
         : flash.slow ? 'Hatırlama süresi aşıldı · Daha sık tekrar edilecek.'
         : Math.floor(seconds) + ' sn · Hatırlayınca aşağıdan yanıtla';
 }
@@ -1781,7 +1821,7 @@ function recordDifficulty(reason) {
 function drawFlash() {
     const x = flash.list[flash.i];
     if (!x || flash.completed >= flash.limit) { finishFlash(); return; }
-    Object.assign(flash, { flipped: false, revealed: false, slow: false, difficultySaved: false,
+    Object.assign(flash, { flipped: false, revealed: false, meaningFailed: false, slow: false, difficultySaved: false,
         elapsed: 0, started: document.hidden ? null : performance.now(), paused: false });
     document.getElementById('flashCard').style.display = '';
     document.getElementById('fcActions').style.display = '';
@@ -1799,7 +1839,11 @@ function drawFlash() {
 function flipFlash() {
     if (!flash.active || flash.paused || flash.revealed) return;
     updateFlashClock(); captureFlashTime(); flash.revealed = true;
-    recordDifficulty('meaning');
+    const x = flash.list[flash.i];
+    x.review = { ...(x.review || {}), meaningViews: ((x.review || {}).meaningViews || 0) + 1 };
+    flash.meaningFailed = x.review.meaningViews >= 2;
+    x.updatedAt = Date.now(); save();
+    if (flash.meaningFailed) recordDifficulty('meaning');
     document.getElementById('fcTr').classList.remove('hidden');
     document.getElementById('fcHint').textContent = 'Anlamı öğrendikten sonra devam et';
     updateFlashClock();
@@ -1808,8 +1852,8 @@ function rateFlash(answer) {
     if (!flash.active || flash.paused || document.hidden) return;
     updateFlashClock();
     const x = flash.list[flash.i], now = Date.now(), ms = elapsedFlash();
-    const failed = flash.revealed || flash.slow || answer === 'again';
-    if (failed) recordDifficulty(flash.revealed ? 'meaning' : flash.slow ? 'slow' : 'again');
+    const failed = flash.meaningFailed || flash.slow || answer === 'again';
+    if (failed) recordDifficulty(flash.meaningFailed ? 'meaning' : flash.slow ? 'slow' : 'again');
     const r = x.review || {};
     const interval = failed ? 60000 : answer === 'hard' ? 10 * 60000
         : Math.min(60 * REVIEW_DAY, Math.max(REVIEW_DAY, (r.interval || 0) * 2.2));
