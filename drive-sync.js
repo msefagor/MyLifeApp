@@ -54,6 +54,7 @@ const LS_CONFLICT_PREFIX  = '_dbsync_conflict_';       // çakışmada uzak sür
 const LS_KITAP_LITE       = '_dbsync_kitap_lite';      // kapaksız acil durum yedeği
 const KITAP_KEY           = 'liquid_lib_pro_v1';
 const MAKALE_KEY          = 'makale_app_v1';   // Makale: kelime bazlı birleştirme
+const SOZLUK_KEY          = 'sozlukKelimeler'; // Sözlük: kelime (id) bazlı birleştirme
 
 // =============================================================================
 //  HANGİ ANAHTAR HANGİ DOMAIN'E AİT?
@@ -183,6 +184,14 @@ function fingerprintValue(key, value) {
     if (key === MAKALE_KEY) {
         const o = parseMakale(value);
         if (o) return fpMakale(o);
+    }
+    if (key === SOZLUK_KEY) {
+        const arr = parseSozluk(value);
+        if (arr) {
+            const items = {};
+            for (const w of arr) if (w && w.id != null) items[String(w.id)] = hashStr(stableStr(w));
+            return { __s: 1, items };
+        }
     }
     return hashStr(String(value));
 }
@@ -323,6 +332,34 @@ function mergeMakale(baseFp, lStr, rStr) {
     return JSON.stringify({ words, cache, days, settings });
 }
 
+// --- SÖZLÜK: kelime (id) bazlı 3-yollu birleştirme ---------------------------
+//  Farklı cihazlarda eklenen kelimeler birbirini EZMEZ; hepsi birleşir.
+//  Aynı kelime iki yerde değiştiyse en son güncellenen kazanır.
+function parseSozluk(str) {
+    if (typeof str !== 'string' || !str) return null;
+    try {
+        const a = JSON.parse(str);
+        return Array.isArray(a) ? a : null;
+    } catch (_) { return null; }
+}
+function pickSozlukWord(l, r) {
+    const lt = Number(l.updatedAt || l.learnedAt || l.createdAt || 0);
+    const rt = Number(r.updatedAt || r.learnedAt || r.createdAt || 0);
+    if (rt > lt) return r;
+    if (lt > rt) return l;
+    return (l.status === 'learned') ? l : r;
+}
+function mergeSozluk(baseFp, lStr, rStr) {
+    const L = parseSozluk(lStr), R = parseSozluk(rStr);
+    if (!L) return rStr;
+    if (!R) return lStr;
+    // Eski sürüm tabanı (tek hash) → taban yok say: silme yok, sadece birleşim (kayıpsız)
+    const bf = (baseFp && typeof baseFp === 'object' && baseFp.__s) ? baseFp.items : null;
+    const merged = mergeList(bf, L, R, pickSozlukWord);
+    merged.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+    return JSON.stringify(merged);
+}
+
 function backupConflict(domain, key, remoteValue) {
     try { window.localStorage.setItem(LS_CONFLICT_PREFIX + domain + '_' + key, remoteValue); }
     catch (_) {}
@@ -349,6 +386,7 @@ function mergeDomainData(domain, baseFp, local, remote) {
         }
         if (k === KITAP_KEY)  { out[k] = mergeKitap(bf, l, r);  continue; }
         if (k === MAKALE_KEY) { out[k] = mergeMakale(bf, l, r); continue; }
+        if (k === SOZLUK_KEY) { out[k] = mergeSozluk(bf, l, r); continue; }
 
         const lSame = sameAsBase(k, l, bf);
         const rSame = sameAsBase(k, r, bf);
