@@ -1077,7 +1077,7 @@
             });
         }
         // Hassasiyet çok kötüyse ölçüm anlamsızdır
-        const MAX_KABUL_HASSASIYET = 4000;  // metre
+        const MAX_KABUL_HASSASIYET = 150;  // metre
         // =======================================================
         function hideLoader() {
             document.getElementById('loader').classList.add('hidden');
@@ -1421,7 +1421,7 @@
                     if(countdownInt) clearInterval(countdownInt); disp.innerText=dur;
                     countdownInt=setInterval(()=>{ dur--; disp.innerText=dur; if(dur<=0){ clearInterval(countdownInt); document.getElementById('qr-cover').classList.remove('hidden'); }}, 1000);
                     if(liveListInt) clearInterval(liveListInt);
-                    updateLiveList(); liveListInt = setInterval(updateLiveList, 3000);
+                    updateLiveList(); liveListInt = setInterval(updateLiveList, 1200);
                 }
             }
         }
@@ -1530,16 +1530,22 @@
             qrScanner = new Html5Qrcode("reader");
             qrScanner.start({ facingMode: "environment" }, { fps:10, qrbox:250 }, async (txt) => {
                 qrScanner.stop();
-                showLoader('Konum doğrulanıyor', 'GPS hassasiyeti bekleniyor…');
+                showLoader('Konum alınıyor', 'Konum izni onaylanır onaylanmaz devam edilecek…');
                 let konum;
                 try {
-                    konum = await konumAl({ hedefAcc: 25, maxSure: 12000, minSure: 2000,
-                        onProgress: b => setLoaderSub(`En iyi ölçüm: ±${b.acc} m — daha hassası bekleniyor…`) });
-                } catch(e) { hideLoader(); showToast(e.message); nav('screen-home'); return; }
-                if (konum.acc > MAX_KABUL_HASSASIYET) {
-                    hideLoader();
-                    showToast(`Konum hassasiyeti yetersiz (±${konum.acc} m). Pencere kenarına yaklaşıp tekrar deneyin.`);
-                    nav('screen-home'); return;
+                    // İzin verilir verilmez eldeki ilk ölçüm anında kullanılır; öğrenci GPS'in
+                    // kendini iyileştirmesini beklemek zorunda kalmaz. Ölçüm ne kadar hassas
+                    // olursa olsun yoklama artık bu yüzden reddedilmiyor — mesafe/hassasiyet
+                    // bilgisi sadece hoca ekranındaki rozet için kaydediliyor.
+                    konum = await konumAl({ hedefAcc: 999999, maxSure: 8000, minSure: 0 });
+                } catch(e) {
+                    // Geçici bir GPS hatasıysa (izin reddi hariç) sessizce bir kez daha dene
+                    if (e && /izni verilmedi/i.test(e.message || "")) {
+                        hideLoader(); showToast(e.message); nav('screen-home'); return;
+                    }
+                    try {
+                        konum = await konumAl({ hedefAcc: 999999, maxSure: 8000, minSure: 0 });
+                    } catch(e2) { hideLoader(); showToast(e2.message); nav('screen-home'); return; }
                 }
                 {
                     const res = await api({
